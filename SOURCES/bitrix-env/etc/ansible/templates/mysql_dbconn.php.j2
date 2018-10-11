@@ -1,0 +1,60 @@
+{% if mysql_playbook == 'cluster' -%}
+{% set DBHost = master_server -%}
+{% set DBName = item.DBName -%}
+{% set DBLogin = cluster_login -%}
+{% set DBPassword = cluster_password -%}
+{% else -%}
+{% set DBHost = mysql_host -%}
+{% set DBName = item.DBName -%}
+{% set DBLogin = mysql_login -%}
+{% set DBPassword = password -%}
+{% endif -%}
+{% set DBPasswordEsc = DBPassword | regex_replace('([\'\\\\])','\\\\\\1') -%}
+<?
+// {{ ansible_managed }}
+$DOCUMENT_ROOT = '{{ item.DocumentRoot }}';
+
+// return values
+$OK   = array( 0, 'Ok' );
+$ERR  = array( 1, 'Error');
+$DBHost = "{{ DBHost }}";
+$DBName = "{{ DBName }}";
+$DBLogin = "{{ DBLogin }}";
+$DBPassword = '{{ DBPasswordEsc }}';
+// replacements
+$sources = array('\\', '\'', '\\');
+$targets = array('\\\\', '\\\'', '\\\\');
+$DBPasswordReplace = str_replace($sources, $targets, $DBPassword);
+
+$filename = $DOCUMENT_ROOT."/bitrix/php_interface/dbconn.php";
+
+if(!file_exists($filename))
+  return $ERR[0];
+
+$content = file_get_contents($filename);
+
+if(strlen($content) <=0)
+  return $ERR[0];
+
+file_put_contents($DOCUMENT_ROOT."/bitrix/php_interface/dbconn.bak.php", $content);
+
+$content = preg_replace('/(\$DBHost\s*=\s*(\"|\')+)(.*)((\"|\')+;)/','${1}'.$DBHost.'${4}',$content);
+$content = preg_replace('/(\$DBName\s*=\s*(\"|\')+)(.*)((\"|\')+;)/','${1}'.$DBName.'${4}',$content);
+$content = preg_replace('/(\$DBLogin\s*=\s*(\"|\')+)(.*)((\"|\')+;)/','${1}'.$DBLogin.'${4}',$content);
+$content = preg_replace('/\$DBPassword\s*=.+/', '$DBPassword = '. "'" .$DBPasswordReplace. "';", $content);
+
+$config = file_put_contents($filename, $content);
+
+if ($config === false)
+{
+  $returnResult = $ERR;
+}else
+{
+  $returnResult = $OK;
+  unlink($DOCUMENT_ROOT."/bitrix/php_interface/dbconn.bak.php");
+}
+
+echo "Update dbconn.php return: ".$returnResult[1];
+return $returnResult[0];
+
+?>

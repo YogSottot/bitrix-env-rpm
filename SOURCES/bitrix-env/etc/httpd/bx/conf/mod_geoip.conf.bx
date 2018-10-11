@@ -1,0 +1,6 @@
+LoadModule geoip_module modules/mod_geoip.so
+
+<IfModule mod_geoip.c>
+	GeoIPEnable On
+	GeoIPDBFile /usr/share/GeoIP/GeoIP.dat
+</IfModule>

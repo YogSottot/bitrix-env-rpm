@@ -1,0 +1,71 @@
+---
+# default timezone for server
+timezone_default: Europe/Moscow
+
+# update php timezone by system
+timezone_php_update: update
+
+# configure iptables in common role: disable|enable
+# disable for Amazon network
+iptables_configure: enable
+
+# nginx manager port
+pool_manager_log: /opt/webdir/logs/update_pool.log
+pool_passwords: /etc/nginx/bx/pool_passwords
+pool_certificate: /etc/nginx/ssl/pool_manager.pem
+pool_replace_iflocal: enable
+pool_replace_ifscript: /opt/webdir/bin/update_network.sh
+pool_main_script: /opt/webdir/bin/wrapper_ansible_conf
+
+# firewall/iptables public ports
+pool_manager_ports:
+  - 8070
+
+web_ports:
+  - 80
+  - 443
+  - 8890
+  - 8891
+  - 8893
+  - 8894
+  - 5222
+  - 5223
+
+service_ports:
+  - 22
+
+memcached_ports:
+  - 11211
+
+sphinx_ports:
+  - 9306
+  - 9312
+
+mysql_ports:
+  - 3306
+
+openvz_sports:
+  udp: 
+    - 53
+  tcp: 
+    - 80
+    - 443
+    - 22
+    - 25
+    - 465
+    - 26
+    - 110
+    - 143
+    - 585
+    - 993
+    - 995
+    - 587
+
+# centos 6
+public_chain: bx_public
+trusted_chain: bx_trusted
+service_chain: bx_users
+
+# centos 7
+public_zone: public
+trusted_zone: bx_trusted

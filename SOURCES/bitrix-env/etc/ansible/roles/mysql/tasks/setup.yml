@@ -1,0 +1,66 @@
+---
+# get system type, which will be used in config choice
+- name: defined bx_system variable
+  set_fact:
+    bx_system: "{{ hostvars[inventory_hostname]['bx_system_type'] }}"
+    mysql_service: "{{ hostvars[inventory_hostname]['mysql_service'] }}"
+  tags: vars
+
+- name: get performance options
+  bx_perf: state=performance
+
+- name: create service directories
+  file: path={{ item }} state=directory owner=mysql group=mysql mode=0775
+  with_items: 
+    - /var/lib/mysqld
+    - /var/log/mysql
+    - /etc/mysql
+    - /etc/mysql/conf.d
+  tags: configs
+
+- name: main config /etc/my.cnf
+  template: src=my.cnf.j2 dest=/etc/my.cnf
+    owner=root group=mysql mode=0644
+  tags: configs
+
+- name: bvat config /etc/mysql/conf.d/bvat.cnf
+  template: src="bvat/bx_perf-bvat.cnf.j2" dest=/etc/mysql/conf.d/bvat.cnf
+    owner=root group=mysql mode=0644
+  tags: configs
+
+- name: replica config bx_replica.cnf
+  template: src=bx_replica.cnf.j2 dest={{ mysql_configs }}/bx_replica.cnf
+    owner=root group=root mode=0644
+  tags: configs
+
+- name: logrotate config 
+  template: src=logrotate-mysqld.j2 dest=/etc/logrotate.d/mysqld
+    owner=root group=root mode=0644
+  tags: configs
+
+- include: mysql-enable_service.yml
+
+- name: restart service mysqld
+  service: name={{ mysql_service }} state=restarted 
+  tags: service
+
+# create mysql users
+- name: grant access to cluster user
+  mysql_user: name={{ cluster_login }} password={{ cluster_password }} host={{ item }}
+    priv='*.*:SUPER,SELECT,LOCK TABLES,CREATE TEMPORARY TABLES,INSERT,UPDATE,DELETE,CREATE,DROP,ALTER,INDEX,REPLICATION CLIENT,RELOAD' state=present
+    login_unix_socket={{ mysql_socket }}
+    append_privs=yes check_implicit_admin=yes update_password=always
+  with_items:
+    - localhost
+    - '%'
+  tags: logins
+
+- name: grant access to replica user
+  mysql_user: name={{ replica_login }} password={{ replica_password }} host={{ item }}
+    priv='*.*:SUPER,REPLICATION SLAVE,REPLICATION CLIENT' state=present
+    login_unix_socket={{ mysql_socket }}
+    append_privs=yes check_implicit_admin=yes update_password=always
+  with_items:
+    - localhost
+    - '%'
+  tags: logins

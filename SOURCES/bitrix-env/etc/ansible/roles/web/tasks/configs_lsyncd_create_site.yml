@@ -1,0 +1,64 @@
+---
+- name: update lsyncd config on master
+  delegate_to: "{{ cluster_web_server }}"
+  blockinfile:
+    marker: "-- {mark} settings for {{ web_site_name }}"
+    dest: "/etc/lsyncd-{{ inventory_hostname }}.conf"
+    content: |
+      sync {
+      default.rsyncssh,
+      host        = "{{ inventory_hostname }}",
+      source      = "{{ web_site_root_dir }}/",
+      targetdir   = "{{ web_site_root_dir }}/",
+      exclude   = {
+      "bitrix/cache/",
+      "bitrix/managed_cache/",
+      "bitrix/stack_cache/",
+      "upload/resize_cache/",
+      "*.log",
+      },
+      rsync  = {
+      archive     = true,
+      compress    = true,
+      owner       = true,
+      perms       = true,
+      },
+      }
+  when: "'bitrix-web' in group_names and inventory_hostname != cluster_web_server"
+
+- name: restart service lsyncd
+  delegate_to: "{{ cluster_web_server }}"
+  service: name=lsyncd-{{ inventory_hostname }} state=started enabled=yes
+  when: "'bitrix-web' in group_names and inventory_hostname != cluster_web_server"
+
+
+- name: update lsyncd config on backend
+  blockinfile:
+    marker: "-- {mark} settings for {{ web_site_name }}"
+    dest: "/etc/lsyncd-{{ cluster_web_server }}.conf"
+    content: |
+      sync {
+      default.rsyncssh,
+      host        = "{{ cluster_web_server }}",
+      source      = "{{ web_site_root_dir }}/",
+      targetdir   = "{{ web_site_root_dir }}/",
+      exclude   = {
+      "bitrix/cache/",
+      "bitrix/managed_cache/",
+      "bitrix/stack_cache/",
+      "upload/resize_cache/",
+      "*.log",
+      },
+      rsync  = {
+      archive     = true,
+      compress    = true,
+      owner       = true,
+      perms       = true,
+      },
+      }
+  when: "'bitrix-web' in group_names and inventory_hostname != cluster_web_server"
+
+- name: restart service lsyncd
+  service: name=lsyncd-{{ cluster_web_server }} state=started enabled=yes
+  when: "'bitrix-web' in group_names and inventory_hostname != cluster_web_server"
+

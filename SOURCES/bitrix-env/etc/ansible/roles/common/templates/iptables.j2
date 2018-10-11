@@ -1,0 +1,107 @@
+# {{ ansible_managed }}
+{% set module_state = bx_ipt_state|default('disable') %}
+# iptables state module: {{ module_state }}
+# guest_type: {{ ansible_virtualization_type }}
+# Manual customization of this file is not recommended.
+*filter
+:INPUT ACCEPT [0:0]
+:FORWARD ACCEPT [0:0]
+:OUTPUT ACCEPT [0:0]
+
+{% if ansible_virtualization_type != 'openvz' %}
+-A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+
+{% for host in groups['bitrix-hosts'] %}
+-A INPUT -s {{ hostvars[host].bx_netaddr }}/32 -p tcp -m tcp -m comment --comment "Access to host from {{ host }}" -j ACCEPT
+-A INPUT -s {{ hostvars[host].bx_netaddr }}/32 -p udp -m udp -m comment --comment "Access to host from {{ host }}" -j ACCEPT
+{% endfor %}
+
+{% if 'bitrix-mgmt' in group_names %}
+-A INPUT -p tcp -m tcp --dport {{ pool_manager_port }} -m comment --comment "Access to manager of pool" -j ACCEPT
+{% endif %}
+
+-A INPUT -m state --state NEW -m tcp -p tcp --dport 22 -j ACCEPT
+{% if 'bitrix-web' in group_names %}
+-A INPUT -p tcp -m tcp --dport 80 -j ACCEPT
+-A INPUT -p tcp -m tcp --dport 443 -j ACCEPT
+-A INPUT -p tcp -m tcp --dport 8890 -j ACCEPT
+-A INPUT -p tcp -m tcp --dport 8891 -j ACCEPT
+-A INPUT -p tcp -m tcp --dport 8893 -j ACCEPT
+-A INPUT -p tcp -m tcp --dport 8894 -j ACCEPT
+-A INPUT -p tcp -m tcp --dport 5222 -j ACCEPT
+-A INPUT -p tcp -m tcp --dport 5223 -j ACCEPT
+{% endif %}
+
+-A INPUT -p icmp -j ACCEPT
+-A INPUT -i lo -j ACCEPT
+-A INPUT -j REJECT --reject-with icmp-host-prohibited
+-A FORWARD -j REJECT --reject-with icmp-host-prohibited
+
+{% else %}
+
+{% for host in groups['bitrix-hosts'] %}
+-A INPUT -s {{ hostvars[host].bx_netaddr }}/32 -p tcp -j ACCEPT
+-A INPUT -s {{ hostvars[host].bx_netaddr }}/32 -p udp -j ACCEPT
+{% endfor %}
+
+{% if 'bitrix-mgmt' in group_names %}
+-A INPUT -p tcp -m tcp --dport {{ pool_manager_port }} -j ACCEPT
+{% endif %}
+
+{% if 'bitrix-web' in group_names %}
+-A INPUT -p tcp -m tcp --dport 80 -j ACCEPT
+-A INPUT -p tcp -m tcp --dport 443 -j ACCEPT
+-A INPUT -p tcp -m tcp --dport 8890 -j ACCEPT
+-A INPUT -p tcp -m tcp --dport 8891 -j ACCEPT
+-A INPUT -p tcp -m tcp --dport 8893 -j ACCEPT
+-A INPUT -p tcp -m tcp --dport 8894 -j ACCEPT
+-A INPUT -p tcp -m tcp --dport 5222 -j ACCEPT
+-A INPUT -p tcp -m tcp --dport 5223 -j ACCEPT
+{% endif %}
+
+-A INPUT -p tcp -m tcp --dport 22 -j ACCEPT
+-A INPUT -p icmp -j ACCEPT
+-A INPUT -i lo -j ACCEPT
+
+{% if 'bitrix-memcached' in group_names %}
+{% for host in groups['bitrix-hosts'] %}
+-A INPUT -p tcp -m tcp -s {{ hostvars[host].bx_netaddr }}/32 --dport 11211 -j ACCEPT
+{% endfor %}
+-A INPUT -p tcp -m tcp --dport 11211 -j REJECT --reject-with icmp-host-prohibited
+{% endif %}
+
+{% if 'bitrix-sphinx' in group_names %}
+{% for host in groups['bitrix-hosts'] %}
+-A INPUT -p tcp -m tcp -s {{ hostvars[host].bx_netaddr }}/32 --dport 9312 -j ACCEPT
+-A INPUT -p tcp -m tcp -s {{ hostvars[host].bx_netaddr }}/32 --dport 9306 -j ACCEPT
+{% endfor %}
+-A INPUT -p tcp -m tcp --dport 9306 -j REJECT --reject-with icmp-host-prohibited
+-A INPUT -p tcp -m tcp --dport 9312 -j REJECT --reject-with icmp-host-prohibited
+{% endif %}
+
+{% if 'bitrix-mysql' in group_names %}
+{% for host in groups['bitrix-hosts'] %}
+-A INPUT -p tcp -m tcp -s {{ hostvars[host].bx_netaddr }}/32 --dport 3306 -j ACCEPT
+{% endfor %}
+-A INPUT -p tcp -m tcp --dport 3306 -j REJECT --reject-with icmp-host-prohibited
+{% endif %}
+
+-A INPUT -m udp -p udp --sport 53 -j ACCEPT
+-A INPUT -m tcp -p tcp --sport 80 -j ACCEPT
+-A INPUT -m tcp -p tcp --sport 443 -j ACCEPT
+-A INPUT -m tcp -p tcp --sport 22 -j ACCEPT
+-A INPUT -m tcp -p tcp --sport 25 -j ACCEPT
+-A INPUT -m tcp -p tcp --sport 465 -j ACCEPT
+-A INPUT -m tcp -p tcp --sport 26 -j ACCEPT
+-A INPUT -m tcp -p tcp --sport 110 -j ACCEPT
+-A INPUT -m tcp -p tcp --sport 143 -j ACCEPT
+-A INPUT -m tcp -p tcp --sport 585 -j ACCEPT
+-A INPUT -m tcp -p tcp --sport 993 -j ACCEPT
+-A INPUT -m tcp -p tcp --sport 995 -j ACCEPT
+
+-A INPUT -j REJECT --reject-with icmp-host-prohibited
+-A FORWARD -j REJECT --reject-with icmp-host-prohibited
+
+{% endif %}
+
+COMMIT

@@ -1,0 +1,32 @@
+---
+# remove server with memcached running
+# option: memcached_server, memcached_status
+
+- name: memcached - set memcached_status variable
+  tags: memcached_options
+  set_fact: memcached_status='OFFLINE'
+
+- include: sites_register.yml
+
+- name: ansible - update group information
+  delegate_to: localhost
+  tags: ansible_hosts
+  bx_conf: hostname={{ inventory_hostname }} group=memcached state=absent
+
+- name: disable monitoring - check memcached process
+  file: path=/etc/munin/plugins/{{ item }}memcached
+    state=absent
+  with_items:
+    - process_status_
+  tags: monitoring
+  notify: restart munin-node
+
+- name: disable monitoring - check instance status
+  file: path=/etc/munin/plugins/memcached_{{ item }}
+    state=absent
+  with_items:
+   - bytes
+   - counters
+   - rates
+  tags: configure_monitor_agents
+  notify: restart munin-node

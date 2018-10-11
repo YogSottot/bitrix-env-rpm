@@ -1,0 +1,150 @@
+#!/usr/bin/perl
+# start ansible playbook for:
+# 1. add slave server
+# 2. remove slave server
+# 3. change master
+# 4. view server status
+# this script is wrapper for ansible playbook ( we need json output for web-interface)
+use strict;
+use warnings;
+
+use lib "/opt/webdir/lib";
+use bxMysql;
+use Output;
+use Pool;
+use Data::Dumper;
+use Getopt::Long;
+use File::Basename qw( dirname basename );
+
+# program options
+my $prog_name = basename $0;
+my $prog_dir  = dirname $0;
+
+my $o_action = "list";    # type of action that script must do.
+                          # status - status the server: role: options
+                          # list   - serverList
+                          # master - change master
+                          # slave  - create slave
+                          # delete - delete mysql
+                          # create - create config file
+my $o_config = '/etc/ansible/group_vars/bitrix-mysql.yml';
+my $options  = {
+    cluster_login    => 'bx_clusteruser',
+    cluster_password => undef,
+    replica_login    => 'bx_repluser',
+    replica_password => undef,
+    slave_server     => undef,
+    password_file    => undef,
+};
+my $o_mysql_server = undef;      # ip address or hostname for mysql server
+my $o_format       = 'plain';    # format of stdout message
+my $o_verbose      = 0;
+my $o_help         = undef;
+
+# get command line options
+Getopt::Long::Configure("bundling");
+my $result_option = GetOptions(
+    'v'                  => \$o_verbose,
+    'verbose'            => \$o_verbose,
+    'h'                  => \$o_help,
+    'help'               => \$o_help,
+    "a:s"                => \$o_action,
+    'action:s'           => \$o_action,
+    "s:s"                => \$o_mysql_server,
+    'server:s'           => \$o_mysql_server,
+    "c:s"                => \$o_config,
+    'config:s'           => \$o_config,
+    'cluster_login:s'    => \$options->{'cluster_login'},
+    'cluster_password:s' => \$options->{'cluster_password'},
+    'replica_login:s'    => \$options->{'replica_login'},
+    'replica_password:s' => \$options->{'replica_password'},
+    'password_file:s'    => \$options->{'password_file'},    
+    "o:s"                => \$o_format,
+    'output'             => \$o_format,
+) or unknown_arg();
+
+# help message
+if ($o_help) { print_help( $prog_name, 0 ) }
+
+# formt output
+if ( $o_format !~ /^(json|plain|te?xt)$/ ) { print_help( $prog_name, 1 ) }
+if ( $o_format =~ /^te?xt$/ ) { $o_format = "plain" }
+
+# process request
+my $confPool = bxMysql->new( cmd => $options );
+my $confMysql = undef;
+if ( $o_action eq "status" ) {
+    $confMysql = $confPool->serverOptions($o_mysql_server);
+}
+elsif ( $o_action eq "list" ) {
+    $confMysql = $confPool->serverList();
+}
+elsif ( $o_action eq "slave" ) {
+    $confMysql = $confPool->slave($o_mysql_server);
+}
+elsif ( $o_action eq "master" ) {
+    $confMysql = $confPool->master($o_mysql_server);
+}
+elsif ( $o_action eq "remove" ) {
+    $confMysql = $confPool->remove($o_mysql_server);
+}
+elsif ( $o_action eq "update" ) {
+    $confMysql = $confPool->update();
+}
+elsif ( $o_action =~ /^(change_password|client_config)$/ ){
+    $confMysql = $confPool->password($o_mysql_server, $1);
+}
+elsif ( $o_action =~ /^(stop_service|start_service)$/ ){
+    $confMysql = $confPool->manage($o_mysql_server, $1);
+}
+else {
+    $confMysql = Output->new(
+        error   => 1,
+        message => "Unknown action option. PLease use -h for help message."
+    );
+}
+$confMysql->print($o_format);
+
+# print usage
+sub print_usage {
+    my $prog = shift;
+    print
+"Usage: $prog [-vh] [-a status|list|slave|master|remove] [-s server_ip] \n";
+}
+
+# help message
+sub print_help {
+    my $prog = shift;
+    my $exit = shift;
+    print_usage($prog);
+    print <<EOT;
+Options:
+  -h|--help    - show this message
+  -v|--verbose - enable verbose mode.
+  -a|--action  - mysql action: list|status|master|slave|remove|options
+  -s|--server  - mysql server
+  -c|--config  - config file ( default: /etc/ansible/group_vars/bitrix-mysql )
+     --mysql_login      - super user, usage for creation of replica
+     --mysql_password   - super user password
+     --cluster_login    - cluster user
+     --cluster_password - password
+     --replica_login    - replication user
+     --replica_password - replication password
+ Ex.
+  * get status of mysql servers
+ $prog -o json
+  * get status for one server
+ $prog -a status -s vm1
+  * create first slave server and all accounts for bx cluster work
+ $prog -s vm2 -a slave --cluster_password="XXXXXXXXXXX" --mysql_password='YYYYYYYYYYYYY' --replica_password="ZZZZZZZZZZ"
+  * change master server
+ $prog -a master -s vm2
+  * delete slave server
+ $prog -a remove -s vm1
+  * test if all option connfigured
+ $prog -a options 
+
+EOT
+    exit;
+}
+

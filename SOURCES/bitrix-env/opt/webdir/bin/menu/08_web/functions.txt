@@ -1,0 +1,164 @@
+# Ошибка получения статуса web-серверов
+WEB0001="Cannot get web server statuses."
+# Не найдены подходящие web-servers в пуле.
+WEB0002="Cannot find matching web servers in the pool."
+# Фльтрация по типу сервера:
+WEB0003="Filtered by server type: "
+# Найдено N web-серверов
+WEB0004="Found __OPT1__ servers"
+# Описание сокращений в меню
+# P - пароль установлен (Y) или нет (N) для mysql пользователя root
+# C - существует (Y) или нет (N) клиентский конфигурационный файл mysql на сервере
+WEB0005="P - password set (Y) or not set (N) for mysql root user"
+WEB0006="C - mysql client config file exists (Y) or not (N) on the server"
+# Найдены настройки сайтов, которые не позволяют создать кластерную конфигурацию.
+WEB0007="There are site preferences that make cluster configuration impossible."
+# Доступно обновление для bitrix-env. Вы должны установить его прежде чем продолжить.
+WEB0008="A bitrix-env update was found. 
+It needs to be installed before running this action."
+# ОБновление доступно в меню управления Хостами
+WEB0009="To install it, use the Host menu."
+# Найден MySQL сервис с пустым паролем для root пользователя.
+# Вы можете исправить это в меню управления MySQL
+WEB0010="There are MySQL services with empty root password:"
+WEB0011="To fix this issue, use the second item in the MySQL menu."
+# Найдены сервера без настроенного клиентского конфига MySQL
+WEB0012="There are MySQL services with empty client config:"
+
+# Описание фоновых заданий:
+# Настройка синхронизации данных и конфигов web-служб
+WEB0013="configure synchronization and web role on __OPT1__"
+# Настройка синхронизации данных между основным серверов и ИМЯ_СЕРВЕРА
+WEB0014="configure synchronization between master and __OPT1__"
+# Настройка web-конфигов на ИМЯ_СЕРВЕРА
+WEB0015="configure web role on __OPT1__"
+
+WEB0016="Web Cluster configuration can be performed in one or two stages."
+WEB0017="\t1. One step configuration will edit all settings at once."
+WEB0018="\t2. Two step configuration will:"
+WEB0019="\t\t - first, perform initial synchronization of document roots;"
+WEB0020="\t\t - then, perform cluster configuration."
+WEB0021="\t\t Two step configuration is mainly used with large scale projects."
+WEB0022="\tYou can employ either type of Web Cluster configuration: one step or two step."
+# Выбирите тип конфигурации
+WEB0023="Please select configuration type (1|2): "
+# Запускаем начальную стадию синхронизации
+WEB0024="Starting the initial synchronization stage."
+# Выбран некорректный вариант
+WEB0025="Invalid selection"
+
+# Синхронизация данных между мастером и ИМЯ  сервером уже настроена.
+WEB0026="Data synchronization between master and __OPT1__ is already configured."
+# Заспускаем следующую стадию
+WEB0027="Starting the next stage."
+# Синхронизация данных между мастером и ИМЯ сервером, но ИМЯ не тот сервер, который выбрали Вы.
+WEB0028="Master was configured for synchronization with __OPT1__, but __OPT2__ was not your choice"
+# Хотите ли Вы настроить синхронизацию для выбранного сервера?
+WEB0029="Do you want to perform synchronization for the selected server? (N|y): "
+# Данный вариант удалит текущие настройки для сервера=ИМЯ.
+WEB0030="This action will delete current configuration for server __OPT1__"
+
+# Создание web-роли на сервере
+WEB0031="Create web role on the server"
+# Удаление web-роли на сервере
+WEB0032="delete web role on __OPT1__"
+# Удаление web-роли на сервере
+WEB0033="Remove web-role on the server"
+
+# Отключение SSH2 Расширения
+WEB0034="Enable __OPT1__ extension"
+# Включение SSh2 расгирения
+WEB0035="Disable __OPT1__ extension"
+# Управление php-расширениями
+WEB0036="Manage PHP extensions"
+
+# Введите имя сайта
+WEB0037="Enter site name (default): "
+# Вы можете ввести несколько значений разделенных запятой. Например:
+WEB0038="Separate multiple entries with a comma. Example: default, test"
+# Введите ДНС имя
+WEB0039="Enter DNS name(s): "
+# Вы можете использовать несколько значений разделенных запятой
+WEB0040="Separate multiple entries with a comma. Example: www.example.org, example.org"
+# Введите email адрес для оповещений Let's encrypt
+WEB0041="Enter email for \"Let's encrypt\" notifications: "
+
+# DNS имя не должно быть пустым
+WEB0042="DNS name(s) must not be empty!"
+# Email адрес не может быть пустым
+WEB0043="Email address must not be empty!"
+
+# Не найдены сайты с казанными именами:
+WEB0044="These sites were not found: "
+
+# Пожалуйста, подтвердите обнволение сертификата для сайтов
+WEB0045="Please confirm you want to update certificate settings for the sites (N|y): "
+# Пожалуйста, подтвертиде установку сертификата для сайтов 
+WEB0046="Please confirm you want to install certificates for the sites (Y|n): "
+# Настройка Let's Encrypt
+WEB0047="Configure \"Let's Encrypt\""
+
+# Требования к импортируемым сертификатам
+# СЕртификат, приватный ключ и цепочка должны быть в PEM-формате
+# Приватный ключ должен быть не зашифрован
+# Сертификат и приватный ключ - обязательные параметры
+# Вы должны использовать полные пути к сертификату, приватному ключу и цепочке 
+# или загрузить файлы в КАТАЛОГ и использовать относительные пути
+WEB0048="Requirements for Imported Certificates: 
+ * Certificate, private key, and certificate chain must all be PEM-encoded.
+ * Private key must not be encrypted.
+ * Certificate and private key are required.
+ * You have to use full paths for certificate, private key, and certificate chain 
+   to use relative paths, upload the files to __OPT1__ first."
+
+# Путь к приватному ключу, сертификату и цепочке сертификатов
+WEB0049="Private Key path: "
+WEB0050="Certificate path: "
+WEB0051="Certificate Chain path: "
+
+# Вы должны задать оба параметра: приватный ключ и сертификат
+WEB0052="Both Private Key and Certificate are required."
+# Не найден файл приватного ключа|сертификата|цепочки: ПУТЬ
+WEB0053="Private Key file was not found:"
+WEB0054="Certificate file was not found:"
+WEB0055="Certificate Chain file was not found:"
+
+# Настройка сертивиката
+WEB0056="Certificate configuration"
+
+# Пожалуйста, подтвердите восстановление сертифката по умолчанию для сайтов
+WEB0057="Please confirm you want to restore default certificate settings for the sites (N|y): "
+# КОнфигурация по умолчанию и так уже настроена для сайтов
+WEB0058="The sites already use the default configuration."
+# Настройка дефолтного сертифката
+WEB0157="Configure default certificate"
+
+# Меню
+WEB0158="1. Configure \"Let's encrypt\" certificate"
+WEB0059="2. Configure own certificate"
+WEB0060="3. Restore default certificate"
+
+# Основное меню
+WEB0061="1. Create web role on server"
+WEB0062="4. Remove web role from server"
+WEB0063="2. Manage PHP extensions"
+WEB0064="3. Configure certificates"
+# Управление конфигурацией web-серверов
+WEB0065="Manage web server configuration"
+
+WEB0066="1. Manage PHP extensions"
+WEB0067="2. Configure certificates"
+
+WEB0200="Press ENTER to exit."
+WEB0201="0. Go to previous screen or exit"
+WEB0202="Enter 0 to exit:"
+WEB0203="Enter 1 to start process or 0 to exit:"
+WEB0204="Enter hostname or 0 to exit: "
+WEB0205="Enter your choice: "
+# Не найден сервер с именем=ИМЯ в пуле.
+WEB0206="Cannot find server __OPT1__ in the pool."
+WEB0207="Cannot find spare web server __OPT1__ in the pool."
+# В пуле нет настроенных дополнительных web серверов
+WEB0208="There are no configured spare web servers in pool"
+# Не найдено подходящих серверов для настройки web службы
+WEB0209="No suitable servers were found to configure the web service"

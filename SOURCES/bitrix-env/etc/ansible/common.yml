@@ -1,0 +1,23 @@
+---
+- hosts: bitrix-hosts
+  vars:
+    cache_directory: /opt/webdir/tmp
+
+  roles:
+    - cleaner
+
+- hosts: bitrix-hosts
+  vars:
+    common_manage: update
+    common_server: NOT_DEFINED
+    common_config: NOT_DEFINED
+    ansible_playbook_file: NOT_DEFINED
+  roles:
+  - common
+
+- hosts: bitrix-hosts
+  vars:
+    cache_directory: /opt/webdir/tmp
+
+  roles:
+    - cleaner

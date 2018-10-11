@@ -1,0 +1,15 @@
+---
+# This playbook Enable or disable monitoring for hosts
+- hosts: bitrix-hosts
+
+  roles:
+    - common
+    - monitor
+
+- hosts: bitrix-hosts
+  vars:
+    cache_directory: /opt/webdir/tmp
+
+  roles:
+    - cleaner
+

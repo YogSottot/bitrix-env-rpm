@@ -1,0 +1,13 @@
+# {{ ansible_managed }}
+## check all files in csync configuration on master and updated remote hosts
+LOCK_FILE=/tmp/csync2_{{ cluster_web_server }}.lock
+
+{% for site in bx_sites_info %}# sync from master {{ site.SiteName }} documentRoot {{ site.DocumentRoot }}
+*/5 * * * * root /opt/webdir/bin/csync2_full_push {{ site.SiteCsync2 }}
+{% endfor %}
+{% if web_site_name != 'NOT_DEFINED' and manage_web == 'create_site' %}
+*/5 * * * * root /opt/webdir/bin/csync2_full_push {{ web_site_csync2 }}
+{% endif %}
+
+# sync configs
+0   * * * * root /opt/webdir/bin/csync2_full_push bxcluster

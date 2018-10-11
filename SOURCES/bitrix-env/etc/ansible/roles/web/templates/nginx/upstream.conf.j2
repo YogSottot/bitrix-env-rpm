@@ -1,0 +1,25 @@
+# {{ ansible_managed }}
+# upstream config with all web-servers
+upstream bx_cluster {
+  ip_hash;
+  
+  {% for host in groups['bitrix-web'] -%}
+  {%if host != deleted_web_server -%}
+  server {{ hostvars[host].bx_netaddr }}:{{ nginx_server_internal_port }};
+  {% endif %}
+  {%- endfor %}
+  {%if new_web_server != 'NOT_DEFINED' -%}
+  server {{ hostvars[new_web_server].bx_netaddr }}:{{ nginx_server_internal_port }};  
+  {% endif %}
+
+  keepalive 10;
+}
+
+# upstream server to local apache server
+# usage in:
+# - scale
+# - push stream module
+# - monitoring links
+upstream bx_local {
+  server {{ nginx_server_internal_addr }}:{{ nginx_server_internal_port }};
+}

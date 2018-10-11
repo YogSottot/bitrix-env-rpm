@@ -1,0 +1,26 @@
+# {{ ansible_managed }}
+{% if monitor_email is defined -%}
+account default
+host {{ monitor_smtphost }}
+port {{ monitor_smtpport }}
+from {{ monitor_email }}
+logfile {{ munin_server_logs_dir }}/msmtp.log
+
+# auth options
+{% if monitor_smtppass is defined %}
+user {{ monitor_smtplogin }}
+password {{ monitor_smtppass }}
+auth {{ monitor_smtpmethod | default('on') }}
+{% else %}
+auth off
+{%- endif %}
+
+{% if monitor_smtptls %}
+# tls options
+tls on
+tls_certcheck off
+{% if 'yandex.ru' in monitor_email %}
+tls_starttls on
+{%- endif %}
+{%- endif %}
+{% endif %}

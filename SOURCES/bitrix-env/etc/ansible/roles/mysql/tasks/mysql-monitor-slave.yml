@@ -1,0 +1,20 @@
+---
+- name: munin monitoring plugins
+  file: src=/usr/share/munin/plugins/{{ item }} dest=/etc/munin/plugins/{{ item }} state=link
+  with_items:
+   - mysql_bytes
+   - mysql_queries
+   - mysql_slowqueries
+   - mysql_threads
+  tags: monitor
+
+- name: munin - enable plugin for resources usage
+  file: src=/usr/share/munin/plugins/{{ item }}
+    dest=/etc/munin/plugins/{{ item }}mysqld state=link
+  with_items:
+    - process_status_
+  tags: monitor
+
+- name: munin - restart
+  service: name=munin-node state=restarted
+  tags: monitor

@@ -1,0 +1,10 @@
+[diskstats]
+user munin
+
+[iostat_ios]
+user munin
+
+[meminfo]
+user root
+group root
+env.enabled_graphs ^meminfo_phisical$

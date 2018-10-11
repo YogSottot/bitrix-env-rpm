@@ -1,0 +1,6 @@
+---
+# stop mysql service on remote server
+- include: mysql-enable_service.yml
+  
+- name: wait open port
+  wait_for: port={{ mysql_port }} delay=10 timeout=100 state=started

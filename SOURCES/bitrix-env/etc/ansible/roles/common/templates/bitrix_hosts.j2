@@ -1,0 +1,9 @@
+# {{ ansible_managed }}
+Cmnd_Alias BXANSIBLE = \
+{% for host in groups['bitrix-hosts'] %}
+  /usr/bin/ansible {{ host }} -m setup, \
+{% endfor %}
+  /usr/bin/ansible localhost -m setup
+
+bitrix  ALL=(ALL) NOPASSWD: BXANSIBLE
+

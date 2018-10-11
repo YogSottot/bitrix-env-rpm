@@ -1,0 +1,110 @@
+#!/bin/sh
+# -*- sh -*-
+
+: << =cut
+
+=head1 NAME
+
+process_status - Plugin to monitor resource usage by processes.
+
+=head1 ABOUT
+
+This plugin requires munin-server version 1.2.5 or 1.3.3 (or higher).
+
+This plugin is backwards compatible with the old processes-plugins found on
+SunOS, Linux and *BSD (i.e. the history is preserved).
+
+=head1 CONFIGURATION
+
+list of process names that must be processed
+This configuration snipplet is an example with the defaults:
+[process_status]
+  env.warning 80
+  env.critical 90
+
+=head1 AUTHOR
+
+Copyright (C) 2014 ksh
+
+=head1 LICENSE
+
+GNU General Public License, version 2
+
+=begin comment
+
+no comment
+
+=end comment
+
+=head1 MAGIC MARKERS
+
+=begin comment
+
+These magic markers are used by munin-node-configure when installing
+munin-node.
+
+=end comment
+
+ #%# family=auto
+ #%# capabilities=autoconf
+
+=cut
+
+. /usr/share/munin/plugins/plugin.sh  || exit 1
+
+PROCESS=${0##*process_status_}
+
+# select process performance value and return it to munin
+process_stats(){
+  CPUN=$(cat /proc/cpuinfo | grep -c "^processor")
+  PROCESS_TMP=/dev/shm/process_status_$PROCESS
+
+  # create process information
+  ps axo %mem,pcpu,comm,args > $PROCESS_TMP 2>&1
+  [[ $? -gt 0 ]] && exit 2
+
+  process_pmem=$(grep -v grep $PROCESS_TMP | grep " $PROCESS " | \
+   awk '{sum+=$1} END {printf "%.2f",sum}')
+  process_pcpu=$(grep -v grep $PROCESS_TMP | grep " $PROCESS " | \
+   awk -v cpu=$CPUN '{sum+=$2} END {printf "%.2f",sum/cpu}'
+  )
+
+  echo "pcpu.value $process_pcpu"
+  echo "pmem.value $process_pmem" 
+
+  rm -f $PROCESS_TMP
+}
+
+# graph information
+process_graph(){
+  printf "multigraph_%s_cpu\n" "$PROCESS"
+  printf "graph_title CPU usage by %s\n" "$PROCESS"
+  printf "graph_vlabel %s\n" '%';
+  printf "graph_category processes\n\n";
+
+  printf "pcpu.label CPU %s\n" '%';
+  printf "pcpu.min 0\n";
+  printf "pcpu.draw LINE1\n";
+  printf "pcpu.info  $PROCESS CPU Usage\n\n";
+
+  printf "multigraph_%s_mem\n" "$PROCESS"
+  printf "graph_title Memory usage by %s\n" "$PROCESS"
+  printf "graph_vlabel %s\n" '%';
+  printf "graph_category processes\n\n";
+
+  printf "pmem.label Mem %s\n" '%';
+  printf "pmem.min 0\n";
+  printf "pmem.draw LINE1\n";
+  printf "pmem.info  $PROCESS Memory Usage\n\n";
+}
+
+case "$1" in
+  "config")
+    process_graph
+  ;;
+  *)
+    process_stats
+  ;;
+esac
+
+exit 0

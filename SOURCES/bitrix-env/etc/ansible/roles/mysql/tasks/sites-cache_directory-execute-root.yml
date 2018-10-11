@@ -1,0 +1,61 @@
+---
+# create temporary directory
+# copy php script into the directory and run it
+# delete temporary directory
+- name: create main temporary directory
+  file:
+    path: "{{ cache_directory  }}"
+    state: directory
+    mode: 0750
+    owner: "{{ bx_ansible_owner  }}"
+    group: "{{ bx_ansible_group }}"
+  delegate_to: "{{ php_server }}"
+
+- name: create site directory
+  file: 
+    path: "{{ cache_directory  }}/{{ item.SiteName  }}"
+    state: directory
+    mode: 0750
+    owner: "{{ bx_ansible_owner  }}"
+    group: "{{ bx_ansible_group }}"
+  with_items: "{{ bx_sites_info }}"
+  delegate_to: "{{ php_server }}"
+  when: "item.DBLogin == 'root'"
+
+- name: create host directory
+  file: 
+    path: "{{ cache_directory  }}/{{ item.SiteName  }}/{{ inventory_hostname }}"
+    state: directory
+    mode: 0750
+    owner: "{{ bx_ansible_owner  }}"
+    group: "{{ bx_ansible_group }}"
+  with_items: "{{ bx_sites_info }}"
+  delegate_to: "{{ php_server }}"
+  when: "item.DBLogin == 'root'"
+
+- name: create php-script
+  template: 
+    src: "{{ php_script }}.j2"
+    dest: "{{ cache_directory }}/{{ item.SiteName }}/{{ inventory_hostname }}/{{ php_script }}"
+    owner: "{{ bx_ansible_owner }}"
+    group: "{{ bx_ansible_group }}" 
+    mode: 0640
+  with_items: "{{ bx_sites_info }}"
+  delegate_to: "{{ php_server }}"
+  when: "item.DBLogin == 'root'"
+
+- name: run php-script
+  shell: php -f "{{ cache_directory }}/{{ item.SiteName }}/{{ inventory_hostname }}/{{ php_script }}"
+  become: yes
+  become_user: "{{ bx_ansible_executer }}"
+  with_items: "{{ bx_sites_info }}"
+  delegate_to: "{{ php_server }}"
+  when: "item.DBLogin == 'root'"
+
+- name: delete temporary directory
+  file: 
+    path: "{{ cache_directory }}/{{ item.SiteName }}"
+    state: absent
+  with_items: "{{ bx_sites_info }}"
+  delegate_to: "{{ php_server }}"
+  when: "ansible_playbook_debug != 'DEBUG'"

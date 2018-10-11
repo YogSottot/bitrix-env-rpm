@@ -1,0 +1,9 @@
+---
+- name: disable searchd service
+  service: name=searchd state=stopped enabled=no
+
+- name: update inventory file
+  delegate_to: 127.0.0.1
+  bx_conf: hostname={{ inventory_hostname }} state=absent group=sphinx
+  tags: ansible
+

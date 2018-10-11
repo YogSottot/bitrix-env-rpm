@@ -1,0 +1,20 @@
+---
+# handler for munin-node
+- name: restart munin-node
+  service: state=restarted name=munin-node
+
+# handler for nagios
+- name: restart nagios
+  service: state=restarted name=nagios
+
+# handler for nrpe
+- name: restart nrpe
+  service: state=restarted name=nrpe
+
+# handle for web-service nginx
+- name: restart nginx
+  service: state=restarted name=nginx
+
+# apache/httpd
+- name: restart httpd
+  service: state=restarted name=httpd

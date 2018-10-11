@@ -1,0 +1,112 @@
+#!/bin/bash
+#
+# chkconfig: - 85 15
+# description: Lightweight inotify based sync daemon
+#
+# processname:  lsyncd
+# config:       /etc/lsyncd.conf
+# config:       /etc/sysconfig/lsyncd
+# pidfile:      /var/run/lsyncd.pid
+
+# Source function library
+. /etc/init.d/functions
+
+# Source networking configuration.
+. /etc/sysconfig/network
+
+# Check that networking is up.
+[ "$NETWORKING" = "no" ] && exit 0
+
+
+PID_DIR=/var/run/lsyncd
+PID_FILE=$PID_DIR/{{ inventory_hostname }}.pid
+CFG_FILE=/etc/lsyncd-{{ inventory_hostname }}.conf
+LSYNCD_OPTIONS="-pidfile $PID_FILE $CFG_FILE"
+LSYNCD_USER=root
+
+if [ -e /etc/sysconfig/lsyncd-{{ inventory_hostname }} ]; then
+  . /etc/sysconfig/lsyncd-{{ inventory_hostname }}
+fi
+
+if [ ! -d $PID_DIR ]; then
+    mkdir -m 750 $PID_DIR
+    chown $LSYNCD_USER $PID_DIR
+fi
+RETVAL=0
+
+prog="lsyncd"
+thelock=/var/lock/subsys/lsyncd-{{ inventory_hostname }}
+
+start() {
+    [ -f $CFG_FILE ] || exit 6
+        echo -n $"Starting $prog: "
+        if [ $UID -ne 0 ]; then
+                RETVAL=1
+                failure
+        else
+                daemon ${LSYNCD_USER:+--user ${LSYNCD_USER}} /usr/bin/lsyncd $LSYNCD_OPTIONS
+                RETVAL=$?
+                [ $RETVAL -eq 0 ] && touch $thelock
+        fi;
+        echo
+        return $RETVAL
+}
+
+stop() {
+        echo -n $"Stopping $prog: "
+        if [ $UID -ne 0 ]; then
+                RETVAL=1
+                failure
+        else
+                killproc -p $PID_FILE lsyncd
+                RETVAL=$?
+                [ $RETVAL -eq 0 ] && rm -f $thelock
+        fi;
+        echo
+        return $RETVAL
+}
+
+reload(){
+        echo -n $"Reloading $prog: "
+        killproc -p $PID_FILE lsyncd -HUP
+        RETVAL=$?
+        echo
+        return $RETVAL
+}
+
+restart(){
+        stop
+        start
+}
+
+condrestart(){
+    [ -e $thelock ] && restart
+    return 0
+}
+
+case "$1" in
+  start)
+        start
+        ;;
+  stop)
+        stop
+        ;;
+  restart)
+        restart
+        ;;
+  reload)
+        reload
+        ;;
+  condrestart)
+        condrestart
+        ;;
+  status)
+        status lsyncd
+        RETVAL=$?
+        ;;
+  *)
+        echo $"Usage: $0 {start|stop|status|restart|condrestart|reload}"
+        RETVAL=1
+esac
+
+exit $RETVAL

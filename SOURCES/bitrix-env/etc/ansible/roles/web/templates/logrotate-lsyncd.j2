@@ -1,0 +1,16 @@
+# {{ ansible_managed }}
+/var/log/lsyncd/*log {
+    daily
+    rotate 8
+    missingok
+    notifempty
+    sharedscripts
+    delaycompress
+    compress
+    su root bitrix
+	postrotate
+	if [ -f /var/lock/lsyncd ]; then
+		/sbin/service lsyncd restart > /dev/null 2>/dev/null || true
+	fi
+	endscript
+}

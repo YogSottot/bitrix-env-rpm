@@ -1,0 +1,91 @@
+---
+# configure csync 
+- name: create csync2-global lock
+  file: path=/etc/csync2/csync2.lock state=touch
+  when: "'bitrix-web' in group_names"
+  tags: csync
+
+- name: kill csync2 process
+  shell: pkill csync2 || true
+  when: "'bitrix-web' in group_names"
+  tags: csync
+
+# cron task
+- name: remove csync2 cron task
+  file: 
+    path: /etc/cron.d/bx_csync
+    state: absent
+  when: "inventory_hostname == delete_web_server"
+  tags: csync
+
+# remove csync2 config data on old server
+- name: remove csync2 DB directory
+  file:
+    path: "{{ csync_db_dir }}"
+    state: absent
+  when: "inventory_hostname == delete_web_server"
+  tags: csync
+
+- name: remove xinetd config
+  file:
+    path: /etc/xinetd.d/csync2
+    state: absent
+  when: "inventory_hostname == delete_web_server"
+  tags: csync
+
+- name: restart xinetd
+  service: name=xinetd state=restarted
+  when: "inventory_hostname == delete_web_server"
+  tags: csync
+
+- name: delete csync2 configs
+  file: 
+    path: "{{ item }}"
+    state: absent
+  with_items:
+    - "{{ csync_configdir }}/csync2_bxcluster.cfg"
+    - "{{ csync2_key }}"
+    - "{{ csync2_priv }}"
+    - "{{ csync2_cert }}"
+  when: "'bitrix-web' in group_names"
+  tags: csync
+
+- name: delete csync2 site configs
+  file: 
+    path: "{{ csync_configdir }}/csync2_{{ item.SiteCsync2 }}.cfg"
+    state: absent
+  with_items: "{{ bx_sites_info }}"
+  when: "'bitrix-web' in group_names"
+  tags: csync
+
+- name: remove csync2 log directory
+  file:
+    path: /var/log/csync2
+    state: absent
+  when: "inventory_hostname == delete_web_server"
+  tags: csync
+
+# recreate csync2 configs on balancer host
+# expect csync synchronyze configs fo other nodes
+- name: csync-config for /etc synchronize
+  template: src="csync2/bx_cluster_config.cfg.j2"
+    dest="{{ csync_configdir }}/csync2_bxcluster.cfg"
+    owner={{ site_root }} group={{ site_bitrix }}
+    mode=0640
+  tags: csync
+  when: "inventory_hostname == cluster_web_server"
+
+- name: create csync-config for site document roots
+  template: src="csync2/bx_cluster_site.cfg.j2"
+    dest="{{ csync_configdir }}/csync2_{{ item.SiteCsync2 }}.cfg"
+    owner={{ site_root }} group={{ site_bitrix }}
+    mode=0640
+  with_items: "{{ bx_sites_info }}"
+  tags: csync
+  when: "inventory_hostname == cluster_web_server"
+
+- name: remove csync2-global lock
+  file: path=/etc/csync2/csync2.lock state=absent
+  when: "'bitrix-web' in group_names"
+  tags: csync
+

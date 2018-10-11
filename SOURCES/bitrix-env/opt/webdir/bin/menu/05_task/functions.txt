@@ -1,0 +1,40 @@
+# Найдено N заданий
+T0001="__OPT1__ tasks have been found."
+# Не отфильтровано или Фильтр не задан
+T0002="filter inactive"
+# Опции фильтра
+T0003="Filter options:"
+T0004="by type:    "
+T0005="by status:  "
+T0006="older than: "
+# Не найдна информация по задачам
+T0007="No task information has been found"
+# Введите идентификатор задачи
+T0008="Enter task ID:"
+# Остановка задания с НОМЕРОМ провалилась
+T0009="Task __OPT1__ failed to stop"
+# Остановка задания с НОМЕРОВ удалась
+T0010="Task __OPT1__ stopped successfully"
+# Выберите количество дней,
+# Задачи старше указанного срока будут удалены
+T0011="Specify the number of days to keep tasks (7): "
+T0012="Tasks before this period will be deleted."
+# Определите тип заданий, которые будут удалены:
+T0013="Specify the type of tasks to delete: "
+# Пожалуйста, подтвердите удаление 
+T0014="Please confirm deletion (y|N): "
+# Меню для остановки заданий
+T0015="1. Stop task"
+# Меню по управлению заданиями
+T0016="1. View running tasks"
+T0017="2. Delete history"
+# Управление заданиями 
+T0018="Manage tasks"
+
+T0200="Press ENTER to exit."
+T0201="0. Previous screen or exit"
+T0202="Enter 0 to exit:"
+T0203="Enter 1 to start process or 0 to exit:"
+T0204="Enter hostname or 0 to exit: "
+T0205="Enter your choice: "
+

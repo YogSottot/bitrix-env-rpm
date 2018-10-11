@@ -1,0 +1,53 @@
+---
+# upgrade php package from 5.6 version to 7.0
+# 1. enable mysqli on servers
+# 2. enable mysqli usage on sites
+# 3. configure remi repo (php70)
+# 4. upgrade php7 version
+# 5. update httpd configuration (only for Centos 6)
+- name: enable mysqli extension
+  lineinfile: dest=/etc/php.d/30-mysqli.ini
+    line='extension=mysqli.so'
+  tags: php7
+  when: "'bitrix-web' in group_names"
+
+- name: test mysqli extension
+  shell: php -m 2>/dev/null | grep -w mysqli
+  tags: php7
+  when: "'bitrix-web' in group_names"
+
+# create list bx_sites_info
+- include: sites-gathering_facts-not_mandatory.yml
+
+- include: sites-enable_mysqli.yml
+  when: "proccess_sites and inventory_hostname == cluster_web_server"
+  static: no
+
+# configure and upgrade remi
+- include: configure_remi_php7.yml
+  when: "'bitrix-web' in group_names"
+
+# configure apache service
+- include: configure_httpd_php7.yml
+  when: "'bitrix-web' in group_names"
+
+- name: delete old extension files
+  file: path=/etc/php.d/{{ item }}
+    state=absent
+  tags: php7
+  with_items:
+    - 30-mysqli.ini.disabled
+    - 20-sybase_ct.ini.disabled
+    - 20-sybase_ct.ini.rpmsave
+    - 20-mssql.ini.disabled
+    - 20-mssql.ini.rpmsave
+    - 40-xhprof.ini.disabled
+    - 40-xhprof.ini.rpmsave
+    - 10-opcache.ini.rpmnew
+  when: "'bitrix-web' in group_names"
+
+- name: restart httpd
+  service: name=httpd state=restarted
+  when: "inventory_hostname == cluster_web_server"
+  tags: php7
+

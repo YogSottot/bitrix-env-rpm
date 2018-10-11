@@ -1,0 +1,256 @@
+#!/usr/bin/perl
+# generate site vars
+# site_dir
+# site_dbuser
+# site_dbpass_file
+# site_db
+
+use strict;
+use warnings;
+use File::Spec::Functions;
+use File::Basename qw( dirname basename );
+use lib "/opt/webdir/lib";
+use Output;
+use Pool;
+use bxSites;
+use JSON;
+use Data::Dumper;
+use File::Temp;
+
+my $TMPDIR = "/opt/webdir/tmp";
+if ( !-d $TMPDIR ) {
+    mkdir $TMPDIR, 0700;
+}
+
+# search="server_name www.bitrix.ru;" basedir=/etc/nginx/bx/site_avaliable regexp=\.conf$
+my $options_file = $ARGV[0];
+
+# parse ansible argv file
+my $gtn_parse_ansible_argv = parse_ansible_argv($options_file);
+
+if ( $gtn_parse_ansible_argv->[0] > 0 ) {
+    print_message(
+        { 'msg' => $gtn_parse_ansible_argv->[1], 'failed' => "true" },
+        $gtn_parse_ansible_argv->[0],
+    );
+}
+
+my $site_name        = $gtn_parse_ansible_argv->[1]->{'site_name'};
+my $site_dir         = $gtn_parse_ansible_argv->[1]->{'site_dir'};
+my $site_dbuser      = $gtn_parse_ansible_argv->[1]->{'site_dbuser'};
+my $site_dbpass_file = $gtn_parse_ansible_argv->[1]->{'site_dbpass_file'};
+my $site_db          = $gtn_parse_ansible_argv->[1]->{'site_db'};
+my $site_type        = $gtn_parse_ansible_argv->[1]->{'site_type'};
+my $site_short       = undef;
+
+# site directory name in /hom/bitrix/ext_www
+if ( not defined $site_dir or $site_dir =~ /^NOT_DEFINED$/ ) {
+    $site_dir = $site_name;
+}
+
+if ( $site_dir !~ /^\// ) {
+    $site_dir = catfile( "/home/bitrix/ext_www/", $site_dir );
+}
+
+if ( not defined $site_name or $site_name =~ /^NOT_DEFINED$/ ) {
+    if ( $site_type =~ /^ext_kernel$/ ) {
+        $site_name = "ext_" . basename($site_dir);
+    }
+    else {
+        $site_name = basename($site_dir);
+    }
+}
+
+# create main part for generated options
+my $site_base = $site_name;
+$site_base =~ s/^([^\.]+)\..+$/$1/;
+my $site_base_leng = length($site_base);
+my $options        = generate_site_options();
+
+# site DBName
+if ( not defined $site_db or $site_db =~ /^NOT_DEFINED$/ ) {
+    $site_db =
+      ( $site_base_leng > 12 ) ? $options->{'site_db'} : "db" . $site_base;
+}
+
+# site DBLogin
+if ( not defined $site_dbuser or $site_dbuser =~ /^NOT_DEFINED$/ ) {
+    $site_dbuser =
+      ( $site_base_leng > 12 )
+      ? $options->{'site_dbuser'}
+      : "user" . $site_base;
+}
+if ( not defined $site_dbpass_file or $site_dbpass_file =~ /^NOT_DEFINED$/ ) {
+    my $tmp = File::Temp->new(
+        TEMPLATE => '.siteXXXXXXXX',
+        UNLINK   => 0,
+        DIR      => $TMPDIR,
+    );
+
+    print $tmp $options->{'site_dbpass'};
+    $site_dbpass_file = $tmp->filename;
+}
+
+# test site_db
+my $db_existen   = 1;
+my $search_limit = 3;
+my $init_db      = $site_db;
+my $init_user    = $site_dbuser;
+while ($db_existen) {
+    my ( $filters, $bx, $sites );
+    $filters->{'DBName'} = $site_db;
+    $bx = bxSites->new( filters => $filters );
+    $sites = $bx->listSite();
+    if ( $sites->{'error'} ) {
+        $db_existen = 0;
+    }
+    else {
+        if ( !$search_limit ) {
+            print_message(
+                {
+                    error => 1,
+                    msg =>
+"Cannot auto generate site DB name. You need to specify it."
+                },
+                1
+            );
+        }
+        else {
+            my @chars = ( "1" .. "9", "a" .. "z" );
+            my $rand = "";
+            $rand .= $chars[ rand @chars ] for 1 .. 3;
+
+            # change user and dbname
+            $site_db = $init_db;
+            $site_db .= $rand;
+            $site_dbuser = $init_user;
+            $site_dbuser .= $rand;
+        }
+
+    }
+    $search_limit--;
+}
+
+#print Dumper($sites);
+
+$site_short = $site_base;
+my $site_csync2 = $site_base;
+$site_csync2 =~ s/[\-_]//g;
+
+print_message(
+    {
+        site_name        => $site_name,
+        site_dir         => $site_dir,
+        site_type        => $site_type,
+        site_db          => $site_db,
+        site_dbuser      => $site_dbuser,
+        site_dbpass_file => $site_dbpass_file,
+        site_short       => $site_short,
+        site_csync2      => $site_csync2
+    },
+    0,
+);
+
+exit 0;
+
+sub rndStr {
+    join '', @_[ map { rand @_ } 1 .. shift ];
+}
+
+# print json output for ansible
+# input: return_hash, exit_code
+sub print_message {
+    my $rh   = shift;
+    my $c    = shift;
+    my $json = to_json( $rh, pretty => 1 );
+    print $json;
+    exit $c;
+}
+
+sub generate_site_options {
+    my $output = {
+        site_db     => '',
+        site_dbuser => '',
+        site_dbpass => '',
+        site_dir    => '',
+    };
+
+    my @chars = ( "a" .. "z", "1" .. "9" );
+
+    #my @pass_chars = ("A".."Z", "a".."z", "1".."9");
+    my @pass_chars = (
+        "A" .. "Z",
+        "a" .. "z",
+        "1" .. "9",
+        '?', '!', '@', '&', '-', '_', '+', '@', '%', '(', ')', '{',
+        '}', '[', ']', '=',
+    );
+
+   #    we need to fix/workaround escaped string by ansible; \char in dbconn.php
+    my $str = "";
+    $str .= $chars[ rand @chars ] for 1 .. 7;
+    $output->{'site_db'}     = $str . 'db';
+    $output->{'site_dbuser'} = $str . 'user';
+    $output->{'site_dir'}    = $str;
+    $output->{'site_dbpass'} .= $pass_chars[ rand @pass_chars ] for 1 .. 15;
+
+    return $output;
+}
+
+# parse opt file
+sub parse_ansible_argv {
+    my $f = shift;
+    my $r = {
+        site_name   => undef,
+        site_dir    => undef,
+        site_type   => undef,
+        site_db     => undef,
+        site_dbuser => undef,
+        site_dbpass_file => undef,
+        creates     => undef,
+    };
+
+    open( my $fh, $f ) or return [ 1, "Cannot open options $f: $!" ];
+    while (<$fh>) {
+        next if (/^$/);
+        if (/\S+=\S+/) {
+            my @matches = split( /\s+/, $_ );
+            foreach my $match (@matches) {
+
+                #print $match,"\n";
+                my ( $key, $val ) = split( '=', $match );
+                $val =~ s/^['"]//;
+                $val =~ s/['"]$//;
+                if ( grep /^$key$/, keys %$r ) {
+
+                    #print "fill out $key\n";
+                    $r->{$key} = $val;
+                }
+            }
+        }
+    }
+
+    close $fh;
+
+    # test keys
+    if (   ( not defined $r->{'site_type'} )
+        || ( $r->{'site_type'} !~ /^(link|kernel|ext_kernel)$/ ) )
+    {
+        return [ 1,
+            "site_type= is mandatory and can be link, kernel or ext_kernel" ];
+    }
+    else {
+        if (   ( not defined $r->{'site_name'} )
+            || ( $r->{'site_name'} =~ /^NOT_DEFINED$/ ) )
+        {
+            if (   ( not defined $r->{'site_dir'} )
+                || ( $r->{'site_dir'} =~ /^NOT_DEFINED$/ ) )
+            {
+                return [ 1, "site_name= or site_dir must be defined" ];
+            }
+        }
+    }
+
+    return [ 0, $r ];
+}
+

@@ -1,0 +1,79 @@
+---
+# -- generate kernel site variables, which will be used in config files
+# -- tetsing if site exists
+# Mandatory options:
+#  web_site_name    - name for web server (ex. example.org)
+#  web_site_dir     - document root for new site
+
+# Generated options:
+#  web_site_db          - database name 
+#  web_site_dbuser      - user name that use for db connection (if mysql or web cluster enable replaced in any cases)
+#  web_site_dbpass_file - user password file (escape special chars)
+#  bitrix_site_charset  - charset option (default: utf-8)
+
+######## load variables from groups config file
+####
+- name: generate missing variables
+  delegate_to: "{{ cluster_web_server }}"
+  bx_generate_site_vars: site_type={{ web_site_type }} site_name={{ web_site_name }}
+    site_dir={{ web_site_dir }} site_db={{ web_site_db }}
+    site_dbuser={{ web_site_dbuser }}
+    site_dbpass_file={{ web_site_dbpass_file }}
+  register: site_vars
+  tags: configure_site
+
+- name: union generated and selected options
+  set_fact:
+    web_site_db: "{{ site_vars.site_db }}"
+    web_site_dbuser: "{{ site_vars.site_dbuser }}"
+    web_site_dbpass: "{{ lookup('file', site_vars.site_dbpass_file) }}"
+    web_site_dbserv: "{{ mysql_host }}"
+    web_site_shname: "{{ site_vars.site_short }}"
+    web_site_csync2: "{{ site_vars.site_csync2 }}"
+    web_site_root_dir: "{{ site_vars.site_dir }}"
+    web_site_sess_dir: "{{ site_extentend_php_sess }}/{{ web_site_name }}"
+    web_site_upld_dir: "{{ site_extentend_upload }}/{{ web_site_name }}"
+    crypto_key: "{{ 999999999999998 | random | to_uuid | hash('md5') }}" 
+  tags: configure_site
+
+- name: remove temporary file
+  file: path={{ site_vars.site_dbpass_file }} state=absent
+
+# cluster settings
+- name: set cluster mark to disabled state
+  set_fact:
+    is_cluster: "disable"
+
+- include: bx_sites_info.yml
+
+- name: set database option for mysql or web cluster cases
+  set_fact:
+    web_site_dbuser: "{{ cluster_login }}"
+    web_site_dbpass: "{{ cluster_password }}"
+    web_site_dbserv: "{{ master_server }}"
+  when: "is_cluster == 'enable'"
+
+# encoding and collation settings
+- name: set charset options for new site
+  set_fact:
+   bitrix_site_encoding: cp1251
+   bitrix_site_collation: cp1251_general_ci
+   bitrix_site_php_overload: "php_admin_value mbstring.func_overload 0"
+   bitrix_site_php_internal: "php_admin_value mbstring.internal_encoding latin"
+  when: "bitrix_site_charset == 'windows-1251'"
+
+#- name: set charset options for new site
+#set_fact:
+# bitrix_site_php_internal: "php_admin_value default_charset latin"
+#when: "bitrix_site_charset == 'windows-1251' and php_older_version == 1"
+
+
+####
+######## /load variables from groups config file
+
+######## testing input options - to avoid the situation with overwriting existing data
+####
+- include: test_site_exist.yml
+
+####
+######## /testing input options - to avoid the situation with overwriting existing data

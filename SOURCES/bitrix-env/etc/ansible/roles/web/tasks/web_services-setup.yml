@@ -1,0 +1,186 @@
+---
+# configure web services: nginx and apache on master server
+# Note: for correct work this task demand configured csync or lsyncd sync
+- name: create upstream config
+  template: 
+    src: "nginx/upstream.conf.j2"
+    dest: "/etc/nginx/bx/site_avaliable/upstream.conf"
+    owner: bitrix
+    group: root
+  tags: web
+
+- name: enable upstream config
+  file: 
+    src="/etc/nginx/bx/site_avaliable/upstream.conf"
+    dest="/etc/nginx/bx/site_enabled/upstream.conf"
+    state=link
+  tags: web
+
+- name: delete not-cluster http-configs bx/site_enabled
+  file: 
+    path: "/etc/nginx/bx/site_enabled/{{ item.NginxHTTPConfig }}"
+    state: absent
+  with_items: 
+    - "{{ bx_sites_info }}"
+  tags: web
+  when: item.SiteInstall == 'link'
+    or item.SiteInstall == 'kernel' 
+
+- name: delete not-cluster http-configs bx/site_avaliable
+  file: 
+    path: "/etc/nginx/bx/site_avaliable/{{ item.NginxHTTPConfig }}"
+    state: absent
+  with_items: 
+    - "{{ bx_sites_info }}"
+  tags: web
+  when: item.SiteInstall == 'link'
+    or item.SiteInstall == 'kernel' 
+
+- name: delete not-cluster https-configs bx/site_enabled
+  file: 
+    path: "/etc/nginx/bx/site_enabled/{{ item.NginxHTTPSConfig }}"
+    state: absent
+  with_items: 
+    - "{{ bx_sites_info }}"
+  tags: web
+  when: item.SiteInstall == 'link'
+    or item.SiteInstall == 'kernel' 
+
+- name: delete not-cluster https-configs bx/site_avaliable
+  file: 
+    path: "/etc/nginx/bx/site_avaliable/{{ item.NginxHTTPSConfig }}"
+    state: absent
+  with_items: 
+    - "{{ bx_sites_info }}"
+  tags: web
+  when: item.SiteInstall == 'link'
+    or item.SiteInstall == 'kernel' 
+
+- name: http balancer config
+  template: 
+    src: "nginx/http_balancer.conf.j2"
+    dest: "/etc/nginx/bx/site_avaliable/http_balancer.conf"
+    owner: bitrix
+    group: root
+  tags: web
+
+- name: https balancer config
+  template:
+    src: nginx/https_balancer_per_site.conf.j2
+    dest: "/etc/nginx/bx/site_avaliable/https_balancer_{{ item.SiteName }}.conf"
+    owner: bitrix
+    group: root
+  with_items: "{{ bx_sites_info }}"
+  when: item.SiteInstall == 'link'
+    or item.SiteInstall == 'kernel' 
+
+- name: create backend configs for sites
+  template: 
+    src: nginx/http_site_template_composite.conf.j2
+    dest: "/etc/nginx/bx/site_cluster/{{ item.NginxHTTPConfig  }}"
+    owner: bitrix
+    group: root
+  with_items: "{{ bx_sites_info }}"
+  tags: web
+  when: item.SiteInstall == 'link'
+    or item.SiteInstall == 'kernel' 
+
+- name: link http balancer config
+  file: 
+    src: "/etc/nginx/bx/site_avaliable/http_balancer.conf"
+    dest: "/etc/nginx/bx/site_enabled/http_balancer.conf"
+    state: link
+  tags: web
+
+- name: unlink old https balancer config
+  file: 
+    path: "/etc/nginx/bx/site_enabled/https_balancer.conf"
+    state: absent
+  tags: web
+
+- name: link https balancer config
+  file:
+    src: "/etc/nginx/bx/site_avaliable/https_balancer_{{ item.SiteName }}.conf"
+    dest: "/etc/nginx/bx/site_enabled/https_balancer_{{ item.SiteName  }}.conf"
+    state: link
+  with_items: "{{ bx_sites_info }}"
+  when: item.SiteInstall == 'link'
+    or item.SiteInstall == 'kernel' 
+
+
+- name: link cluster-configs to bx/site_avaliable
+  file: 
+    src: "/etc/nginx/bx/site_cluster/{{ item.NginxHTTPConfig }}"
+    dest: "/etc/nginx/bx/site_avaliable/{{ item.NginxHTTPConfig }}"
+    state: link
+  with_items: "{{ bx_sites_info }}"
+  tags: web
+  when: item.SiteInstall == 'link'
+    or item.SiteInstall == 'kernel' 
+
+
+- name: link cluster-configs to bx/site_enabled
+  file: 
+    src: "/etc/nginx/bx/site_cluster/{{ item.NginxHTTPConfig }}"
+    dest: "/etc/nginx/bx/site_enabled/{{ item.NginxHTTPConfig }}"
+    state: link
+  with_items: "{{ bx_sites_info }}"
+  tags: web
+  when: item.SiteInstall == 'link'
+    or item.SiteInstall == 'kernel' 
+
+
+- name: delete general add_headers config 
+  file: path="{{ nginx_base_dir }}/bx/conf/http-add_header.conf"
+    state=absent
+  with_items: "{{ bx_sites_info }}"
+  tags: web
+  when: item.SiteInstall == 'link'
+    or item.SiteInstall == 'kernel' 
+
+
+- name: create blank add_headers config 
+  file: src="{{ nginx_base_dir }}/bx/conf/blank.conf" 
+    dest="{{ nginx_base_dir }}/bx/conf/http-add_header.conf"
+    state=link
+  with_items: "{{ bx_sites_info }}"
+  tags: web
+  when: item.SiteInstall == 'link'
+    or item.SiteInstall == 'kernel' 
+
+# default site special treatment
+- name: remove default_server file s1.conf
+  shell: "[[ -L /etc/nginx/bx/site_enabled/s1.conf ]] && sed -i 's/listen 80 default_server;/listen {{ nginx_server_internal_port }};/' /etc/nginx/bx/site_enabled/s1.conf"
+  ignore_errors: true
+
+- name: remove file ssl.s1.conf
+  file:
+    path: /etc/nginx/bx/site_enabled/ssl.s1.conf
+    state: absent
+
+# Note: Do we really need this setting?
+- name: configure apache server-status on nginx
+  template: 
+    src: nginx/bx_apache_status.conf.j2
+    dest: "/etc/nginx/bx/site_avaliable/bx_apache_status.conf"
+    owner: bitrix
+    group: root
+  tags: web
+
+- name: enable apache server-status on nginx
+  file: 
+    state: link
+    src: "/etc/nginx/bx/site_avaliable/bx_apache_status.conf"
+    dest: "/etc/nginx/bx/site_enabled/bx_apache_status.conf"
+    owner: bitrix
+    group: root
+  tags: web
+
+# apache service
+- name: configure apache server-status on httpd
+  template: 
+    src: httpd/bx_apache_status.conf.j2
+    dest: "/etc/httpd/bx/conf/bx_apache_status.conf"
+    owner: bitrix
+    group: bitrix
+  tags: web

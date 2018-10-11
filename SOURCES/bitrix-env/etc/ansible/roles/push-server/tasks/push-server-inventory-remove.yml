@@ -1,0 +1,15 @@
+---
+- name: add server to push group
+  delegate_to: "{{ cluster_web_server }}"
+  bx_conf: hostname={{ inventory_hostname  }}
+    state=absent group=push
+  tags: ansible_hosts
+
+# group vars
+- name: update bitrix-hosts group
+  delegate_to: "{{ cluster_web_server }}"
+  bx_conf: group=hosts state=update
+    push_server_netaddr=NOT_DEFINED
+    push_server=NOT_DEFINED
+  tags: ansible_hosts
+

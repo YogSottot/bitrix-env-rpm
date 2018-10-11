@@ -1,0 +1,32 @@
+---
+#  fill up bx_sites_info variable for cluster cases (create common csync files)
+#  ONLY usage in create/delete site tasks
+#
+
+######## load variables from groups config file
+####
+- name: set cluster mark to disabled state
+  set_fact:
+    is_cluster: "disable"
+
+- name: change cluster mark if web cluster configured
+  set_fact:
+    is_cluster: "enable"
+  when: "cluster_web_configure == 'enable'"
+
+- name: change cluster mark if mysql cluster configured
+  set_fact:
+    is_cluster: "enable"
+  when: "cluster_mysql_configure == 'enable'"
+
+- name: gathering facts about installed sites
+  delegate_to: "{{ cluster_web_server }}"
+  bx_facts: name=list password=0 status=finished
+  tags: sites_facts
+  when: "is_cluster == 'enable'"
+
+- name: create variable bx_sites_info
+  set_fact:
+    bx_sites_info: "{{ hostvars[inventory_hostname]['bx_sites'] }}"
+  tags: sites_facts
+  when: "is_cluster == 'enable'"

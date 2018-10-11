@@ -1,0 +1,55 @@
+---
+####
+- name: create configs variables
+  set_fact:
+    nginx_config_name_http: "bx_ext_{{ web_site_name }}.conf"
+    nginx_config_name_https: "bx_ext_ssl_{{ web_site_name }}.conf"
+    nginx_config_name_https_balancer: "https_balancer_{{ web_site_name }}.conf"
+    apache_config_name: "bx_ext_{{ web_site_name }}.conf"
+    apache_config_name_scale: "ext_{{ web_site_name }}.conf"
+
+- name: change configs variables for default site
+  set_fact:
+    nginx_config_name_http: "s1.conf"
+    nginx_config_name_https: "ssl.s1.conf"
+    nginx_config_name_https_balancer: "https_balancer_default.conf"
+    apache_config_name: "default.conf"
+  when: "web_site_name == 'default'"
+
+- include: create_nginx_configs_general.yml
+  when: cluster_web_configure != 'enable'
+  static: no
+
+- include: create_nginx_configs_cluster.yml
+  when: "cluster_web_configure == 'enable' and inventory_hostname == cluster_web_server"
+  static: no
+
+- name: additional apache port
+  template: 
+    src: httpd/bx_apache_site_name_port.conf.j2
+    dest: /etc/httpd/bx/conf/bx_apache_site_name_port.conf
+    owner: bitrix
+    group: bitrix
+  tags: web_config
+  notify: restart httpd
+
+- name: http apache config
+  template: 
+    src: httpd/bx_apache_site.conf.j2
+    dest: /etc/httpd/bx/conf/{{ apache_config_name }}
+    owner: bitrix
+    group: bitrix
+  tags: web_config
+  notify: restart httpd
+
+- name: http apache-scale config
+  template: 
+    src: httpd/bx_apache_site_scale.conf.j2
+    dest: /etc/httpd/bx-scale/conf/{{ apache_config_name_scale }}
+    owner: bitrix
+    group: bitrix
+  tags: web_config
+  notify: restart httpd-scale
+  when: ansible_distribution == "CentOS" 
+    and ansible_distribution_major_version == "7"
+    and inventory_hostname == cluster_web_server

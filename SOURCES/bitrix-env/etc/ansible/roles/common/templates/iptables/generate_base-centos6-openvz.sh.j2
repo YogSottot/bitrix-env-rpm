@@ -1,0 +1,122 @@
+#!/bin/bash
+# {{ ansible_managed }}
+# Configure iptables for Centos6 and openvz virtualization (by default no additional modules)
+# 1. check the existence of chains: bx_public, bx_trusted
+# 2. there are no defaults, perform a full configuration
+# 3. there are defaults, perfom configuration only bx* chains
+#set -e
+
+is_bx_public=$(iptables -L {{ public_chain }} -n >/dev/null 2>&1 && echo 1 || echo 0)
+is_bx_trusted=$(iptables -L {{ trusted_chain }} -n >/dev/null 2>&1 && echo 1 || echo 0)
+is_bx_sports=$(iptables -L {{ service_chain  }} -n >/dev/null 2>&1 && echo 1 || echo 0)
+
+LOG_DIR=/opt/webdir/logs
+[[ ! -d $LOG_DIR ]] && mkdir -p -m 700 $LOG_DIR
+LOG_FILE=$LOG_DIR/iptables.log
+
+TMP_DIR=/opt/webdir/tmp
+[[ ! -d $TMP_DIR ]] && mkdir -p -m 700 $TMP_DIR
+LOCK_FILE=$TMP_DIR/iptables.lock
+
+log2file(){
+    echo "$(date +"%Y/%m/%dT%H:%M:%S.%3N") [$$] $1" >> $LOG_FILE
+    sleep 1
+}
+
+lockFile(){
+    WAIT_LIMIT_CNT=10
+    while [[ -f $LOCK_FILE ]]; do
+        [[ $WAIT_LIMIT_CNT -le 1 ]] && return 1
+        sleep 10
+
+        $WAIT_LIMIT_CNT=$(( $WAIT_LIMIT_CNT - 1 ))
+    done
+
+    touch $LOCK_FILE
+    return 0
+}
+
+lockFile
+if [[ $? -gt 0 ]]; then
+    log2file "Lock file=$LOCK_FILE found. Exit"
+    exit
+fi
+
+log2file "Start iptables configuration"
+
+
+## initial setup
+if [[ ( $is_bx_public -eq 0 ) || ( $is_bx_trusted -eq 0 ) || ( $is_bx_sports -eq 0 ) ]]; then
+    iptables -P INPUT ACCEPT
+    iptables -P FORWARD ACCEPT
+    iptables -P OUTPUT ACCEPT
+    log2file "Set ACCEPT policy for INPUT and FORWARD chains"
+
+    # delete existen rules
+    iptables -F INPUT 
+    iptables -F FORWARD
+    log2file "Remove existen rules from INPUT and FORWARD chains"
+
+    # create new chains
+    iptables -N {{ public_chain }}
+    iptables -N {{ trusted_chain }}
+    iptables -N {{ service_chain }}
+    log2file "Create Bitrix chains"
+
+    # default rules
+    iptables -A INPUT -m tcp -p tcp --dport 22 -j ACCEPT
+    iptables -I INPUT -j {{ public_chain  }}
+    iptables -I INPUT -j {{ trusted_chain  }}
+    iptables -I INPUT -j {{ service_chain  }}
+    iptables -A INPUT -p icmp -j ACCEPT
+    iptables -A INPUT -i lo -j ACCEPT
+    iptables -A INPUT -j REJECT --reject-with icmp-host-prohibited
+    iptables -A FORWARD -j REJECT --reject-with icmp-host-prohibited
+
+    log2file "Create empty {{ public_chain }} and {{ trusted_chain }} chains"
+else
+    # clear custom chains
+    iptables -F {{ public_chain  }}
+    iptables -F {{ trusted_chain  }}
+    log2file "Truncate {{ public_chain  }} and {{ trusted_chain  }} chains"
+fi
+
+## update bx* chains
+# trusted chain
+{% for host in groups['bitrix-hosts'] %}
+    iptables -A {{ trusted_chain   }} -s {{ hostvars[host].bx_netaddr  }}/32 \
+        -p tcp -j ACCEPT
+    iptables -A {{ trusted_chain   }} -s {{ hostvars[host].bx_netaddr  }}/32 \
+        -p udp -j ACCEPT
+    log2file "Add {{ host }} to {{ trusted_chain }}"
+{% endfor %}
+
+# public chain
+{% if 'bitrix-mgmt' in group_names %}
+    {% for port in pool_manager_ports %}
+        iptables -A {{ public_chain }} -p tcp -m tcp --dport {{ port }} -j ACCEPT
+    {% endfor %}
+    log2file "Configure public ports for bitrix mgmt host"
+{% endif %}
+
+
+{% if 'bitrix-web' in group_names %}
+    {% for port in web_ports %}
+        iptables -A {{ public_chain }} -p tcp -m tcp --dport {{ port }} -j ACCEPT
+    {% endfor %}
+    log2file "Configure public ports for bitrix web host"
+{% endif %}
+
+# sport chain
+{% for port in openvz_sports['udp'] %}
+    iptables -A {{ service_chain }} -p udp -m udp --sport {{ port }} -j ACCEPT
+{% endfor %}
+
+{% for port in openvz_sports['tcp'] %}
+    iptables -A {{ service_chain }} -p tcp -m tcp --sport {{ port }} -j ACCEPT
+{% endfor %}
+
+# save iptables rules
+iptables-save > /etc/sysconfig/iptables
+log2file "Save iptables rules to /etc/sysconfig/iptables"
+rm -f $LOCK_FILE

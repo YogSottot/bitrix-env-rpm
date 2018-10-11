@@ -1,0 +1,21 @@
+# {{ ansible_managed }}
+dbdir       /var/lib/munin
+htmldir     /var/lib/munin
+logdir      /var/log/munin
+rundir      /var/run/munin
+
+# accept fork
+fork yes
+
+# max_graph_jobs 
+max_graph_jobs 1
+
+# generate graphs and html pages
+htmldir  {{ munin_server_data_dir }}
+
+# include configs from directory:
+includedir /etc/munin/conf.d
+
+[{{ munin_graph_group }};]
+  use_node_name yes
+

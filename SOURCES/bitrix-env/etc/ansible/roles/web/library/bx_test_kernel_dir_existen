@@ -1,0 +1,81 @@
+#!/usr/bin/perl
+# test if kernel dircetory exists folders:
+# bitrix
+# upload 
+# images
+
+use strict;
+use warnings;
+use File::Spec;
+use File::Basename qw( dirname basename );
+use JSON;
+use Data::Dumper;
+
+
+# search="server_name www.bitrix.ru;" basedir=/etc/nginx/bx/site_avaliable regexp=\.conf$
+my $options_file  = $ARGV[0];
+
+# parse ansible argv file
+my $gtn_parse_ansible_argv = parse_ansible_argv ( $options_file );
+if ( $gtn_parse_ansible_argv->[0] > 0 ) {
+  print_message( 
+    { 'msg' => $gtn_parse_ansible_argv->[1], 'failed' => "true" },
+    $gtn_parse_ansible_argv->[0],
+  );
+}
+
+my $site_bitrix = File::Spec->catfile($gtn_parse_ansible_argv->[1]->{'bxkernel'}, "bitrix" );
+my $site_upload = File::Spec->catfile($gtn_parse_ansible_argv->[1]->{'bxkernel'}, "upload" );
+my $site_images = File::Spec->catfile($gtn_parse_ansible_argv->[1]->{'bxkernel'}, "images" );
+
+foreach my $dir ( $site_bitrix, $site_upload, $site_images ){
+  if ( ! -d $dir ){
+    print_message(
+      { found => 0, directory  => $dir },
+      0,
+    );
+  }
+}
+
+print_message(
+  { found => 1 },
+  0,
+);
+
+
+exit 0;
+
+# print json output for ansible
+# input: return_hash, exit_code
+sub print_message {
+  my $rh = shift;
+  my $c = shift;
+  my $json = to_json( $rh, pretty => 1 );
+  print $json;
+  exit $c;
+}
+
+# parse opt file
+sub parse_ansible_argv {
+  my $f = shift;
+  my $r = {};
+
+  open ( my $fh, $f ) or return [ 1, "Cannot open options $f: $!" ];
+  while ( <$fh> ){
+    next if ( /^$/ );
+    if ( /bxkernel=(\S+)/ )     { 
+        my $val = $1;
+        $val =~ s/^['"]//;
+        $val =~ s/['"]$//;
+        $r->{'bxkernel'}  = $val; 
+    };
+  }
+
+  close $fh;
+
+
+  if ( ! $r->{'bxkernel'} )     { return [ 1, "You must send bitrix kernel directory via bxkernel option" ] };
+
+  return [ 0, $r ];
+}
+

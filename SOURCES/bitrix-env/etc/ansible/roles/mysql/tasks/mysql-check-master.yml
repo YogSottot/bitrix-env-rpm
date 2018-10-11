@@ -1,0 +1,17 @@
+---
+# check mysql options
+- name: check replication status on slave
+  delegate_to: "{{ slave_server }}"
+  mysql_replication: mode=getslave login_unix_socket={{ mysql_socket }}
+  register: slave
+  tags: slave_facts
+
+- name: replication status contains error
+  fail: msg="There is replication error on {{ slave_server }}. Exit"
+  when: slave.Last_Errno > 0
+  tags: slave_facts
+
+- name: replication delay
+  fail: msg="There is replication delay on {{ slave_server }} delay={{ slave.Seconds_Behind_Master }}s"
+  when: slave.Seconds_Behind_Master > 300
+  tags: slave_facts

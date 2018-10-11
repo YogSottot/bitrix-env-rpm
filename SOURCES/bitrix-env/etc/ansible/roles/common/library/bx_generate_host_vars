@@ -1,0 +1,133 @@
+#!/usr/bin/perl
+# generate site vars
+# site_dir
+# site_dbuser
+# site_dbpass
+# site_db
+
+use strict;
+use warnings;
+use File::Spec;
+use File::Basename qw( dirname basename );
+use JSON;
+use Data::Dumper;
+
+
+# search="server_name www.bitrix.ru;" basedir=/etc/nginx/bx/site_avaliable regexp=\.conf$
+my $options_file  = $ARGV[0];
+
+# parse ansible argv file
+my $gtn_parse_ansible_argv = parse_ansible_argv ( $options_file );
+if ( $gtn_parse_ansible_argv->[0] > 0 ) {
+  print_message( 
+    { 'msg' => $gtn_parse_ansible_argv->[1], 'failed' => "true" },
+    $gtn_parse_ansible_argv->[0],
+  );
+}
+
+my $host_name   = $gtn_parse_ansible_argv->[1]->{'host_name'};
+my $host_id     = $gtn_parse_ansible_argv->[1]->{'host_id'};
+my $host_pass   = $gtn_parse_ansible_argv->[1]->{'host_pass'};
+my $bx_netname  = $gtn_parse_ansible_argv->[1]->{'bx_netname'};
+
+my $options = generate_host_options($host_name);
+
+# host_id
+if (not defined $host_id or $host_id =~ /^NOT_DEFINED$/){
+  $host_id = $options->{'host_id'};
+}
+
+# host_pass
+if (not defined $host_pass or $host_pass =~ /^NOT_DEFINED/){
+  $host_pass = $options->{'host_pass'}
+}
+if (not defined $bx_netname or $bx_netname =~ /^NOT_DEFINED$/){
+  $bx_netname = $options->{'bx_netname'};
+}
+
+print_message(
+  {
+    ansible_facts => {
+      host_name   => $host_name,
+      host_id     => $host_id,
+      host_pass   => $host_pass,
+      bx_netname  => $bx_netname
+    }
+  },
+  0,
+);
+
+exit 0;
+
+# print json output for ansible
+# input: return_hash, exit_code
+sub print_message {
+  my $rh = shift;
+  my $c = shift;
+  my $json = to_json( $rh, pretty => 1 );
+  print $json;
+  exit $c;
+}
+
+sub generate_random {
+  my $len = shift;
+  if (not defined $len) { $len = 10 }
+  my @alphanum = ( 'A' .. 'Z', 'a' .. 'z', 0 .. 9);
+  my $random = join('', map($alphanum[rand($#alphanum)],(1..$len)));
+  return $random; 
+}
+
+sub generate_host_options {
+  my $host_name = shift;
+  my $output = {
+    host_id => '',
+    host_pass => '',
+    bx_netname => '',
+  };
+
+  my $tm = time;
+  $output->{'host_id'} = "$tm".'_'.generate_random(10);
+  $output->{'host_pass'} = "$tm".'_'.generate_random(10);
+  $output->{'bx_netname'} = $host_name;
+
+  return $output;
+}
+
+# parse opt file
+sub parse_ansible_argv {
+  my $f = shift;
+  my $r = {
+    host_name   => undef,
+    host_id     => undef,
+    host_pass   => undef,
+    bx_netname  => undef,
+  };
+
+
+  open ( my $fh, $f ) or return [ 1, "Cannot open options $f: $!" ];
+  while ( <$fh> ){
+    next if ( /^$/ );
+    if ( /\S+=\S+/ ){
+      my @matches = split(/\s+/, $_);
+      foreach my $match (@matches){
+        #print $match,"\n";
+        my ($key,$val)=split('=',$match);
+        $val =~ s/^['"]//;
+        $val =~ s/['"]$//;
+        if (grep /^$key$/, keys %$r){
+          #print "fill out $key\n";
+          $r->{$key} = $val;
+        }
+      }
+    }
+  }
+
+  close $fh;
+  
+  # test keys
+  if (not defined $r->{'host_name'}){
+    return [1, "host_name= is mandatory"];
+  }
+  return [ 0, $r ];
+}
+

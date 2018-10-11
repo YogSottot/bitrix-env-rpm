@@ -1,0 +1,51 @@
+---
+### delete mysql info from slave server
+# slave_server  => hostname
+# mysql_active  => N
+- include: sites-gathering_facts.yml
+
+- name: set mysql_active option for deleted server
+  set_fact: mysql_active='N'
+
+- name: stop pt-slave-restart
+  service:
+    name: pt-slave-restart
+    state: stopped
+    enabled: no
+  ignore_errors: yes
+
+- include: sites-remove_slave.yml
+
+- name: delete databases from removed server
+  with_items: "{{ bx_sites_info }}"
+  mysql_db: name={{ item.DBName }} state=absent login_unix_socket={{ mysql_socket }}
+  tags: mysql_clear
+
+- name: delete replication user from server
+  mysql_user: name={{ replica_login }} state=absent login_unix_socket={{ mysql_socket }}
+  tags: mysql_clear
+
+- name: delete cluster user from server
+  mysql_user: name={{ cluster_login }} state=absent login_unix_socket={{ mysql_socket }}
+  tags: mysql_clear
+
+- include: mysql-disable_service.yml 
+
+- name: delete replication files
+  file: path=/var/lib/mysql/{{ item }} state=absent
+  with_items: 
+    - master.info
+    - relay-bin.info
+  tags: mysql_service
+
+- name: delete host from mysql group
+  delegate_to: 127.0.0.1
+  bx_conf: hostname={{ inventory_hostname }} state=absent group=mysql
+  tags: ansible_hosts
+
+- name: delete mysql options from host
+  delegate_to: 127.0.0.1
+  bx_conf: hostname={{ inventory_hostname }} state=update 
+    mysql_replication_role=ABSENT mysql_serverid=ABSENT
+  tags: ansible_changed
+  

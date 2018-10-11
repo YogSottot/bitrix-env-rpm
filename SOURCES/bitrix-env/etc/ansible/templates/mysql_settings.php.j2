@@ -1,0 +1,63 @@
+{% if mysql_playbook == 'cluster' -%}
+{% set DBHost = master_server -%}
+{% set DBName = item.DBName -%}
+{% set DBLogin = cluster_login -%}
+{% set DBPassword = cluster_password -%}
+{% else -%}
+{% set DBHost = mysql_host -%}
+{% set DBName = item.DBName -%}
+{% set DBLogin = mysql_login -%}
+{% set DBPassword = password -%}
+{% endif -%}
+{% set DBPasswordEsc = DBPassword | regex_replace('([\'\\\\])','\\\\\\1') -%}
+<?
+// {{ ansible_managed }}
+$DOCUMENT_ROOT = '{{ item.DocumentRoot }}';
+// return values
+$OK   = array( 0, 'Ok' );
+$ERR  = array( 1, 'Error');
+$DBHost = "{{ DBHost }}";
+$DBName = "{{ DBName }}";
+$DBLogin = "{{ DBLogin }}";
+$DBPassword = '{{ DBPasswordEsc }}';
+
+$filename = $DOCUMENT_ROOT."/bitrix/.settings.php";
+
+if (!file_exists($filename))
+  return $OK[0];
+
+// include settings - with old values
+ob_start();
+$settings = include($filename);
+ob_end_clean();
+
+if (!is_array($settings))
+  return $ERR[0];
+
+// check connection to DB exists in settings file
+if(!isset($settings['connections']['value']['default']) || !is_array($settings['connections']['value']['default']))
+  return $OK[0];
+
+$settings['connections']['value']['default']['host'] = $DBHost;
+$settings['connections']['value']['default']['database'] = $DBName;
+$settings['connections']['value']['default']['login'] = $DBLogin;
+$settings['connections']['value']['default']['password'] = $DBPassword;
+
+$data = var_export($settings, true);
+
+rename($filename, $DOCUMENT_ROOT."/bitrix/.settings.bak.php");
+$config = file_put_contents($filename, "<"."?php\nreturn ".$data.";\n");
+
+if ($config === false)
+{
+  $returnResult = $ERR;
+}else
+{
+  $returnResult = $OK;
+  unlink($DOCUMENT_ROOT."/bitrix/.settings.bak.php");
+}
+
+echo "Update .settings.php return: ".$returnResult[1];
+return $returnResult[0];
+
+?>

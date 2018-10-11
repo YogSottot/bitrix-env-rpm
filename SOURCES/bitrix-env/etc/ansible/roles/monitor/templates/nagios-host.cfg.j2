@@ -1,0 +1,40 @@
+# {{ ansible_managed }}
+# Hostname:   {{ nagios_alias }}
+# IP address: {{ nagios_ip }}
+define host{
+  use                     linux-server
+  host_name               {{ nagios_host }}
+  alias                   {{ nagios_alias }}
+  address                 {{ nagios_ip }}
+  hostgroups              linux-servers
+}
+
+{% if 'bitrix-mysql' in group_names %}
+## mysql services
+define service {
+  use       local-service
+  host_name     {{ nagios_alias }}
+  service_description   MySQL: connection to 3306
+  check_command     check_tcp!3306
+}
+{% endif %}
+
+{% if 'bitrix-web' in group_names %}
+## web services
+# http
+define service {
+  use       local-service
+  host_name     {{ nagios_alias }}
+  service_description   HTTP: connection to 80
+  check_command     check_http!-p80 -H{{ nagios_alias }} -u /bitrix/index.php -s bitrix --onredirect=follow!
+}
+# https
+define service {
+  use       local-service
+  host_name     {{ nagios_alias }}
+  service_description   HTTP: connection to 443
+  check_command     check_http!-p443 -H{{ nagios_alias }} --ssl -u /bitrix/index.php -s bitrix!
+}
+{% endif %}
+
+

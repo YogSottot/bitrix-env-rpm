@@ -1,0 +1,87 @@
+#!/bin/bash
+# 
+# Waiting until synchronized lsyncd
+#set -x
+export LANG=en_EN.UTF-8
+export PATH=/sbin:/bin:/usr/sbin:/usr/bin
+
+[[ -z $DEBUG ]] && DEBUG=0
+TMP_DIR=/opt/webdir/tmp
+[[ ! -d $TMP_DIR ]] && mkdir -m 700 $TMP_DIR
+LOG_FILE=$TMP_DIR/bx_lsyncd_wait_$$.log
+
+debug(){
+    mess=$1
+
+    [[ $DEBUG -gt 0 ]] && echo "$(date +%s) $mess" >> $LOG_FILE
+}
+
+notify(){
+    msg="${1}"
+    err="${2:-0}"
+
+    json="\"msg\":\"$msg\","
+    json=$json"\"changed:\":false"
+    [[ $err -gt 0 ]] && json=$json",\"failed\":true"
+
+    echo "{$json}"
+    exit $err
+}
+
+test_log(){
+    if [[ ! -f $log ]]; then
+        return 1
+    fi
+    return 0
+}
+
+get_variables(){
+
+    [[ -z $timeout ]] && timeout=30
+    [[ -z $attempts ]] && attempts=10
+    [[ -z $log ]] && notify "You must define lsynd log=/path/to/log" 1
+}
+
+get_delay(){
+    ( egrep -o '[0-9]+ delays' $log 2>/dev/null || echo 9999 ) | \
+        awk 'BEGIN{total=0}{total+=$1}END{print total}'
+}
+
+lsyncd_wait(){
+    step=0
+
+    # test file exists
+    file_exists=0
+    while [[ ( $file_exists -eq 0 ) && ( $step -lt $attempts  ) ]]; do
+        test_log
+        if [[ $? -eq 0 ]]; then
+            file_exists=1
+        fi
+        step=$(( $step+1 ))
+        sleep $timeout
+    done
+    if [[ $file_exists -eq 0 ]]; then
+        notify "Not found log file=$log"
+    fi
+
+    # test timeout
+    step=0
+    delay=$(get_delay)
+    while [[ ( $delay -gt 0 ) && ( $step -lt $attempts ) ]]; do
+        sleep $timeout
+        delay=$(get_delay)
+        step=$(( $step+1 ))
+    done
+
+    if [[ $delay -gt 0 ]]; then
+        notify "Lsyncd-synchronization was not completed in the allotted time" 1
+    fi
+
+    notify "Lsyncd-synchronization was completed"
+}
+
+source ${1}
+
+get_variables
+
+lsyncd_wait

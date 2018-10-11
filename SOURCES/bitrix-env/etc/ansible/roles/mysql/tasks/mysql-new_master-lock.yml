@@ -1,0 +1,12 @@
+---
+# sync tasks on two server by lock file
+- name: create lock file after setup tasks on the new master-server
+  file: path="/tmp/{{ new_master_server }}-{{ lock|default('mysql') }}.lock" state=touch
+  when: "slave_server == inventory_hostname"
+  tags: mysql_sync
+
+- name: test from slave-servers that lock file exists
+  delegate_to: "{{ new_master_server }}"
+  wait_for: path="/tmp/{{ new_master_server }}-{{ lock|default('mysql') }}.lock" state=present
+  tags: mysql_sync
+  when: "inventory_hostname != new_master_server"

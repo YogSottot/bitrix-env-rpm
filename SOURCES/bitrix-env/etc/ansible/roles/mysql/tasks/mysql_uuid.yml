@@ -1,0 +1,9 @@
+---
+- name: remove auto.cnf file
+  file:
+    path: /var/lib/mysql/auto.cnf
+    state: absent
+
+- name: restart service mysqld
+  service: name={{ mysql_service }} state=restarted
+  tags: service

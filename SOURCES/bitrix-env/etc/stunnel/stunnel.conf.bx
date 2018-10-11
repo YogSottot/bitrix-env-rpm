@@ -1,0 +1,10 @@
+cert = /etc/stunnel/stunnel.pem
+; Protocol version (all, SSLv2, SSLv3, TLSv1)
+sslVersion = all
+; Some performance tunings
+socket = l:TCP_NODELAY=1
+socket = r:TCP_NODELAY=1
+; Service-level configuration
+[xmpp]
+accept  = 5223
+connect = 5222

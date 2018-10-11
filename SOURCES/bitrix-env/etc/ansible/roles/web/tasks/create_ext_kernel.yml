@@ -1,0 +1,67 @@
+---
+######## generate site options and testing site
+####
+- include: inc_generate_site_vars.yml
+####
+######## generate site options and testing site
+
+######## create database and user for site
+####
+- include: inc_site_mysql.yml
+  when: "inventory_hostname == cluster_web_server"
+
+####
+######## /create database and user for site
+
+######## create site directories on all web servers in the pool
+####
+- include: create_basic_dirs.yml
+
+- name: create dbconn file for site
+  template: src=dbconn.php.j2
+    dest={{ web_site_root_dir }}/bitrix/php_interface/dbconn.php
+    owner={{ site_bitrix }} group={{ site_bitrix }} mode=0660
+  tags: create_site_files
+  when: "'bitrix-web' in group_names"
+
+- name: create settings file for site
+  template: src=.settings.php.j2
+    dest={{ web_site_root_dir }}/bitrix/.settings.php
+    owner={{ site_bitrix }} group={{ site_bitrix }} mode=0660
+  tags: create_site_files
+  when: "'bitrix-web' in group_names"
+
+- name: create upload directory
+  file: path={{ web_site_root_dir }}/upload
+    owner={{ site_bitrix }} group={{ site_bitrix }} mode=0770
+    state=directory
+  tags: create_site_files
+  when: "'bitrix-web' in group_names"
+####
+######## /create site directories on all web servers in the pool
+
+######## create csync configuration and sync data for site between nodes for new site
+####
+- include: create_csync2_site.yml
+  when: "cluster_web_configure == 'enable' and fstype == 'csync'"
+
+- include: configs_lsyncd_create_site.yml
+  when: "cluster_web_configure == 'enable' and fstype == 'lsync'"
+####
+######## /create csync configuration and sync data for site between nodes for new site
+
+######## cron configs
+####
+- include: create_cron_config.yml
+  when: "web_site_cron == 'enable'"
+####
+######## /cron configs
+
+######## remove files
+####
+- file: 
+    path: "{{ web_site_root_dir }}/bitrix/.settings.php.crm.orig"
+    state: absent
+  when: "'bitrix-web' in group_names"
+####
+####### /remove files

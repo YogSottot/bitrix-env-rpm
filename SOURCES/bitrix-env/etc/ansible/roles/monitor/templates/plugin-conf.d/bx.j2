@@ -1,0 +1,12 @@
+# {{ ansible_managed }}
+[apache_*]
+  env.url	http://{{ apache_monitoring_netaddr }}:{{ apache_monitoring_port }}/server-status?auto
+  env.ports {{ apache_monitoring_port }}
+
+[nginx*]
+  env.url http://{{ nginx_monitoring_netaddr }}:{{ nginx_monitoring_port }}/
+
+[mysql*]
+user root
+env.mysqlopts --defaults-extra-file=/root/.my.cnf
+

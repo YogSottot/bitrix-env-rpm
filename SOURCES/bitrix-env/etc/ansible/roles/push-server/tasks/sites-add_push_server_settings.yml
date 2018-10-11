@@ -1,0 +1,39 @@
+---
+- include: sites-gathering_facts-not_mandatory.yml
+
+# create  push settings from template
+- name: create push settings
+  template: 
+    src: push-settings.php.j2
+    dest: /tmp/push-settings.php
+  delegate_to: "{{ cluster_web_server }}"
+  when: proccess_sites
+
+# delete settings if exists
+- name: delete site configs
+  with_items: "{{ bx_sites_info }}"
+  delegate_to: "{{ cluster_web_server }}"
+  when: proccess_sites
+  bx_blockinfile: 
+    insertafter='BEGIN GENERATED PUSH SETTINGS'
+    insertbefore='END GENERATED PUSH SETTINGS' state=delete
+    dest="{{ item.DocumentRoot }}/bitrix/.settings.php"
+
+# add template data to the site config
+- name: create site configs
+  with_items: "{{ bx_sites_info }}"
+  delegate_to: "{{ cluster_web_server }}"
+  when: proccess_sites
+  bx_blockinfile: from_file=/tmp/push-settings.php 
+    insertafter='return array' 
+    dest="{{ item.DocumentRoot }}/bitrix/.settings.php"
+
+- name: change access rights
+  file:
+    owner: bitrix
+    group: bitrix
+    mode: 0640 
+    path: "{{ item.DocumentRoot }}/bitrix/.settings.php"
+  delegate_to: "{{ cluster_web_server }}"
+  with_items: "{{ bx_sites_info }}"
+  when: proccess_sites

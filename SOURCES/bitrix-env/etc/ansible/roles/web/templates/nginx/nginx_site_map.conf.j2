@@ -1,0 +1,98 @@
+{# defined personal composite setting for site: #}
+{# site id (!!! variables must be personal and not affect other sites in the group) #}
+{% set ID = item['CompositeNginxID'] %}
+{# defined domains in config file: #}
+{% set cDomains = item['CompositeDomains'] %}
+{% set cDomainsCounter = cDomains|length %}
+{# defined include uri for site: #}
+{% set cIncludeUri = item['CompositeIncludeUri'] %}
+{% set cIncludeUriCounter = cIncludeUri|length %}
+{# defined exclude uri for site: #}
+{% set cExcludeUri = item['CompositeExcludeUri'] %}
+{% set cExcludeUriCounter = cExcludeUri|length %}
+{# exclude params in requests #}
+{% set cExcludeParams = item['CompositeExcludeParams'] %}
+{% set cExcludeParamsCounter = cExcludeParams|length %}
+{# set map variable names #}
+{% set vDomain = 'config_domain_'+ID %}
+{% set vIncUri = 'is_include_uri_'+ID %}
+{% set vExlUri = 'not_exclude_uri_'+ID %}
+{% set vExlPrm = 'not_exclude_params_'+ID %}
+{% set vFinalTest = '' %}
+{% set vSite = 'is_site_composite_'+ID %}
+# {{ ansible_managed }}
+##############################################
+#
+# server:         {{ item.ServerName }}
+# site:           {{ item.SiteName }}
+# storage:        {{ item.CompositeStorage }}
+# site_var:       {{ vSite }}
+# id:             {{ ID }}
+# domains:        {{ cDomainsCounter }}
+# include_uri:    {{ cIncludeUriCounter }}
+# exclude_uri:    {{ cExcludeUriCounter }}
+# exclude_params: {{ cExcludeParamsCounter }}
+##############################################
+{% if cDomainsCounter > 0 -%}
+
+# test domain name for site
+map $host ${{ vDomain }} {
+  hostnames;
+  default "0";
+  {% for domain in cDomains -%}
+  "{{ domain }}" "1";
+  {% endfor %}
+
+}
+{% set vFinalTest = vFinalTest+'${'+vDomain+'}' %}
+{% endif %}
+{% if cIncludeUriCounter > 0 -%}
+
+# test include uri for site
+map $uri ${{ vIncUri }} {
+  default  "0";
+  {% for uri in cIncludeUri -%}
+  "~*{{ uri }}"  "1";
+  {% endfor %}
+
+}
+{% set vFinalTest = vFinalTest+'${'+vIncUri+'}' %}
+{% endif %}
+{% if cExcludeUriCounter > 0 -%}
+
+# test exclude uri for site
+map $uri  ${{ vExlUri }} {
+  default  "1";
+  {% for uri in cExcludeUri -%}
+  "~*{{ uri }}"  "0";
+  {% endfor %}
+
+}
+{% set vFinalTest = vFinalTest+'${'+vExlUri+'}' %}
+{% endif %}
+{% if cExcludeParamsCounter > 0 -%}
+
+# exclude params
+map $args ${{ vExlPrm }} {
+  default  "1";
+  {% for arg in cExcludeParams -%}
+  "~{{ arg }}" "0";
+  {% endfor %}
+
+}
+{% set vFinalTest = vFinalTest+'${'+vExlPrm+'}' %}
+{% endif %}
+
+{# create final map, if vFinalTest is not empty #}
+{% if vFinalTest != '' -%}
+
+# variable ${{ vSite }} used in site config
+map "{{ vFinalTest }}" ${{ vSite }} {
+  default   "1";
+  ~0        "0";
+}
+{% else %}
+map "$host" ${{ vSite }} {
+  default   "1";
+}
+{% endif %}

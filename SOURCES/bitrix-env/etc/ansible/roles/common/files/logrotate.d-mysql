@@ -1,0 +1,12 @@
+/var/log/mysql/*.log
+{
+    copytruncate
+    ifempty
+    daily
+    rotate 10
+    missingok
+    compress
+    delaycompress
+    sharedscripts
+}
+

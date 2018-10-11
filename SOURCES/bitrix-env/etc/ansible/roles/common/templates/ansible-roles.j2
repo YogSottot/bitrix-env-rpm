@@ -1,0 +1,12 @@
+# {{ ansible_managed }}
+# contains information about client groups
+# this file does not allow to create a pool with the master on which the file exists
+hostname            = {{ inventory_hostname }} 
+master_netaddr      = {{ bx_netaddr_server }}
+master              = {{ bx_hostname_server }}
+master_port         = {{ pool_manager_ports[0] }}
+host_id             = {{ host_id }}
+host_pass           = {{ host_pass }}
+host_ether          = {{ bx_ether_client }}
+host_netaddr        = {{ bx_netaddr_client }}
+groups              = {% for group in group_names %} {{ group }} {% endfor %}

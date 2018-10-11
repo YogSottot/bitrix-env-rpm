@@ -1,0 +1,84 @@
+{% set cluster_password_esc = cluster_password | regex_replace('([\'\\\\])','\\\\\\1') -%}
+<?
+// {{ ansible_managed }}
+$_SERVER["DOCUMENT_ROOT"] = '{{ item.DocumentRoot }}';
+$DOCUMENT_ROOT = $_SERVER["DOCUMENT_ROOT"];
+define("NO_KEEP_STATISTIC", true);
+define("NOT_CHECK_PERMISSIONS",true);
+define('BX_NO_ACCELERATOR_RESET', true);
+require($_SERVER["DOCUMENT_ROOT"]."/bitrix/modules/main/include/prolog_before.php");
+
+if(!CModule::IncludeModule('cluster'))
+{
+  echo "Not found cluster module for {{ item.SiteName }}";
+  return 0;
+};
+
+// register variables for node
+$dbHost = "{{ inventory_hostname }}";
+$dbLogin = "{{ cluster_login }}";
+$dbPassword = '{{ cluster_password_esc }}';
+$dbName = "{{ item.DBName }}";
+$masterHost = "{{ master_server }}";
+$masterId = "{{ master_server_id|default('1') }}";
+$groupId = "1";
+$slaveRole  = "SLAVE";
+// Y|N
+$slaveActive = "{{ mysql_active|default('Y') }}";
+
+// return values
+$OK   = array( 0, 'Ok' );
+$ERR  = array( 1, 'Error');
+
+$dbNode = new CClusterDBNode;
+$rsNodes = $dbNode->GetList(
+  array(),
+  array(
+    "=ROLE_ID" => array("MAIN"),
+    "=MASTER_ID" => false,
+    "=STATUS" => "ONLINE",
+  )
+);
+
+if($arNode = $rsNodes->Fetch())
+{
+  $masterId = $arNode["ID"];
+  $groupId = $arNode["GROUP_ID"];
+}
+else
+{
+  $returnResult = $ERR;
+  echo "Can't find db master: ". $returnResult[1];
+  return $returnResult[0];
+}
+
+// test if node exist => search by DBHost
+$rsNodes = CClusterDBNode::GetList(array(), array("=NAME" => $dbHost));
+while($arNode = $rsNodes->Fetch())
+{
+  CClusterDBNode::Delete($arNode["ID"]);
+}
+
+$nodeId = $dbNode->Add(array(
+  "ACTIVE"      => $slaveActive,
+  "ROLE_ID"     => $slaveRole,
+  "NAME"        => $dbHost,
+  "DESCRIPTION" => false,
+  "DB_HOST"     => $dbHost,
+  "DB_NAME"     => $dbName,
+  "DB_LOGIN"    => $dbLogin,
+  "DB_PASSWORD" => $dbPassword,
+  "MASTER_ID"   => $masterId,
+  "MASTER_HOST" => $masterHost,
+  "MASTER_PORT" => 3306,
+  "SERVER_ID"   => false,
+  "STATUS"      => "ONLINE",
+  "SELECTABLE"  => "Y",
+  "WEIGHT"      => 100,
+  "GROUP_ID"    => $groupId
+));
+
+$returnResult = intval($nodeId)>0 ? $OK : $ERR;
+echo "Create claster slave db node: ". $returnResult[1];
+return $returnResult[0];
+?>

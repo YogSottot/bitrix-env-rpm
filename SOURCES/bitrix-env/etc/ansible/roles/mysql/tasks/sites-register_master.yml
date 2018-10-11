@@ -1,0 +1,6 @@
+---
+# register|deregister slave in cluster env
+- include: sites-cache_directory-execute.yml
+  vars:
+    php_script: mysql_change_master.php
+    php_server: "{{ cluster_web_server }}"

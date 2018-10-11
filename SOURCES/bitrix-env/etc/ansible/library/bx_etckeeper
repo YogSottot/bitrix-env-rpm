@@ -1,0 +1,93 @@
+#!/bin/bash
+# insert block of line into the file
+
+export LANG=en_EN.UTF-8
+export PATH=$PATH:/sbin:/usr/sbin
+
+[[ -z $DEBUG  ]] && DEBUG=0
+TMP=/opt/webdir/logs
+LOG=$TMP/bx_blocklines.log
+[[ $DEBUG -gt 0  ]] 2>/dev/null && echo -n "" > $LOG
+
+debug() {
+    msg=$1
+
+    [[ $DEBUG -gt 1  ]] && printf "%s: %d: %s\n" "$(date +%F-%H-%M-%S)" "$$" "$msg" >> $LOG
+}
+
+# print error message
+print_error() {
+  msg=$1
+  echo "{\"changed\":false,\"failed\":true,\"msg\":\"$msg\"}"
+  if [[ -f $TMPFILE && $DEBUG -eq 0 ]]; then
+      rm -f $TMPFILE
+  fi
+  exit 1
+}
+
+# print timezone info
+print_ok() {
+  msg=$1
+
+  echo "{\"changed\":true,\"msg\":\"$msg\"}"
+  if [[ -f $TMPFILE && $DEBUG -eq 0 ]]; then
+      rm -f $TMPFILE
+  fi
+ 
+  exit 0
+}
+
+print_notchanged() {
+  msg=$1
+
+  echo "{\"changed\":false,\"msg\":\"$msg\"}"
+  if [[ -f $TMPFILE && $DEBUG -eq 0 ]]; then
+      rm -f $TMPFILE
+  fi
+ 
+  exit 0
+
+}
+
+revert_commit() {
+    pushd /etc >/dev/null 2>&1
+    TMPFILE=$(mktemp /tmp/hg_XXXXXX)
+    # get mercurial history
+    hg log | grep '^\(changeset\|summary\):' > $TMPFILE 2>&1
+    for rtn in ${PIPESTATUS[*]}; do
+        [[ $rtn -gt 0 ]] && \
+            error "Cannot get hg log for /etc"
+    done
+
+    # get changeset number
+    CHANGESET=$(cat $TMPFILE | grep "$commit" -B1 | \
+        tail -n 2 | grep "^changeset:" | \
+        awk -F':' '{print $2}' | sed -e "s/\s\+//")
+    if [[ $CHANGESET -gt 0 ]] 2>/dev/null; then
+        hg revert -r $CHANGESET $dest > $TMPFILE 2>&1
+        hg_rtn=$?
+        if [[ $hg_rtn -gt 0 ]]; then
+            print_error "Revert operation return error=$hg_rtn: $(head $TMPFILE)"
+        else
+            print_ok "Revert configs for dest=$dest to changeset=$CHANGESET"
+        fi
+    else
+        print_notchanged "Not found commit=$commit"
+    fi
+
+    popd >/dev/null 2>&1
+}
+
+# get ansible variables
+source ${1} 2>/dev/null
+
+[[ -z $commit ]] && print_error "Not defined a commit=."
+[[ -z $dest ]] && print_error "Not defined a dest=."
+[[ -z $state ]] && state="revert"
+debug "commit=$commit state=$state"
+
+case "$state" in
+    "revert") revert_commit;;
+    *) print_error "Unknown state option";;
+esac
+

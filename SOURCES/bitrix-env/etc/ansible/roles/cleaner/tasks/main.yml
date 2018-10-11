@@ -1,0 +1,14 @@
+---
+# delete cache files from cache_directory
+- name: get file list
+  find:
+    paths: "{{ cache_directory }}"
+    file_type: file
+    hidden: true
+  register: result
+
+- name: delete files
+  file:
+    path: "{{ item.path }}"
+    state: absent
+  with_items: "{{ result.files }}"

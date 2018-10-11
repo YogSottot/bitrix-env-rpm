@@ -1,0 +1,13 @@
+---
+# manage sphinx instances
+# manage_sphinx = create|delete|add_index|delete_index
+# manage_node   = host
+# manage_site   = create|delete index for defined site
+- include: /etc/ansible/inc_vars.yml
+
+- include: sphinx.yml
+  when: "manage_sphinx == 'create' or manage_sphinx == 'delete'"
+
+- include: index_site.yml
+  when: "manage_sphinx == 'add_site' or manage_sphinx == 'delete_site'"
+

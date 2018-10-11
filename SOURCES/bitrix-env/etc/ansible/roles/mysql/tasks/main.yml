@@ -1,0 +1,61 @@
+---
+## manage by option
+## mysql_manage: update|add|remove|change
+## update|remove - slave_server
+## change        - new_master_server 
+# test playbook
+#- include: test_mysql.yml
+#  when: "mysql_manage == 'test'"
+- include: /etc/ansible/inc_vars.yml
+
+- name: additional gathering facts
+  bx_vat:
+
+# change master server
+- include: test_mysql.yml
+  when: "mysql_manage == 'test'"
+
+# update configuration
+- include: mysql-update-settings.yml
+  when: "mysql_manage == 'update' and 'bitrix-mysql' in group_names"
+  static: no
+
+# start mysql service
+- include: mysql-stop_service.yml
+  when: "mysql_manage == 'stop_service' and inventory_hostname == slave_server"
+  static: no
+
+# stop mysql service
+- include: mysql-start_service.yml
+  when: "mysql_manage == 'start_service' and inventory_hostname == slave_server"
+  static: no
+
+# change root password
+- include: mysql-change_password.yml
+  when: "mysql_manage == 'change_password' and inventory_hostname == slave_server"
+  static: no
+
+# create mysql client configfile
+- include: mysql-client_config.yml
+  when: "mysql_manage == 'client_config' and inventory_hostname == slave_server"
+  static: no
+
+# create slave server
+- include: create_slave.yml
+  when: "mysql_manage == 'add'"
+  static: no
+
+# delete slave
+- include: remove_slave.yml
+  when: "mysql_manage == 'remove' and inventory_hostname == slave_server and mysql_replication_role == 'slave'"
+  static: no
+
+# change master server
+- include: change_master.yml
+  when: "mysql_manage == 'master'"
+  static: no
+
+- include: upgrade_mysql.yml
+  when: "mysql_manage == 'upgrade_mysql57'"
+  static: no
+

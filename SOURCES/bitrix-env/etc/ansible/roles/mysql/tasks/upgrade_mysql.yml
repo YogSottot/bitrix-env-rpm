@@ -1,0 +1,39 @@
+---
+# update mysql service to 5.7 version
+- name: install package
+  yum: name=bzip2 state=latest
+
+- include: common-etckeeper.yml
+  when: "slave_server == inventory_hostname or master_server == inventory_hostname"
+
+- include: sites-gathering_facts-not_mandatory.yml
+
+- include: backup_dbs.yml
+  when: "proccess_sites and inventory_hostname == master_server"
+  static: no
+
+- name: additional gathering facts
+  bx_vat:
+
+- set_fact: 
+    my_mid_version: "{{ mysql_mid_version }}" 
+
+- include: upgrade_mysql56.yml
+  when: "my_mid_version == '5'"
+
+- set_fact: 
+    my_mid_version: "{{ mysql_mid_version }}" 
+
+- include: upgrade_mysql57.yml
+  when: "my_mid_version == '6'"
+
+- name: remove backup files
+  file: 
+    path: "{{item}}"
+    state: absent
+  with_fileglob:
+    - "/etc/my.cnf.ori*"
+    - "/etc/my.cnf.rpm*"
+    - "/etc/my.cnf.bx_mysql*"
+  ignore_errors: yes
+

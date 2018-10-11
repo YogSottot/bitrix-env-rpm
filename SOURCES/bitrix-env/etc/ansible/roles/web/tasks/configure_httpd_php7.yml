@@ -1,0 +1,20 @@
+---
+# configure apache service
+- name: replace libphp5 by libphp7
+  shell: sed -i 's/libphp5/libphp7/g;s/php5_module/php7_module/g' /etc/httpd/bx/conf/php.conf
+  args:
+    executable: /bin/bash
+  tags: php7
+
+- name: replace mod_php5 on mod_php7 in htaccess
+  with_items: "{{ bx_sites_info }}"
+  shell: find "{{ item.DocumentRoot }}" -maxdepth 2 -name ".htaccess" -type f -exec sed -i 's/mod_php5/mod_php7/g' '{}' ';'
+  args:
+    executable: /bin/bash
+  when: "proccess_sites and inventory_hostname == cluster_web_server"
+  tags: php7
+
+# configure modules by bvat
+- name: bitrix settings
+  service: name=bvat state=restarted
+  tags: php7

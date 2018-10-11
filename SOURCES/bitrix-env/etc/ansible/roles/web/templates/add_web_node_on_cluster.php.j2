@@ -1,0 +1,112 @@
+<?
+// {{ ansible_managed }}
+{% if item['SiteStatus'] == 'finished' %}
+$_SERVER["DOCUMENT_ROOT"] = '{{ item.DocumentRoot }}';
+$DOCUMENT_ROOT = $_SERVER["DOCUMENT_ROOT"];
+define("NO_KEEP_STATISTIC", true);
+define("NOT_CHECK_PERMISSIONS",true);
+define('BX_NO_ACCELERATOR_RESET', true);
+
+require($_SERVER["DOCUMENT_ROOT"]."/bitrix/modules/main/include/prolog_before.php");
+
+if(!CModule::IncludeModule('cluster'))
+{
+  echo "Not found cluster module for {{ item.SiteName }}";
+  return 0;
+};
+
+$webServer = "{{ inventory_hostname }}";
+$webServerPort = "{{ nginx_to_apache_monitoring_port }}";
+$groupId = 1;
+
+// return values
+$OK   = array( 0, 'Ok' );
+$ERR  = array( 1, 'Error');
+
+// configure session stored in DB
+$dbSession = COption::GetOptionString("security", "session", "N");
+
+if($dbSession != 'Y')
+{
+	if(!CModule::IncludeModule('security'))
+	{
+		echo "Not found security module for {{ item.SiteName }}";
+		return 0;
+	};
+
+	COption::SetOptionString("security", "session", "Y");
+	CSecuritySession::Init();
+	CAgent::RemoveAgent("CSecuritySession::CleanUpAgent();", "security");
+	$res = CAgent::Add(array(
+		"NAME"=>"CSecuritySession::CleanUpAgent();",
+		"MODULE_ID"=>"security",
+		"ACTIVE"=>"Y",
+		"AGENT_INTERVAL"=>1800,
+		"IS_PERIOD"=>"N",
+	));
+
+	$returnResult = intval($res) > 0 ? $OK : $ERR;
+	echo "Store session in db: ". $returnResult[1];
+
+	if(intval($res) <= 0)
+		return $returnResult[0];
+}
+
+//We need to know the group id
+$dbNode = new CClusterDBNode;
+
+$rsNodes = $dbNode->GetList(
+	array(),
+	array(
+		"=ROLE_ID" => array("MAIN"),
+		"=MASTER_ID" => false,
+		"=STATUS" => "ONLINE",
+	)
+);
+
+if($arNode = $rsNodes->Fetch())
+{
+	$groupId = $arNode["GROUP_ID"];
+}
+else
+{
+	$returnResult = $ERR;
+	echo "Can't find db master: ". $returnResult[1];
+	return $returnResult[0];
+}
+
+$arFields = array(
+	"NAME" => $webServer,
+	"HOST" => $webServer,
+	"PORT" => $webServerPort,
+	"STATUS_URL" => '/server-status',
+	"DESCRIPTION" => $webServerPort,
+	"GROUP_ID" => $groupId
+);
+
+$ob = new CClusterWebnode;
+
+$rsData = $ob->GetList(
+	array(),
+	array(
+		"HOST" => $webServer,
+		"PORT" => $webServerPort
+	)
+);
+
+if($arRes = $rsData->Fetch())
+{
+	$res = $ob->Update($arRes["ID"], $arFields);
+}
+else
+{
+	$res = $ob->Add($arFields);
+}
+
+$returnResult = intval($res) > 0 ? $OK : $ERR;
+echo "Created cluster web node: ". $returnResult[1];
+return $returnResult[0];
+{% else %}
+return 0;
+{% endif %}
+?>

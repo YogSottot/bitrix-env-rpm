@@ -1,0 +1,21 @@
+## {{ ansible_managed }}
+# csync2 configuration - data synchronization site in DocumentRoot
+# siteName: {{ web_site_name  }}
+# DocumentRoot: {{ web_site_root_dir }}
+group {{ web_site_csync2 }} {
+  {% for host in groups['bitrix-web'] %}
+  host {{ host }};
+  {% endfor %}
+
+  key     {{ csync_configdir }}/{{ csync_cluster_key }};
+
+  include {{ web_site_root_dir }};
+  exclude {{ web_site_root_dir }}/bitrix/cache;
+  exclude {{ web_site_root_dir }}/bitrix/managed_cache;
+  exclude {{ web_site_root_dir }}/bitrix/stack_cache;
+  exclude {{ web_site_root_dir }}/upload/resize_cache;
+  exclude {{ web_site_root_dir }}/bitrix/modules/xmppd.log;
+  exclude {{ web_site_root_dir }}/bitrix/modules/smtpd.log;
+
+  auto first;
+}

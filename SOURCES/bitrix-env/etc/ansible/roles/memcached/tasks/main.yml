@@ -1,0 +1,17 @@
+---
+######## role for create or remove memcached service on the server
+# memcached_server=
+# memcached_mange=create|remove|update
+- include: /etc/ansible/inc_vars.yml
+
+- include: setup.yml
+  when: "memcached_mange == 'update' and 'bitrix-memcached' in group_names"
+  static: no
+
+- include: create_memcached.yml
+  when: "memcached_mange == 'create' and inventory_hostname == memcached_server"
+  static: no
+  
+- include: remove_memcached.yml
+  when: "memcached_mange == 'remove' and inventory_hostname == memcached_server"
+  static: no

@@ -1,0 +1,36 @@
+# {{ ansible_managed }}
+# This is a config file for munin-node agent
+
+log_level 4
+log_file /var/log/munin-node/munin-node.log
+pid_file /var/run/munin/munin-node.pid
+
+background 1
+setsid 1
+
+user root
+group root
+
+# Regexps for files to ignore
+
+ignore_file ~$
+#ignore_file [#~]$  # FIX doesn't work. '#' starts a comment
+ignore_file DEADJOE$
+ignore_file \.bak$
+ignore_file %$
+ignore_file \.dpkg-(tmp|new|old|dist)$
+ignore_file \.rpm(save|new)$
+ignore_file \.pod$
+ignore_file \.swp$
+
+host_name {{ inventory_hostname }}
+
+# ALLOWED HOST ADDRESSES
+allow {{ monitoring_server_netaddr }}
+
+# client address (listen)
+host {{ bx_netaddr }}
+
+# client port (listen)
+port 4949
+

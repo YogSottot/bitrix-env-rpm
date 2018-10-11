@@ -1,0 +1,70 @@
+#!/usr/bin/perl
+# return interface name (request opt= ip_address) or ip address(request option int)
+use strict;
+use warnings;
+
+use lib "/opt/webdir/lib";
+use Output;
+use bxNetworkNode;
+use Data::Dumper;
+use Getopt::Long;
+use File::Basename qw( dirname basename );
+
+# program options
+my $prog_name = basename $0;
+my $prog_dir  = dirname $0;
+
+my %options = (
+  bx_netaddr  => undef,
+  bx_iface    => undef,
+);
+my @options = keys %options;
+
+# get command line options
+my $opt_file = $ARGV[0];
+
+# if change opts via module options
+if ( $opt_file ){
+  open (my $oh, $opt_file) or die "Cannot open $opt_file: $!";
+  my $lines = <$oh>;
+  if (defined $lines){
+    my @opts = split(/\s+/, $lines);
+    foreach my $opt (@opts){
+      # if we need update option from file
+      if ($opt =~ /^([^=]+)=(\S+)$/){
+        my $key = $1;
+        my $val = $2;
+        $val =~ s/^['"]//;
+        $val =~ s/['"]$//;
+
+        $options{$key} = $val;
+      # if we need delete option from file
+      }elsif($opt =~ /^([^=]+)$/){
+        $options{$1} = undef;
+      }
+    }
+    close $oh;
+  }
+}
+
+# test options
+my $bx_return = undef;
+my $bx = bxNetworkNode->new(
+  manager_interface => "any"
+);
+ 
+# get intreface name by netaddr
+if ($options{'bx_netaddr'}){
+ $bx_return = $bx->ip_to_interface($options{'bx_netaddr'});
+# get bx_netaddr by interface
+}elsif ($options{'bx_iface'}){
+  $bx_return = $bx->interface_to_ip($options{'bx_iface'});
+}else{
+  $bx_return = Output->new(
+    error => 1,
+    message => "bx_iface= or bx_netaddr= must be defined"
+  );
+}
+
+print $bx_return->printAnsible;
+

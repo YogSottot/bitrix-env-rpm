@@ -1,0 +1,12 @@
+---
+# default setttings on server
+memcached_port: 11211
+
+# memory size
+memcached_size: 64
+
+# ansible temporary folder for php-script
+bx_ansible_temp_dir_fn: /opt/webdir/.ansible
+bx_ansible_owner: root
+bx_ansible_group: bitrix
+bx_ansible_executer: bitrix

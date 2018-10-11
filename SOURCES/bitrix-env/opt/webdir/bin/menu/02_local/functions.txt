@@ -1,0 +1,56 @@
+CH000="0. Previous screen or exit"
+CH001="   Change hostname (current: __OPT1__)"
+CH002="Enter hostname or 0 for exit: "
+# обновлен файл
+CH003="Config file __OPT1__ has been updated"
+# Имя хоста изменено с СТАРОЕ_ИМЯ на НОВОЕ_ИМЯ
+CH004="Hostname changed from __OPT1__ to __OPT2__"
+# Сервер с указанными именем=ИМЯ нельзя использовать. Ошибка в настройке
+CH005="Server __OPT1__ was found but cannot be used due to configuration error"
+# Сервер с указанным именем=ИМЯ не найден в пуле
+CH006="Cannot find server __OPT1__ in the pool"
+# Найден сервер с именем=ИМЯ в пуле серверов. 
+# Недопустима конфигурация с несколькими серверами с одинаковыми именами.
+CH007="A server named __OPT1__ already exists in the pool.
+Servers cannot share the same name."
+# Пожалуйста, подтвердте смену имени
+CH008="Please confirm hostname change"
+# Конфигураци сетевого интерфейса с помощью DHCP
+CH009="Configure network interface using DHCP"
+CH010="Enter interface name or 0 for exit: "
+# Имя интерфейса не может быть пустым
+CH011="Interface name cannot be empty"
+# Во время рестарта демон=ИМЯ вернул код=КОД
+CH012="Daemon __OPT1__ returned code __OPT2__ while restarting"
+# Конфигурационный файл=ПУТЬ обновлен
+CH013="Config file __OPT1__ has been updated"
+# Завершена конфигурация интерфейса=ИМЯ
+CH014="Interface __OPT1__ has been configured"
+# Найдена ошибка в конфигурации. Не назначен IP адрес.
+CH015="Configuration error detected: the IP address is empty."
+# Введите IP, широковещательный адрес и сетевую маску
+CH016="Enter IP address (e.g. 192.168.0.1): "
+CH017="Enter broadcast address (e.g. 192.168.0.255): "
+CH018="Enter network mask (e.g. 255.255.255.0): "
+CH019="Enter default gateway address: "
+# Хотите ли Вы настроить DNS сервер:
+CH020="Would you like to configure the DNS server? (Y|n)"
+# Введите списко DNS серверов разделенных символом пробела
+CH021="Enter DNS server addresses. Separate multiple entries with space (e.g. 8.8.8.8 8.8.4.4): "
+# Выбранные параметры для сетевого интерфейса ИМЯ: список
+CH022="Selected parameters for network interface __OPT1__:"
+# Неизвестный тип операции=НАЗВАНИЕ
+CH023="Unknown action: __OPT1__"
+# На сервере не найден интерфейс=ИМЯ
+CH024="There is no network interface __OPT1__ on the server"
+# Пожалуйста, подтвердите ОБНОВЛЕНИЕ|ПЕРЕЗАГРУЗКУ|ВЫКЛЮЧЕНИЕ сервера
+CH025="Please confirm you want to __OPT1__  the server (N|y):"
+
+CH0091="Configure network interface manually"
+CH0092="If you are connected to the server 
+through the network interface for which the settings are being changed, 
+then the network connection could be reset."
+
+# Нажмите Enter для выхода
+CH100="Press ENTER to exit"
+CH101="Please confirm changes"

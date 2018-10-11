@@ -1,0 +1,53 @@
+###### test variables
+## composite_key defined in map
+set $cache_key  "$host$composite_key/index@$args.html";
+set $cache_file "bitrix/html_pages/$cache_key";
+
+## conditions
+
+###### configuration for deafult cache
+# HTML cache location for calls without kernel
+location ~ ^(/bitrix/html_pages) {
+  index index@.html;
+
+  if (!-f $request_filename) {
+    rewrite ^/bitrix/html_pages(.*)/index@.html$ $1/ break;
+    rewrite ^/bitrix/html_pages(.*)/index@(.*)\.html$ $1/?$2 break;
+    rewrite ^/bitrix/html_pages(.*)@.html$ $1.php break;
+    rewrite ^/bitrix/html_pages(.*)@(.*)\.html$ $1.php?$2 break;
+    proxy_pass $proxyserver;
+  }
+}
+
+# php file processing
+location ~ \.php$ {
+  if ($request_method = POST ) {
+    break;
+    proxy_pass $proxyserver;
+  }
+
+  # If session is not set and HTML cache is enabled, try cached file first
+  set $usecache "";
+  if ($http_cookie !~ "PHPSESSID=" ) { set $usecache "Y"; }
+  if (-f "$docroot/bitrix/html_pages/.enabled") { set $usecache "${usecache}Y"; }
+  if ($usecache = "YY" ) { rewrite ^(.*)\.php$ /bitrix/html_pages$1@$args.html? last; }
+
+  proxy_pass $proxyserver;
+}
+
+# Dynamic pages
+location ~ /$ {
+  rewrite_log on;
+  if ($request_method = POST ) {
+    break;
+    proxy_pass $proxyserver;
+  }
+
+  # If session is not set and HTML cache is enabled, try cached file first
+  set $usecache "";
+  if ($http_cookie !~ "PHPSESSID=" ) { set $usecache "Y"; }
+  if (-f "$docroot/bitrix/html_pages/.enabled") { set $usecache "${usecache}Y"; }
+  if ($usecache = "YY" ) { rewrite ^(.*)/$ /bitrix/html_pages$1/index@$args.html? last; }
+
+  proxy_pass $proxyserver;
+}

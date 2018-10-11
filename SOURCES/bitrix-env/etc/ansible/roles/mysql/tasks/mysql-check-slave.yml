@@ -1,0 +1,12 @@
+---
+# check mysql options
+- name: check replication status on slave
+  delegate_to: "{{ slave_server }}"
+  mysql_replication: mode=getslave login_unix_socket={{ mysql_socket }}
+  ignore_errors: true
+  register: slave
+  tags: slave_facts
+
+- name: replication is configured
+  fail: msg="Replication is already configured on {{ slave_server }}. Exit"
+  when: "{{ slave.Master_Server_Id }} is defined"

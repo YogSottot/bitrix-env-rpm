@@ -1,0 +1,21 @@
+---
+######## role is fits for monitoring server and monitored nodes
+# configure:
+# munin
+# munin-node
+# nagios
+# nrpe
+########
+- name: include variables from temporary config
+  include_vars: "{{ ansible_playbook_file }}"
+  when: "ansible_playbook_file != 'NOT_DEFINED'"
+
+## package installation
+- include: install.yml
+  when: "'enable' in monitoring_status or 'update' in monitoring_status" 
+  static: no
+
+- include: uninstall.yml
+  when: "'disable' in monitoring_status"
+  static: no
+

@@ -1,0 +1,22 @@
+# {{ ansible_managed }}
+# munin 
+location ^~ /munin {
+  # access_log /var/log/monitoring_access_log main;
+  error_log /var/log/nginx/monitoring_error_log error;
+  access_log off;
+
+  auth_basic				"BitrixEnv/BitrixVM munin";
+  auth_basic_user_file	{{ munin_server_htpasswd }};
+  index index.html;
+  root /var/lib;
+}
+
+# nagios server monitoring configuration
+location ^~ /nagios {
+  # access_log /var/log/monitoring_access_log main;
+  error_log /var/log/nginx/monitoring_error_log error;
+  access_log off;
+
+  proxy_pass  $proxyserver;
+}
+

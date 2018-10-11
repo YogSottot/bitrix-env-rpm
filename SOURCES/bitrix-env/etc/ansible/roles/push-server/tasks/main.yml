@@ -1,0 +1,20 @@
+---
+- name: include variables from temporary config
+  include_vars: "{{ ansible_playbook_file }}"
+  when: "ansible_playbook_file != 'NOT_DEFINED'"
+
+- name: additional gathering facts
+  bx_vat: 
+
+- include: remove_nodjs_push-server.yml
+  when: "manage == 'remove_nodjs' and inventory_hostname == hostname"
+  static: no
+
+- include: remove_nodjs_push-server.yml
+  when: "manage == 'configure_nodejs' and inventory_hostname == push_server"
+  static: no
+
+- include: configure_nodjs_push-server.yml
+  when: "manage == 'configure_nodejs' and inventory_hostname == hostname"
+  static: no
+

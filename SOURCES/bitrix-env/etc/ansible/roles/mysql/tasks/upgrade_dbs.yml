@@ -1,0 +1,23 @@
+---
+- name: upgrade cnf options
+  template: src=upgrade_mysql.cnf.j2
+    dest=/etc/mysql/conf.d/upgrade_mysql.cnf
+    owner=root group=mysql mode=0664
+  tags: mysql
+
+- name: restarted mysqld
+  service: name=mysqld state=restarted
+  tags: mysql
+
+- name: upgrade DBs
+  shell: /usr/bin/mysql_upgrade >> /tmp/mysql_upgrade.log 2>&1
+  ignore_errors: true
+  tags: mysql
+
+- name: remove cnf options
+  file: path=/etc/mysql/conf.d/upgrade_mysql.cnf state=absent
+  tags: mysql
+
+- name: restarted mysqld
+  service: name=mysqld state=restarted
+  tags: mysql

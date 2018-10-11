@@ -1,0 +1,48 @@
+---
+# This playbook manage web servers on bitrix-hosts hosts
+- hosts: bitrix-hosts
+  any_errors_fatal: true
+
+# you can modify role by setting manage_web to:
+# update - update settings for all web servers
+  vars:
+    manage_web: NOT_DEFINED
+    new_web_server: NOT_DEFINED
+    deleted_web_server: NOT_DEFINED
+    web_site_name: NOT_DEFINED
+    web_site_type: link
+    web_site_dir: NOT_DEFINED
+    web_site_dbuser: NOT_DEFINED
+    web_site_dbpass_file: NOT_DEFINED
+    web_site_db: NOT_DEFINED
+    web_site_cron: disable
+    fstype: lsync
+    # kernel site name: if it exists in pool
+    web_kernel_site: NOT_DEFINED
+    # kernel site dir
+    web_kernel_root: NOT_DEFINED
+    # netbios domain name (ex. BX)
+    ntlm_name: NOT_DEFINED
+    # full domain name (ex. BX.OFFICE)
+    ntlm_fqdn: NOT_DEFINED
+    # domain password server (ex. DC1.BX.OFFICE)
+    ntlm_dps: NOT_DEFINED
+    # netbios hostname 
+    ntlm_host: NOT_DEFINED
+    # domain admin user
+    ntlm_user: Administrator
+    # password for domain user
+    ntlm_pass: NOT_DEFINED
+    # for secure transmission parameters
+    ansible_playbook_file: NOT_DEFINED
+    # for debug playbook
+    ansible_playbook_debug: NOT_DEFINED
+  roles:
+  - web
+
+- hosts: bitrix-hosts
+  vars:
+    cache_directory: /opt/webdir/tmp
+
+  roles:
+    - cleaner

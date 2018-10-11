@@ -1,0 +1,16 @@
+[Unit]
+Description=Replica Restarter
+After=mysqld.target
+
+[Service]
+Type=forking
+ExecStart=/opt/webdir/bin/pt-slave-restart start
+ExecStop=/opt/webdir/bin/pt-slave-restart stop
+Restart=always
+RestartSec=30
+User=root
+WorkingDirectory=/root
+PIDFile=/var/run/slave_restart.pid
+
+[Install]
+WantedBy=multi-user.target

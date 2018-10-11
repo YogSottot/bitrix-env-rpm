@@ -1,0 +1,13 @@
+---
+# stop mysql service on remote server
+- name: defined bx_system variable
+  set_fact:
+    mysql_service: "{{ hostvars[inventory_hostname]['mysql_service'] }}"
+  tags: vars
+
+- name: stop mysql service
+  service: name={{ mysql_service }} state=stopped
+  tags: mysql
+
+- name: wait closed port
+  wait_for: port={{ mysql_port }} delay=10 timeout=100 state=stopped

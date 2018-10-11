@@ -1,0 +1,17 @@
+# {{ ansible_managed }}
+define contact{
+    contact_name                    {{ nagios_server_login| default('nagiosadmin') }}
+	use				                generic-contact
+    alias                           Nagios Admin
+    email                           {{ monitor_email | default('nagios@localhost') }}
+    {% if notify_nagios is defined %}
+    host_notification_commands      notify-host-by-email-msmtp
+    service_notification_commands   notify-service-by-email-msmtp
+    {% endif %}
+}
+
+define contactgroup{
+    contactgroup_name       admins
+    alias                   Nagios Administrators
+    members                 {{ nagios_server_login| default('nagiosadmin')  }}
+}

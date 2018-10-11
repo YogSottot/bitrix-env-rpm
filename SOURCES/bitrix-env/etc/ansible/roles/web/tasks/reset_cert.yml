@@ -1,0 +1,30 @@
+---
+# reset current certificate settings
+- include: sites-gathering_facts_site_names.yml
+
+- name: delete old settings from nginx config
+  lineinfile:
+    dest: "{{ item.NginxHTTPSFullPath }}"
+    regexp: "ssl.conf;\\s*$"
+    state: absent
+  with_items: "{{ bx_sites_info }}"
+
+- name: delete previously settings
+  bx_blockinfile: insertafter="CERTIFICATE ANSIBLE MANAGED BLOCK" state="delete"
+    dest="{{ item.NginxHTTPSFullPath }}"
+  with_items: "{{ bx_sites_info }}"
+
+- name: add new settings to nginx config 
+  blockinfile:
+    dest: "{{ item.NginxHTTPSFullPath }}"
+    insertbefore: "proxy_set_header"
+    marker: "# CERTIFICATE ANSIBLE MANAGED BLOCK"
+    content: |
+      include bx/conf/ssl.conf;
+  with_items: "{{ bx_sites_info }}"
+
+- name: restart nginx
+  service: 
+    name: nginx
+    state: restarted
+

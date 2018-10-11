@@ -1,0 +1,34 @@
+---
+# delete web role from the server
+- include: sites-gathering_facts.yml
+
+# commit current configuration
+- include: common-etckeeper.yml
+  vars: 
+    task_type: "delete_web_{{ deleted_web_server }}"  
+
+# delete csync configuration
+- include: remove_csync.yml
+  when: "fstype == 'csync'"
+
+# delete lsync configuration
+- include: remove_lsync.yml
+  when: "fstype == 'lsync'"
+
+- include: remove_sites_directories.yml
+  when: "inventory_hostname == deleted_web_server"
+
+- include: revert_web_configs.yml
+  when: "inventory_hostname == deleted_web_server"
+
+# register web nodes on sites
+- include: sites-cache_directory-execute.yml
+  vars:
+    php_script: delete_web_node_on_cluster.php
+    php_server: "{{ cluster_web_server }}"
+  when: "inventory_hostname == deleted_web_server"
+
+# remove web option from host
+- include: remove_sites_inventory.yml
+  when: "inventory_hostname == deleted_web_server"
+

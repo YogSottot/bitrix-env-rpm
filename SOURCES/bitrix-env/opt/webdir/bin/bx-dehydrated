@@ -1,0 +1,27 @@
+#!/bin/bash
+export LANG=en_US.UTF-8
+export NOLOCALE=yes
+export PATH=/sbin:/bin:/usr/sbin:/usr/bin
+
+OS_VERSION=$(cat /etc/redhat-release | \
+    sed -e "s/CentOS Linux release//;s/CentOS release // " | cut -d'.' -f1 | \
+    sed -e "s/\s\+//g")
+
+LOG=/home/bitrix/dehydrated_update.log
+CERT_DIR=/home/bitrix/dehydrated/certs
+
+# update certificates
+/home/bitrix/dehydrated/dehydrated -c > $LOG 2>&1
+
+# restart web service
+new_cnt=$(find $CERT_DIR/ -type f -mtime -1 | wc -l)
+if [[ $new_cnt -gt 0 ]]; then
+    if [[ $OS_VERSION -eq 7 ]]; then
+        systemctl restart nginx >> $LOG 2>&1
+    else
+        service nginx restart >> $LOG 2>&1
+    fi
+fi
+
+# delete old certificates
+find $CERT_DIR/ -type f -mtime +120 -delete >>$LOG 2>&1

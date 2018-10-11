@@ -1,0 +1,70 @@
+---
+#### Munin
+##
+munin_server_include_dir:  /etc/munin/conf.d
+munin_server_data_dir: /var/lib/munin
+munin_server_logs_dir: /var/log/munin
+munin_client_logs_dir: /var/log/munin-node
+munin_server_user: munin
+munin_server_group: bitrix
+munin_server_login: admin
+# default password, it can be changed via variable
+munin_server_password: muninBitrixMon
+munin_server_htpasswd: /etc/munin/passwd
+munin_graph_group: cluster_hosts
+munin_plugins_state_dir: plugin-state
+##
+#### /Munin
+
+#### Nagios
+##
+nagios_server_include_dir: /etc/nagios/bitrix-pool
+nagios_server_data_dir: /var/spool/nagios
+nagios_server_log_dir: /var/log/nagios
+nagios_server_user: nagios
+nagios_server_group: bitrix
+nagios_server_login: nagiosadmin
+# default password, it can be changed via variable
+nagios_server_password: nagiosBitrixMon
+nagios_server_htpasswd: /etc/nagios/passwd
+nagios_msmtp_config: /etc/nagios/.msmtprc
+##
+#### /Nagios
+
+#### NRPE
+##
+nrpe_server_include_dir: /etc/nrpe.d
+nrpe_server_user: nrpe
+nrpe_server_data_dir: /var/run/nrpe
+nrpe_server_group: bitrix
+
+##
+#### /NRPE
+
+#### Munin-node
+##
+munin_node_user: root
+munin_node_group: root
+
+#### monitoring plugins
+apache_monitoring_netaddr: 127.0.0.1
+apache_monitoring_port: 8886
+apache_monitoring_page: /server-status
+apache_user: bitrix
+apache_group: apache
+new_web_server: NOT_DEFINED
+deleted_web_server: NOT_DEFINED
+
+#### monitoring plugins
+nginx_monitoring_netaddr: 127.0.0.1
+nginx_monitoring_port: 8885
+
+sphinx_general_listen: 9312
+sphinx_mysqlproto_listen: 9306
+
+common_manage: update
+common_server: NOT_DEFINED
+common_config: NOT_DEFINED
+ansible_playbook_file: NOT_DEFINED
+monitoring_status: update
+

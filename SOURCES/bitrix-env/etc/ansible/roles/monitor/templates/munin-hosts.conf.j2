@@ -1,0 +1,10 @@
+# {{ ansible_managed }}
+
+# hosts definitions
+{% for host in groups['bitrix-hosts'] %}
+{% set hostname = hostvars[host].bx_host|default(host) %}
+[{{ munin_graph_group }};{{ hostname }}]
+  address {{ hostvars[host].bx_netaddr }}
+
+{% endfor %}
+

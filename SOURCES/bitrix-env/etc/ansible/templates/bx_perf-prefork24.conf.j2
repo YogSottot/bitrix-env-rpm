@@ -1,0 +1,9 @@
+# from bitrix_env
+# memory: {{ max_memory }}MB
+<IfModule mpm_prefork_module>
+  StartServers        {{ start_servers }}
+  MinSpareServers     {{ start_servers }}
+  MaxSpareServers     {{ start_servers }}
+  MaxRequestWorkers   {{ start_servers }}
+  MaxRequestsPerChild 5000
+</IfModule>

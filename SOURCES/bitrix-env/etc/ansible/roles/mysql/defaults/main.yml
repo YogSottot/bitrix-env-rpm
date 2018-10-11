@@ -1,0 +1,328 @@
+---
+## default values for slaves server
+# master server
+master_server: bob
+master_serverid: 1
+
+cache_directory: /opt/webdir/tmp
+
+## usage in host connection and creation users ( you can set it in personal host files host_vars/<hostname> )
+mysql_password:
+mysql_login: root
+#
+## usage for replication process ( it must be the same for all host in cluster group for ease of switching, you can set it in group file group_vars/<groupname> )
+# replica_password:
+replica_login: bx_repluser
+#
+## usage in bx cluster management 
+# cluster_password:
+cluster_login: bx_clusteruser
+#
+# configuration file with replication options
+replica_config: /etc/mysql/conf.d/bx_replica.cnf
+master_config: /etc/mysql/conf.d/bx_master.cnf
+
+# mysql option ( you can set it on host in own file in host_vars/<hostname>)
+mysql_host: localhost
+mysql_port: 3306
+mysql_socket: /var/lib/mysqld/mysqld.sock
+mysql_playbook: cluster
+
+nginx_disable_www: /var/www/bitrixenv_disabled
+nginx_disable_cfg: /etc/nginx/bx/site_disabled
+nginx_enabled_cfg: /etc/nginx/bx/site_enabled
+nginx_availab_cfg: /etc/nginx/bx/site_avaliable
+nginx_user: bitrix
+nginx_group: bitrix
+site_stopped: Y
+
+percona_release_rpm: "http://www.percona.com/downloads/percona-release/redhat/0.1-4/percona-release-0.1-4.noarch.rpm"
+
+# ansible temporary folder for php-script
+bx_ansible_owner: root
+bx_ansible_group: bitrix
+bx_ansible_executer: bitrix
+# bvat settings
+bvat_settings:
+  general:
+    type1:
+      query_cache_size: 32M
+      query_cache_limit: 2M
+      max_connections: 12
+      table_open_cache: 4096
+      thread_cache_size: 32
+      max_heap_table_size: 32M
+      tmp_table_size: 32M
+      key_buffer: 16M
+      join_buffer_size: 2M
+      sort_buffer_size: 2M
+      bulk_insert_buffer_size: 2M
+      myisam_sort_buffer_size: 2M
+      innodb_buffer_pool_size: 64
+    type2:
+      query_cache_size: 64M
+      query_cache_limit: 4M
+      max_connections: 18
+      table_open_cache: 4096
+      thread_cache_size: 64
+      max_heap_table_size: 64M
+      tmp_table_size: 64M
+      key_buffer: 16M
+      join_buffer_size: 4M
+      sort_buffer_size: 4M
+      bulk_insert_buffer_size: 2M
+      myisam_sort_buffer_size: 2M
+      innodb_buffer_pool_size: 128
+    type3:
+      query_cache_size: 128M
+      query_cache_limit: 8M
+      max_connections: 20
+      table_open_cache: 8096
+      thread_cache_size: 32
+      max_heap_table_size: 128M
+      tmp_table_size: 128M
+      key_buffer: 16M
+      join_buffer_size: 8M
+      sort_buffer_size: 8M
+      bulk_insert_buffer_size: 2M
+      myisam_sort_buffer_size: 2M
+      innodb_buffer_pool_size: 256
+    type4:
+      query_cache_size: 128M
+      query_cache_limit: 8M
+      max_connections: 20
+      table_open_cache: 8096
+      thread_cache_size: 32
+      max_heap_table_size: 128M
+      tmp_table_size: 128M
+      key_buffer: 16M
+      join_buffer_size: 12M
+      sort_buffer_size: 8M
+      bulk_insert_buffer_size: 2M
+      myisam_sort_buffer_size: 2M
+      innodb_buffer_pool_size: 512
+    type5:
+      query_cache_size: 128M
+      query_cache_limit: 8M
+      max_connections: 20
+      table_open_cache: 8096
+      thread_cache_size: 32
+      max_heap_table_size: 128M
+      tmp_table_size: 128M
+      key_buffer: 32M
+      join_buffer_size: 12M
+      sort_buffer_size: 8M
+      bulk_insert_buffer_size: 2M
+      myisam_sort_buffer_size: 2M
+      innodb_buffer_pool_size: 512
+    type6:
+      query_cache_size: 128M
+      query_cache_limit: 8M
+      max_connections: 20
+      table_open_cache: 8096
+      thread_cache_size: 32
+      max_heap_table_size: 128M
+      tmp_table_size: 128M
+      key_buffer: 64M
+      join_buffer_size: 12M
+      sort_buffer_size: 8M
+      bulk_insert_buffer_size: 2M
+      myisam_sort_buffer_size: 8M
+      innodb_buffer_pool_size: 756
+    type7:
+      query_cache_size: 128M
+      query_cache_limit: 8M
+      max_connections: 20
+      table_open_cache: 8096
+      thread_cache_size: 32
+      max_heap_table_size: 128M
+      tmp_table_size: 128M
+      key_buffer: 64M
+      join_buffer_size: 12M
+      sort_buffer_size: 8M
+      bulk_insert_buffer_size: 2M
+      myisam_sort_buffer_size: 8M
+      innodb_buffer_pool_size: 1024
+    type8:
+      query_cache_size: 128M
+      query_cache_limit: 8M
+      max_connections: 30
+      table_open_cache: 10240
+      thread_cache_size: 32
+      max_heap_table_size: 128M
+      tmp_table_size: 128M
+      key_buffer: 64M
+      join_buffer_size: 12M
+      sort_buffer_size: 8M
+      bulk_insert_buffer_size: 2M
+      myisam_sort_buffer_size: 8M
+      innodb_buffer_pool_size: 1512
+    type9:
+      query_cache_size: 128M
+      query_cache_limit: 8M
+      max_connections: 40
+      table_open_cache: 10240
+      thread_cache_size: 32
+      max_heap_table_size: 128M
+      tmp_table_size: 128M
+      key_buffer: 64M
+      join_buffer_size: 12M
+      sort_buffer_size: 8M
+      bulk_insert_buffer_size: 2M
+      myisam_sort_buffer_size: 8M
+      innodb_buffer_pool_size: 3072
+    type10:
+      query_cache_size: 128M
+      query_cache_limit: 8M
+      max_connections: 60
+      table_open_cache: 14240
+      thread_cache_size: 32
+      max_heap_table_size: 128M
+      tmp_table_size: 128M
+      key_buffer: 128M
+      join_buffer_size: 12M
+      sort_buffer_size: 12M
+      bulk_insert_buffer_size: 2M
+      myisam_sort_buffer_size: 8M
+      innodb_buffer_pool_size: 6144
+openvz:
+    type1:
+      query_cache_size: 16M
+      query_cache_limit: 1M
+      max_connections: 10
+      table_open_cache: 1024
+      thread_cache_size: 8
+      max_heap_table_size: 8M
+      tmp_table_size: 8M
+      key_buffer: 4M
+      join_buffer_size: 1M
+      sort_buffer_size: 1M
+      bulk_insert_buffer_size: 1M
+      myisam_sort_buffer_size: 2M
+      innodb_buffer_pool_size: 32
+    type2:
+      query_cache_size: 32M
+      query_cache_limit: 2M
+      max_connections: 10
+      table_open_cache: 4048
+      thread_cache_size: 8
+      max_heap_table_size: 16M
+      tmp_table_size: 16M
+      key_buffer: 8M
+      join_buffer_size: 2M
+      sort_buffer_size: 2M
+      bulk_insert_buffer_size: 1M
+      myisam_sort_buffer_size: 4M
+      innodb_buffer_pool_size: 64
+    type3:
+      query_cache_size: 64M
+      query_cache_limit: 2M
+      max_connections: 20
+      table_open_cache: 4048
+      thread_cache_size: 32
+      max_heap_table_size: 64M
+      tmp_table_size: 64M
+      key_buffer: 8M
+      join_buffer_size: 4M
+      sort_buffer_size: 4M
+      bulk_insert_buffer_size: 2M
+      myisam_sort_buffer_size: 8M
+      innodb_buffer_pool_size: 128
+    type4:
+      query_cache_size: 96M
+      query_cache_limit: 8M
+      max_connections: 20
+      table_open_cache: 4048
+      thread_cache_size: 32
+      max_heap_table_size: 128M
+      tmp_table_size: 128M
+      key_buffer: 16M
+      join_buffer_size: 8M
+      sort_buffer_size: 4M
+      bulk_insert_buffer_size: 2M
+      myisam_sort_buffer_size: 8M
+      innodb_buffer_pool_size: 128
+    type5:
+      query_cache_size: 128M
+      query_cache_limit: 8M
+      max_connections: 20
+      table_open_cache: 4048
+      thread_cache_size: 32
+      max_heap_table_size: 128M
+      tmp_table_size: 128M
+      key_buffer: 16M
+      join_buffer_size: 8M
+      sort_buffer_size: 4M
+      bulk_insert_buffer_size: 2M
+      myisam_sort_buffer_size: 8M
+      innodb_buffer_pool_size: 512
+    type6:
+      query_cache_size: 128M
+      query_cache_limit: 8M
+      max_connections: 20
+      table_open_cache: 4048
+      thread_cache_size: 32
+      max_heap_table_size: 128M
+      tmp_table_size: 128M
+      key_buffer: 16M
+      join_buffer_size: 8M
+      sort_buffer_size: 8M
+      bulk_insert_buffer_size: 2M
+      myisam_sort_buffer_size: 8M
+      innodb_buffer_pool_size: 512
+    type7:
+      query_cache_size: 128M
+      query_cache_limit: 16M
+      max_connections: 30
+      table_open_cache: 8048
+      thread_cache_size: 32
+      max_heap_table_size: 128M
+      tmp_table_size: 128M
+      key_buffer: 16M
+      join_buffer_size: 8M
+      sort_buffer_size: 8M
+      bulk_insert_buffer_size: 2M
+      myisam_sort_buffer_size: 8M
+      innodb_buffer_pool_size: 1024
+    type8:
+      query_cache_size: 128M
+      query_cache_limit: 16M
+      max_connections: 30
+      table_open_cache: 8048
+      thread_cache_size: 32
+      max_heap_table_size: 128M
+      tmp_table_size: 128M
+      key_buffer: 16M
+      join_buffer_size: 8M
+      sort_buffer_size: 8M
+      bulk_insert_buffer_size: 2M
+      myisam_sort_buffer_size: 8M
+      innodb_buffer_pool_size: 1512
+    type9:
+      query_cache_size: 128M
+      query_cache_limit: 16M
+      max_connections: 30
+      table_open_cache: 10048
+      thread_cache_size: 32
+      max_heap_table_size: 128M
+      tmp_table_size: 128M
+      key_buffer: 16M
+      join_buffer_size: 8M
+      sort_buffer_size: 8M
+      bulk_insert_buffer_size: 2M
+      myisam_sort_buffer_size: 8M
+      innodb_buffer_pool_size: 2048
+    type10:
+      query_cache_size: 128M
+      query_cache_limit: 16M
+      max_connections: 30
+      table_open_cache: 10048
+      thread_cache_size: 32
+      max_heap_table_size: 128M
+      tmp_table_size: 128M
+      key_buffer: 16M
+      join_buffer_size: 8M
+      sort_buffer_size: 8M
+      bulk_insert_buffer_size: 2M
+      myisam_sort_buffer_size: 8M
+      innodb_buffer_pool_size: 4096

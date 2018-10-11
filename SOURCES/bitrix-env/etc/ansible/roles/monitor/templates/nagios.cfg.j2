@@ -1,0 +1,333 @@
+##############################################################################
+#
+# NAGIOS.CFG
+# {{ ansible_managed }}
+#
+##############################################################################
+{% set is_nagios3 = true %}
+{% set nagios_pid = '/var/run/nagios.pid' %}
+{% if ansible_distribution == 'CentOS' and ansible_distribution_major_version == '7' %}
+{% set is_nagios3 = false %}
+{% set nagios_pid = '/var/run/nagios/nagios.pid' %}
+{% endif %}
+
+
+# LOG FILE
+log_file={{ nagios_server_log_dir }}/nagios.log
+
+
+# OBJECT CONFIGURATION FILE(S)
+# You can specify individual object config files as shown below:
+cfg_file=/etc/nagios/objects/commands.cfg
+cfg_file=/etc/nagios/objects/contacts.cfg
+cfg_file=/etc/nagios/objects/timeperiods.cfg
+cfg_file=/etc/nagios/objects/templates.cfg
+
+# Definitions for monitoring the local (Linux) host
+cfg_file=/etc/nagios/objects/localhost.cfg
+cfg_dir=/etc/nagios/conf.d
+
+# Directory for bitrix-hosts
+cfg_dir={{ nagios_server_include_dir }}
+
+# OBJECT CACHE FILE
+object_cache_file={{ nagios_server_data_dir }}/objects.cache
+
+# PRE-CACHED OBJECT FILE
+precached_object_file={{ nagios_server_data_dir }}/objects.precache
+
+# RESOURCE FILE
+resource_file=/etc/nagios/private/resource.cfg
+
+# STATUS FILE
+status_file={{ nagios_server_log_dir }}/status.dat
+
+# STATUS FILE UPDATE INTERVAL
+status_update_interval=10
+
+# NAGIOS USER and GROUP
+nagios_user={{ nagios_server_user }}
+nagios_group={{ nagios_server_group }}
+
+# EXTERNAL COMMAND OPTION
+check_external_commands=1
+
+# EXTERNAL COMMAND FILE
+command_file={{ nagios_server_data_dir }}/cmd/nagios.cmd
+
+# LOCK FILE
+#
+lock_file={{ nagios_pid }}
+
+# TEMP FILE
+temp_file={{ nagios_server_log_dir }}/nagios.tmp
+
+# TEMP PATH
+temp_path=/tmp
+
+# EVENT BROKER OPTIONS
+event_broker_options=-1
+
+# LOG ROTATION METHOD
+log_rotation_method=d
+
+# LOG ARCHIVE PATH
+log_archive_path={{ nagios_server_log_dir }}/archives
+
+# LOGGING OPTIONS
+use_syslog=0
+
+# NOTIFICATION LOGGING OPTION
+log_notifications=1
+
+# SERVICE RETRY LOGGING OPTION
+log_service_retries=1
+
+# HOST RETRY LOGGING OPTION
+log_host_retries=1
+
+# EVENT HANDLER LOGGING OPTION
+log_event_handlers=1
+
+# INITIAL STATES LOGGING OPTION
+log_initial_states=0
+
+# EXTERNAL COMMANDS LOGGING OPTION
+log_external_commands=1
+
+# PASSIVE CHECKS LOGGING OPTION
+log_passive_checks=1
+
+# SERVICE INTER-CHECK DELAY METHOD
+service_inter_check_delay_method=s
+
+# MAXIMUM SERVICE CHECK SPREAD
+max_service_check_spread=30
+
+# SERVICE CHECK INTERLEAVE FACTOR
+service_interleave_factor=s
+
+# HOST INTER-CHECK DELAY METHOD
+host_inter_check_delay_method=s
+
+# MAXIMUM HOST CHECK SPREAD
+max_host_check_spread=30
+
+# MAXIMUM CONCURRENT SERVICE CHECKS
+max_concurrent_checks=0
+
+# HOST AND SERVICE CHECK REAPER FREQUENCY
+check_result_reaper_frequency=10
+
+# MAX CHECK RESULT REAPER TIME
+max_check_result_reaper_time=30
+
+# CHECK RESULT PATH
+check_result_path={{ nagios_server_data_dir }}/checkresults
+
+# MAX CHECK RESULT FILE AGE
+max_check_result_file_age=3600
+
+# CACHED HOST CHECK HORIZON
+cached_host_check_horizon=15
+
+# CACHED SERVICE CHECK HORIZON
+cached_service_check_horizon=15
+
+# ENABLE PREDICTIVE HOST DEPENDENCY CHECKS
+enable_predictive_host_dependency_checks=1
+
+# ENABLE PREDICTIVE SERVICE DEPENDENCY CHECKS
+enable_predictive_service_dependency_checks=1
+
+# SOFT STATE DEPENDENCIES
+soft_state_dependencies=0
+
+# AUTO-RESCHEDULING OPTION
+auto_reschedule_checks=0
+
+# AUTO-RESCHEDULING INTERVAL
+auto_rescheduling_interval=30
+
+# AUTO-RESCHEDULING WINDOW
+auto_rescheduling_window=180
+
+# TIMEOUT VALUES
+service_check_timeout=60
+host_check_timeout=30
+event_handler_timeout=30
+notification_timeout=30
+ocsp_timeout=5
+perfdata_timeout=5
+
+# RETAIN STATE INFORMATION
+retain_state_information=1
+
+# STATE RETENTION FILE
+state_retention_file={{ nagios_server_log_dir }}/retention.dat
+
+# RETENTION DATA UPDATE INTERVAL
+retention_update_interval=60
+
+# USE RETAINED PROGRAM STATE
+use_retained_program_state=1
+
+# USE RETAINED SCHEDULING INFO
+use_retained_scheduling_info=1
+
+# RETAINED ATTRIBUTE MASKS (ADVANCED FEATURE)
+# This mask determines what host attributes are not retained
+retained_host_attribute_mask=0
+
+# This mask determines what service attributes are not retained
+retained_service_attribute_mask=0
+
+# These two masks determine what process attributes are not retained.
+retained_process_host_attribute_mask=0
+retained_process_service_attribute_mask=0
+
+# These two masks determine what contact attributes are not retained.
+retained_contact_host_attribute_mask=0
+retained_contact_service_attribute_mask=0
+
+# INTERVAL LENGTH
+interval_length=60
+
+# CHECK FOR UPDATES
+check_for_updates=0
+
+# BARE UPDATE CHECK
+bare_update_check=0
+
+# AGGRESSIVE HOST CHECKING OPTION
+use_aggressive_host_checking=0
+
+# SERVICE CHECK EXECUTION OPTION
+execute_service_checks=1
+
+# PASSIVE SERVICE CHECK ACCEPTANCE OPTION
+accept_passive_service_checks=1
+
+# HOST CHECK EXECUTION OPTION
+execute_host_checks=1
+
+# PASSIVE HOST CHECK ACCEPTANCE OPTION
+accept_passive_host_checks=1
+
+# NOTIFICATIONS OPTION
+enable_notifications=1
+
+# EVENT HANDLER USE OPTION
+enable_event_handlers=1
+
+# PROCESS PERFORMANCE DATA OPTION
+process_performance_data=0
+
+# OBSESS OVER SERVICE CHECKS OPTION
+obsess_over_services=0
+
+# OBSESS OVER HOST CHECKS OPTION
+obsess_over_hosts=0
+
+# TRANSLATE PASSIVE HOST CHECKS OPTION
+translate_passive_host_checks=0
+
+# PASSIVE HOST CHECKS ARE SOFT OPTION
+passive_host_checks_are_soft=0
+
+# ORPHANED HOST/SERVICE CHECK OPTIONS
+check_for_orphaned_services=1
+check_for_orphaned_hosts=1
+
+# SERVICE FRESHNESS CHECK OPTION
+check_service_freshness=1
+
+# SERVICE FRESHNESS CHECK INTERVAL
+service_freshness_check_interval=60
+
+# SERVICE CHECK TIMEOUT STATE
+service_check_timeout_state=c
+
+# HOST FRESHNESS CHECK OPTION
+check_host_freshness=0
+
+# HOST FRESHNESS CHECK INTERVAL
+host_freshness_check_interval=60
+
+# ADDITIONAL FRESHNESS THRESHOLD LATENCY
+additional_freshness_latency=15
+
+# FLAP DETECTION OPTION
+enable_flap_detection=1
+
+# FLAP DETECTION THRESHOLDS FOR HOSTS AND SERVICES
+low_service_flap_threshold=5.0
+high_service_flap_threshold=20.0
+low_host_flap_threshold=5.0
+high_host_flap_threshold=20.0
+
+# DATE FORMAT OPTION
+date_format=eu
+
+{% if is_nagios3 %}
+# P1.PL FILE LOCATION
+p1_file=/usr/sbin/p1.pl
+
+# EMBEDDED PERL INTERPRETER OPTION
+enable_embedded_perl=1
+
+# EMBEDDED PERL USAGE OPTION
+use_embedded_perl_implicitly=1
+
+# SLEEP TIME
+sleep_time=0.25
+
+# EXTERNAL COMMAND BUFFER SLOTS
+external_command_buffer_slots=4096
+
+# EXTERNAL COMMAND CHECK INTERVAL
+#command_check_interval=15s
+command_check_interval=-1
+
+{% else %}
+query_socket={{ nagios_server_data_dir }}/cmd/nagios.qh
+
+{% endif %}
+
+# ILLEGAL OBJECT NAME CHARACTERS
+illegal_object_name_chars=`~!$%^&*|'"<>?,()=
+
+# ILLEGAL MACRO OUTPUT CHARACTERS
+illegal_macro_output_chars=`~$&|'"<>
+
+# REGULAR EXPRESSION MATCHING
+use_regexp_matching=0
+
+# "TRUE" REGULAR EXPRESSION MATCHING
+use_true_regexp_matching=0
+
+# ADMINISTRATOR EMAIL/PAGER ADDRESSES
+admin_email=nagios@localhost
+admin_pager=pagenagios@localhost
+
+# DAEMON CORE DUMP OPTION
+daemon_dumps_core=0
+
+# LARGE INSTALLATION TWEAKS OPTION
+use_large_installation_tweaks=0
+
+# ENABLE ENVIRONMENT MACROS
+enable_environment_macros=1
+
+# DEBUG LEVEL
+debug_level=0
+
+# DEBUG VERBOSITY
+debug_verbosity=1
+
+# DEBUG FILE
+debug_file={{ nagios_server_log_dir }}/nagios.debug
+
+# MAX DEBUG FILE SIZE
+max_debug_file_size=1000000
+

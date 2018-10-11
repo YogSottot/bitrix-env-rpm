@@ -1,0 +1,22 @@
+---
+# check next options for sites installed on master server
+# -- all sites have installed sacel module
+# -- all sites have installed cluster module
+- name: default values
+  set_fact: 
+    test_without_cluster: 0 
+    test_without_scale: 0
+  tags: site_facts
+
+- name: gathering facts about site
+  delegate_to: "{{ cluster_web_server }}"
+  bx_facts: name=cluster_test
+  tags: sites_facts
+
+- name: check scale module
+  fail: msg="Found sites={{ test_without_scale }} without scale module"
+  when: test_without_scale > 0
+
+- name: check cluster module
+  fail: msg="Found sites={{ test_without_cluster }} without cluster module"
+  when: test_without_cluster > 0

@@ -1,0 +1,22 @@
+---
+# This playbook manage mysql on bitrix-mysql hosts
+- hosts: bitrix-hosts
+  any_errors_fatal: true
+  vars:
+    mysql_manage: update
+    cluster_login: bx_clusteruser
+    replica_login: bx_replica
+    slave_server: NOT_DEFINED
+    ansible_playbook_file: NOT_DEFINED
+    ansible_playbook_debug: NOT_DEFINED
+
+  roles:
+    - mysql
+
+- hosts: bitrix-hosts
+  vars:
+    cache_directory: /opt/webdir/tmp
+
+  roles:
+    - cleaner
+

@@ -1,0 +1,6 @@
+{% set password_esc = password | regex_replace('([\'\\\\])','\\\\\\1') -%}
+# {{ ansible_managed }}
+[client]
+user={{ mysql_login }}
+password='{{ password_esc }}'
+socket={{ mysql_socket }}

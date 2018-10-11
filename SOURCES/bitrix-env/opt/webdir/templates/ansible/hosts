@@ -1,0 +1,19 @@
+# Bitrix VM default configuration group
+[bitrix-hosts]
+{{ hostname }}   ansible_connection=local ansible_ssh_host={{ host_ip_address }}
+
+[bitrix-mgmt]
+{{ hostname }}   ansible_connection=local ansible_ssh_host={{ host_ip_address }}
+
+
+[bitrix-web]
+{{ hostname }}   ansible_connection=local ansible_ssh_host={{ host_ip_address }}
+
+[bitrix-mysql]
+{{ hostname }}   ansible_connection=local ansible_ssh_host={{ host_ip_address }}
+
+[bitrix-memcached]
+
+[bitrix-sphinx]
+
+[bitrix-push]

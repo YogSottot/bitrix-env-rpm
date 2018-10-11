@@ -1,0 +1,26 @@
+###############################################################################
+# localhost
+# {{ ansible_managed }}
+###############################################################################
+define hostgroup{
+  hostgroup_name  linux-servers
+  alias           Linux Servers
+}
+
+# bitrix-mysql
+define hostgroup {
+  hostgroup_name bitrix-mysql
+  alias          MySQL Servers
+  {% for host in groups['bitrix-mysql'] %}
+  members {{ host }}
+  {% endfor %}
+}
+
+# bitrix-web
+define hostgroup {
+  hostgroup_name bitrix-web
+  alias          Web Servers
+  {% for host in groups['bitrix-web'] %}
+  members {{ host }}
+  {% endfor %}
+}

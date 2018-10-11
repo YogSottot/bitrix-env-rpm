@@ -1,0 +1,54 @@
+<?
+// {{ ansible_managed }}
+// check if matser record exists in the main database
+$_SERVER["DOCUMENT_ROOT"] = '{{ item.DocumentRoot }}';
+$DOCUMENT_ROOT = $_SERVER["DOCUMENT_ROOT"];
+define("NO_KEEP_STATISTIC", true);
+define("NOT_CHECK_PERMISSIONS",true);
+define('BX_NO_ACCELERATOR_RESET', true);
+require($_SERVER["DOCUMENT_ROOT"]."/bitrix/modules/main/include/prolog_before.php");
+
+if(!CModule::IncludeModule('cluster'))
+{
+  echo "Not found cluster module for {{ item.SiteName }}";
+  return 0;
+};
+
+// register variables for node
+$dbHost = "{{ inventory_hostname }}";
+$dbLogin = "{{ cluster_login }}";
+$dbPassword = "{{ cluster_password }}";
+$dbName = "{{ item.DBName }}";
+$masterHost = "{{ master_server }}";
+$masterID = "1";
+$slaveRole  = "{{ mysql_replication_role }}";
+// Y|N
+$slaveActive = "{{ mysql_active|default('Y') }}";
+// return values
+$OK   = array( 0, 'Ok' );
+$ERR  = array( 1, 'Error');
+
+$dbNode = new CClusterDBNode;
+$rsNodes = $dbNode->GetList(
+  array(),
+  array(
+    "=ROLE_ID" => array("MAIN"),
+    "=MASTER_ID" => false,
+  )
+);
+
+if($arNode = $rsNodes->Fetch())
+{
+  $masterId = $arNode["ID"];
+  $groupID = $arNode["GROUP_ID"];
+}
+else
+{
+  throw new Exception("Can't determine MASTER_ID ang GROUP_ID");
+
+}
+
+$returnResult = intval($masterID)>0 ? $OK : $ERR;
+return $returnResult[0];
+
+?>

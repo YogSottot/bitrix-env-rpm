@@ -1,0 +1,86 @@
+# Произошла ошибка при запросе статуса мониторинга
+MON0001="Error requesting monitoring status."
+# Статус системы мониторинга
+MON0002="Monitoring system status:"
+# Сервер мониторинга
+MON0003="Monitoring server:"
+MON0004="Nagios url:       "
+MON0005="Munin  url:       "
+# Мастер установки использует следующие настройки
+# Munin web-интерфейс
+# Nagios web-интерфейс
+MON0006="The installation wizard is using the following settings:"
+MON0007=" Munin web interface: "
+MON0008=" Nagios web interface:"
+# Хотите ли Вы изменить стандартные логин и пароль для мониторинга?
+MON0009="Do you want to change the standard login and password for the monitoring system (Y|n)? "
+# ПОжалуйста введите.. (по умолчнию используется __OPT1__)
+MON0010="Please enter the nagios login (default: __OPT1__): "
+MON0011="Please enter the munin login (default: __OPT1__): "
+# По умолчанию конфигурация Nagios предполагает использование локального root-аккаунта для уведомлений.
+# Хотите ли Вы настроить другой почтовый адрес для получения оповещений?
+MON0012="The Nagios installation use the local root account for notifications."
+MON0013="Do you want to set up another email address to receive alerts? (Y|n)"
+# Превышено количество попыток
+MON0014="Exceeded the number of attempts"
+# Настройка почтовых опций:
+MON0015="Configure email settings:"
+# Введите email адрес. 
+# Адрес не может быть пустым
+MON0016="Enter the email address (ex. bob@example.org): "
+MON0017="Email cannot be empty"
+# Введите адрес сервера|порт сервера
+MON0018="Enter the server address or DNS (default: 127.0.0.1): "
+MON0019="Enter the server port (default: 25): "
+# Хотите ли Вы использовать SMTP аутентификацию на сервере?
+MON0020="Do you want to use SMTP authentication on the __OPT1__ (N|y): "
+# Введите логин|пароль
+MON0021="Enter login (default: __OPT1__): "
+MON0022="Enter password: "
+# Введите тип метода SMTP аутентификации
+MON0023="Enter SMTP authentication type (default: auto): "
+# Список доступных методов: 
+MON0024="Available authentication types are:"
+# Введенный метод не подерживается
+MON0025="Authentication type __OPT1__ is not supported."
+# Хотите ли Вы включить TLS шифрование?
+MON0026="Enable TLS (n|Y)? "
+
+# Настройка сервисов мониторинга
+MON0027="Configure monitoring services"
+# Мастер настройки сконфигурирует два сервиса мониторинга
+# -- утилиту мониторинга Munin
+# -- сервер мониторинга Nagios
+MON0028="The installation wizard will configure the two monitoring services: 
+ -- Munin monitoring tool
+ -- Nagios monitoring service"
+
+MON0029="The installation wizard will disable the monitoring services: 
+ -- Munin monitoring tool
+ -- Nagios monitoring service"
+
+# Пожалуйста, подтвердите процедуру отключения
+MON0030="Please confirm disabling the monitoring system (N|y)"
+# ОТключение мониторинга
+MON0031="Disable monitoring"
+# Обновление настроек мониторинга
+MON0032="Update monitoring settings"
+
+# Меню
+MON0033="1. Configure monitoring services"
+MON0034="2. Disable monitoring services"
+MON0035="3. Update monitoring settings"
+MON0036="Manage monitoring services"
+
+MON0200="Press ENTER to exit."
+MON0201="0. Previous screen or exit"
+MON0202="Enter 0 to exit:"
+MON0203="Enter 1 to start process or 0 to exit:"
+MON0204="Enter hostname or 0 to exit: "
+MON0205="Enter your choice: "
+# Не найден сервер с именем=ИМЯ в пуле.
+MON0206="Cannot find server __OPT1__ in the pool."
+# Не найдено подходящих серверов для настройки мониторинга
+MON0209="No suitable servers were found to configure the monitoring service"
+MON0210="Press ENTER and try again"
+

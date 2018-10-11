@@ -1,0 +1,14 @@
+# {{ ansible_managed }}
+# https://dev.1c-bitrix.ru/learning/course/?COURSE_ID=37&LESSON_ID=6932
+# 'notify-host-by-email-msmtp' command definition
+define command{
+    command_name    notify-host-by-email-msmtp
+    command_line   /usr/bin/printf "%b" "Subject: ** $NOTIFICATIONTYPE$ Host Alert: $HOSTNAME$ is $HOSTSTATE$ **\n\n ***** Nagios *****\n\nNotification Type: $NOTIFICATIONTYPE$\nHost: $HOSTNAME$\nState: $HOSTSTATE$\nAddress: $HOSTADDRESS$\nInfo: $HOSTOUTPUT$\n\nDate/Time: $LONGDATETIME$\n" | /usr/bin/msmtp -C {{ nagios_msmtp_config }} $CONTACTEMAIL$
+            
+}
+
+# 'notify-service-by-email-msmtp' command definition
+define command{
+    command_name    notify-service-by-email-msmtp
+    command_line   /usr/bin/printf "%b" "Subject: ** $NOTIFICATIONTYPE$ Service Alert: $HOSTALIAS$/$SERVICEDESC$ is $SERVICESTATE$ **\n\n ***** Nagios *****\n\nNotification Type: $NOTIFICATIONTYPE$\n\nService: $SERVICEDESC$\nHost: $HOSTALIAS$\nAddress: $HOSTADDRESS$\nState: $SERVICESTATE$\n\nDate/Time: $LONGDATETIME$\n\nAdditional Info:\n\n$SERVICEOUTPUT$\n" | /usr/bin/msmtp -C {{ nagios_msmtp_config }} $CONTACTEMAIL$
+}

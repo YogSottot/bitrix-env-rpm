@@ -1,0 +1,50 @@
+----
+-- /etc/lsyncd.conf
+-- {{ ansible_managed }}
+-- 
+-- For more examples, see /usr/share/doc/lsyncd*/examples/
+-- 
+
+
+-- settings 
+-- logfile        - log into this file
+-- statusFile     - periodically writes a status report to this file
+-- statusInterval - writes the status file at shortest after this number of seconds has passed
+-- inotifyMode    - Modify|CloseWrite 
+-- maxProcesses   - Lysncd will not spawn more than these number of processes.
+settings {
+  logfile         = "/var/log/lsyncd/daemon-{{ inventory_hostname }}.log",
+  statusFile      = "/var/log/lsyncd/daemon-{{ inventory_hostname }}.status",
+  statusInterval  = 20,
+  inotifyMode     = "CloseWrite",
+  maxProcesses    = 1,
+}
+
+-- sync options for sites
+--
+{% for s in bx_sites_info %}
+-- BEGIN settings for {{ s.SiteName }}
+sync {
+  default.rsyncssh,
+  host        = "{{ inventory_hostname }}",
+  source      = "{{ s.DocumentRoot }}",
+  targetdir   = "{{ s.DocumentRoot }}",
+  exclude   = {
+    "bitrix/cache/",
+    "bitrix/managed_cache/",
+    "bitrix/stack_cache/",
+    "upload/resize_cache/",
+    "*.log",
+    "bitrix/.settings.php",
+    "php_interface/*.php",
+  },
+  rsync  = {
+    archive     = true,
+    compress    = true,
+    owner       = true,
+    perms       = true,
+  },
+}
+-- END settings for {{ s.SiteName }}
+
+{% endfor %}

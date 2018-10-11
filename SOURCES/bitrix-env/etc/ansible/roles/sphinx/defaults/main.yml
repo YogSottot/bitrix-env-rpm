@@ -1,0 +1,34 @@
+---
+######## default options for sphinx: searchd and indexer
+####
+sphinx_base_dir: /etc/sphinx
+sphinx_log_dir: /var/log/sphinx
+sphinx_run_dir: /var/run/sphinx
+sphinx_lib_dir: /var/lib/sphinx
+
+sphinx_bx_dir:   /etc/sphinx/bx
+# index directory
+sphinx_inx_dir:  /etc/sphinx/bx/search_index
+# dictionary directory
+sphinx_dct_dir:  /etc/sphinx/bx/dicts
+
+### service options
+sphinx_general_listen: 9312
+sphinx_mysqlproto_listen: 9306
+
+# log  files
+sphinx_main_log: "{{ sphinx_log_dir }}/searchd.log"
+sphinx_query_log: "{{ sphinx_log_dir }}/query.log"
+
+# pid file
+sphinx_run_file: "{{ sphinx_run_dir }}/searchd.pid"
+
+# ansible temporary folder for php-script
+bx_ansible_temp_dir_fn: /opt/webdir/.ansible
+bx_ansible_owner: root
+bx_ansible_group: bitrix
+bx_ansible_executer: bitrix
+
+sphinx_package: "sphinx"
+cache_directory: /opt/webdir/tmp
+

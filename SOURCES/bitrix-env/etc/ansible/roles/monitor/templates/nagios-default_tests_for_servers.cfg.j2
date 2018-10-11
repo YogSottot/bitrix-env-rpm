@@ -1,0 +1,54 @@
+# {{ ansible_managed }}
+
+# service checks to be applied to all hosts
+define service {
+  use                             local-service
+  host_name                       *
+  service_description             System: Partitions Size
+  check_command                   check_nrpe_cmd!check_disks
+}
+
+define service {
+  use                             local-service
+  host_name                       * 
+  service_description             System: Current Users
+  check_command                   check_nrpe_cmd!check_users
+}
+
+
+define service {
+  use                             local-service
+  host_name                       * 
+  service_description             System: Total Processes
+  check_command                   check_nrpe_cmd!check_total_procs
+}
+
+define service {
+  use                             local-service
+  host_name 		 	                *	
+  service_description             System: AVG Load
+  check_command                   check_nrpe_cmd!check_load
+}
+
+define service {
+  use                             local-service
+  host_name                       *
+  service_description             System: Swap Usage
+  check_command                   check_nrpe_cmd!check_swap
+}
+
+define service {
+  use                             local-service
+  host_name                       *
+  service_description             System: PING
+  check_command                   check_ping!100.0,20%!500.0,60%
+}
+
+define service {
+  use                             local-service
+  host_name                       *
+  service_description             System: SSH
+  check_command                   check_ssh
+  notifications_enabled           0
+}
+

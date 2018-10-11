@@ -1,0 +1,120 @@
+#!/usr/bin/perl
+# start ansible playbook for:
+# 1. create sphinx server
+# 2. remove sphinx server
+# 4. view status of sphinx servers
+# this script is wrapper for ansible playbook ( we need json output for web-interface)
+use strict;
+use warnings;
+
+use lib "/opt/webdir/lib";
+use bxSphinx;
+use Output;
+use Pool;
+use Data::Dumper;
+use Getopt::Long;
+use File::Basename qw( dirname basename );
+
+
+# program options
+my $prog_name = basename $0;
+my $prog_dir  = dirname $0;
+
+my $o_action  = "list";           # type of action that script must do.
+                                    # status - status the server: role: options
+                                    # list   - serverList
+                                    # create - create sphinx instance
+                                    # remove - remove sphinx instance
+my $o_config = '/etc/ansible/group_vars/bitrix-sphinx.yml';
+my $o_sphinx_server = undef;        # ip address or hostname for sphinx server
+my $o_format  = 'plain';            # format of stdout message
+my $o_verbose = 0;
+my $o_help    = undef;
+my $o_reindex = 0;
+my $o_dbname  = undef;
+# get command line options
+Getopt::Long::Configure ("bundling");
+my $result_option = GetOptions(
+  'v'     => \$o_verbose,       'verbose'   => \$o_verbose,
+  'h'     => \$o_help,          'help'      => \$o_help,
+  "a:s"   => \$o_action,        'action:s'  => \$o_action,
+  "s:s"   => \$o_sphinx_server, 'server:s'  => \$o_sphinx_server,
+  "o:s"   => \$o_format,        'output:s'  => \$o_format,
+  "d:s"   => \$o_dbname,        'dbname:s'  => \$o_dbname,
+  "r"     => \$o_reindex,       'reindex'   => \$o_reindex,
+) or unknown_arg();
+
+
+# help message
+if ( $o_help ) { print_help($prog_name, 0) };
+# formt output
+if ( $o_format !~ /^(json|plain|te?xt)$/ ) { print_help($prog_name, 1)}
+if ( $o_format =~ /^te?xt$/ ) { $o_format = "plain" };
+
+# process request
+my $confPool = bxSphinx->new();
+my $confSphinx = undef;
+if ($o_action =~ /^status$/i){
+  if ( not defined $o_sphinx_server ){
+    $confSphinx = Output->new(
+      error => 1,
+      message => "Ypu must defined server_name -s option",
+    );
+  }else{
+    $confSphinx = $confPool->serverOptions($o_sphinx_server);
+  }
+}elsif ($o_action =~ /^list$/){
+  $confSphinx = $confPool->serverList();
+}elsif ($o_action =~ /^create$/){
+  if (!$o_dbname || !$o_sphinx_server){
+    $confSphinx = Output->new(
+      error => 1,
+      message => "You must define server_name and dbname options"
+    );
+  }else{
+    $confSphinx = $confPool->createSphinx($o_sphinx_server,$o_dbname,$o_reindex);
+  }
+}elsif ($o_action =~ /^(remove|delete)$/){
+  $confSphinx = $confPool->removeSphinx($o_sphinx_server,$o_dbname);
+}else{
+  $confSphinx = Output->new( 
+    error => 1, 
+    message => "Unknown action option. PLease use -h for help message." 
+  );
+}
+$confSphinx->print($o_format);
+
+# print usage
+sub print_usage {
+  my $prog = shift;
+  print "Usage: $prog [-vh] [-a status|list|create|remove|update] [-s server_ip] \n";
+}
+
+# help message
+sub print_help {
+  my $prog = shift;
+  my $exit = shift;
+  print_usage( $prog );
+  print <<EOT;
+Options:
+  -h|--help    - show this message
+  -v|--verbose - enable verbose mode.
+  -a|--action  - sphinx action: list|status|create|remove
+  -s|--server  - mysql server
+  -d|--dbname  - database for site that will be use sphinx
+  -r|--reindex - will reindex on site will be run
+ Ex.
+  * get status of all sphinx servers
+ $prog -o json
+  * get status for one server
+ $prog -a status -s vm1
+  * create sphinx instance on the server vm2 for default site
+ $prog -a create -s vm2 --dbname sitemanager0 --reindex
+  * remove sphinx instance from the server
+ $prog -a remove -s vm2 
+
+EOT
+;
+  exit;
+}
+

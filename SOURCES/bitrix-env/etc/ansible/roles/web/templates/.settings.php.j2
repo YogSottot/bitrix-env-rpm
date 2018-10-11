@@ -1,0 +1,123 @@
+<?php
+/* {{ ansible_managed }} */
+{% set utf_mode = 'true' -%}
+{% if bitrix_site_charset == 'windows-1251' -%}
+{% set utf_mode = 'false' -%}
+{%- endif %}
+{% set web_site_dbpass_regexp = web_site_dbpass | regex_replace('([\'\\\\])','\\\\\\1') -%}
+{% set DBModule = 'MysqlConnection' -%}
+{% if php_mysql_ext == 'mysqli' | default('mysql') -%}
+{% set DBModule = 'MysqliConnection' -%}
+{%- endif %}
+{% set bitrix_type = bx_package_name | default('bitrix-env') %}
+{% set bitrix_push_status = push_status | default('disabled') %}
+{% set bitrix_site_push_status = NodeJSPush | default('disabled') %}
+return array (
+  'utf_mode' =>
+  array (
+    'value' => {{ utf_mode }},
+    'readonly' => true,
+  ),
+{% if bitrix_type == 'bitrix-env-crm' %}
+  'cache' => array(
+    'value' => array (
+        'type' => 'memcache',
+        'memcache' => array(
+            'host' => 'unix:///tmp/memcached.sock',
+            'port' => '0'
+        ),
+        'sid' => $_SERVER["DOCUMENT_ROOT"]."#01"
+    ),
+  ),
+{% endif %}
+{% if bitrix_push_status == 'installed' %}
+{% if bitrix_site_push_status == 'enable' %}
+'pull_s1' => 'BEGIN GENERATED PUSH SETTINGS. DON\'T DELETE COMMENT!!!!',
+  'pull' => Array(
+    'value' =>  array(
+        'path_to_listener' => "http://#DOMAIN#{{ push_sub }}",
+        'path_to_listener_secure' => "https://#DOMAIN#{{ push_sub }}",
+        'path_to_modern_listener' => "http://#DOMAIN#{{ push_sub }}",
+        'path_to_modern_listener_secure' => "https://#DOMAIN#{{ push_sub }}",
+        'path_to_mobile_listener' => "http://#DOMAIN#:8893{{ push_sub }}",
+        'path_to_mobile_listener_secure' => "https://#DOMAIN#:8894{{ push_sub }}",
+        'path_to_websocket' => "ws://#DOMAIN#{{ push_subws }}",
+        'path_to_websocket_secure' => "wss://#DOMAIN#{{ push_subws }}",
+        'path_to_publish' => 'http://127.0.0.1:8895{{ push_pub }}',
+        'nginx_version' => '3',
+        'nginx_command_per_hit' => '100',
+        'nginx' => 'Y',
+        'nginx_headers' => 'N',
+        'push' => 'Y',
+        'websocket' => 'Y',
+        'signature_key' => '{{ push_security_key }}',
+        'signature_algo' => 'sha1',
+        'guest' => 'N',
+    ),
+  ),
+'pull_e1' => 'END GENERATED PUSH SETTINGS. DON\'T DELETE COMMENT!!!!',
+{% endif %}
+{% endif %}
+  'cache_flags' =>
+  array (
+    'value' =>
+    array (
+      'config_options' => 3600,
+      'site_domain' => 3600,
+    ),
+    'readonly' => false,
+  ),
+  'cookies' =>
+  array (
+    'value' =>
+    array (
+      'secure' => false,
+      'http_only' => true,
+    ),
+    'readonly' => false,
+  ),
+  'exception_handling' =>
+  array (
+    'value' =>
+    array (
+      'debug' => false,
+      'handled_errors_types' => 4437,
+      'exception_errors_types' => 4437,
+      'ignore_silence' => false,
+      'assertion_throws_exception' => true,
+      'assertion_error_type' => 256,
+      'log' => array (
+          'settings' =>
+          array (
+            'file' => '/var/log/php/exceptions.log',
+            'log_size' => 1000000,
+        ),
+      ),
+    ),
+    'readonly' => false,
+  ),
+  'crypto' =>
+  array (
+    'value' =>
+    array (
+        'crypto_key' => '{{ crypto_key }}',
+    ),
+    'readonly' => true,
+  ),
+  'connections' =>
+  array (
+    'value' =>
+    array (
+      'default' =>
+      array (
+        'className' => '\\Bitrix\\Main\\DB\\{{ DBModule }}',
+        'host' => '{{ web_site_dbserv }}',
+        'database' => '{{ web_site_db }}',
+        'login' => '{{ web_site_dbuser }}',
+        'password' => '{{ web_site_dbpass_regexp }}',
+        'options' => 2,
+      ),
+    ),
+    'readonly' => true,
+  )
+);

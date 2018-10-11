@@ -1,0 +1,9 @@
+{% for host in groups['bitrix-hosts'] %}
+# ANSIBLE MANAGED BLOCK {{ host }}; DON'T insert your record after this comment!!!
+{% if hostvars[host].bx_host is defined %}
+{{ hostvars[host].bx_netaddr  }} {{ host }} {{ hostvars[host].bx_host }}
+{% else %}
+{{ hostvars[host].bx_netaddr  }} {{ host }}
+{% endif %}
+{% endfor %}
+

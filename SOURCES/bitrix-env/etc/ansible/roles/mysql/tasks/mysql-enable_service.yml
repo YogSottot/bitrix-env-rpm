@@ -1,0 +1,28 @@
+---
+- name: defined bx_system variable
+  set_fact:
+    mysql_service: "{{ hostvars[inventory_hostname]['mysql_service'] }}"
+  tags: vars
+
+- name: recreate links
+  file: 
+    src: /usr/lib/systemd/system/mariadb.service
+    dest: "/etc/systemd/system/{{ item }}"
+    state: link
+  with_items:
+    - mysqld.service
+    - mysql.service
+  when: mysql_service == 'mariadb'
+    and ansible_distribution == "CentOS"
+    and ansible_distribution_major_version == "7"
+
+- name: reload systemd configuration
+  shell: systemctl daemon-reload
+  when: mysql_service == 'mariadb'
+    and ansible_distribution == "CentOS"
+    and ansible_distribution_major_version == "7"
+
+- name: start mysql service
+  service: name={{ mysql_service }} state=started enabled=yes
+  tags: mysql
+

@@ -1,0 +1,36 @@
+# {{ ansible_managed }}
+{% set netbios_name = ansible_hostname -%}
+{% if ntlm_host != 'NOT_DEFINED' -%}
+{% set netbios_name = ntlm_host -%}
+{%- endif %}
+# configure active directory connection for NTLM auth
+[global]
+    workgroup = {{ ntlm_name|upper() }}
+    server string = {{ bx_hostname|upper() }} server
+    security = ads
+
+    realm = {{ ntlm_fqdn|upper() }}
+    netbios name = {{ netbios_name|upper() }}
+
+    socket options = TCP_NODELAY SO_RCVBUF=8192 SO_SNDBUF=8192
+
+    winbind enum users = yes
+    winbind enum groups = yes
+
+    idmap config * : range = {{ idmap_range_start }}-{{ idmap_range_end }}
+    idmap config * : backend = tdb
+
+    template homedir = /home/%D/%U
+    template shell = /bin/bash
+
+    encrypt passwords = yes
+    password server = {{ ntlm_dps }}
+    winbind use default domain = yes
+    restrict anonymous = 2
+    client use spnego = yes
+    client ntlmv2 auth = yes
+    winbind separator = +
+
+    log file = /var/log/samba/log.%m
+    log level = 2 passdb:5 auth:10 winbind:2
+    max log size = 200

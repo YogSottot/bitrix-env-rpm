@@ -1,0 +1,47 @@
+# {{ ansible_managed }}
+# enable ServerStatus 
+{%- set is_httpd24 = 0 %}
+{%- if ansible_distribution == 'CentOS' and ansible_distribution_major_version == '7' %}
+{%- set is_httpd24 = 1 %}
+{% endif %}
+
+Listen {{ apache_monitoring_netaddr }}:{{ apache_monitoring_port }}
+{% if is_httpd24 == 0 -%}
+NameVirtualHost {{ apache_monitoring_netaddr }}:{{ apache_monitoring_port }}
+{% endif %}
+
+<IfModule mod_status.c>
+    ExtendedStatus On
+</IfModule>
+
+<VirtualHost {{ apache_monitoring_netaddr }}:{{ apache_monitoring_port }}>
+    ServerAdmin webmaster@localhost
+
+    <Location {{ apache_monitoring_page }}>
+        SetHandler server-status
+        {% if is_httpd24 > 0 -%}
+            Require ip 127.0.0.1
+                {% for host in groups['bitrix-web'] %}
+                    {% if host != deleted_web_server %}
+            Require ip {{ hostvars[host].bx_netaddr  }}
+                    {% endif %}
+                {% endfor %}
+                {%if new_web_server != 'NOT_DEFINED' %}
+            Require ip {{ hostvars[new_web_server].bx_netaddr  }}
+                {%endif%}
+        {% else %}
+            Order Deny,Allow
+            Allow from 127.0.0.1
+            {% for host in groups['bitrix-web'] %}
+                {% if host != deleted_web_server %}
+            Allow from {{ hostvars[host].bx_netaddr }}
+                {% endif %} 
+            {% endfor %}
+            {%if new_web_server != 'NOT_DEFINED' %}
+            Allow from {{ hostvars[new_web_server].bx_netaddr }}
+            {%endif%}
+            Deny from All
+        {% endif %}
+    </Location>
+</VirtualHost>
+

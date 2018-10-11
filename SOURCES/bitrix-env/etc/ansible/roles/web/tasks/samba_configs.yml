@@ -1,0 +1,120 @@
+--- 
+############ Configure Winbind (samba, kerberos and etc.)
+####
+- name: install samba packages
+  yum: name={{ item }} state=latest
+  with_items:
+   - samba
+   - samba-winbind
+   - samba-common
+   - samba-client
+   - samba-winbind-clients
+   - mod_auth_ntlm_winbind
+
+- name: get current ntlm status
+  bx_ntlm: 
+  tags: winbind_config
+
+- name: shutdown smb and winbind service 
+  when: "domain_status == 'configured'"
+  with_items:
+    - winbind
+    - smb
+  service: name={{ item }} state=stopped
+  tags: winbind_config
+
+- name: delete cache files from samba
+  when: "domain_status == 'configured'"
+  with_items:
+    - serverid.tdb
+    - winbindd_cache.tdb
+    - winbindd_idmap.tdb
+    - winbindd_privileged/pipe
+  file: path=/var/lib/samba/{{ item }}
+    state=absent
+
+- name: create samba config
+  template: src=smb.conf.j2 dest=/etc/samba/smb.conf
+    owner=root group=root mode=0644
+  tags: winbind_config
+
+- name: create kerberos config
+  template: src=krb5.conf.j2 dest=/etc/krb5.conf
+    owner=root group=root mode=0644
+  tags: winbind_config
+
+- name: update login sources in /etc/nsswitch.conf
+  lineinfile: "dest=/etc/nsswitch.conf
+    regexp='^passwd:' line='passwd: compat winbind'"
+  tags: winbind_config
+
+- name: update group sources in /etc/nsswitch.conf
+  lineinfile: "dest=/etc/nsswitch.conf
+    regexp='^group:' line='group: compat winbind'"
+  tags: winbind_config
+
+- name: update password sources in /etc/nsswitch.conf
+  lineinfile: "dest=/etc/nsswitch.conf
+    regexp='^shadow:' line='shadow: compat'"
+  tags: winbind_config
+
+- name: update domain in /etc/resolv.conf - search
+  lineinfile: dest=/etc/resolv.conf
+    regexp='^search\s+' line='search {{ ntlm_fqdn }}'
+    state=present
+  tags: winbind_config
+
+- name: update domain in /etc/resolv.conf - domain
+  lineinfile: dest=/etc/resolv.conf
+    regexp='^domain\s+' line='domain {{ ntlm_fqdn }}'
+    state=present
+  tags: winbind_config
+
+- name: add bitrix to wbpriv group
+  user: append=yes groups=wbpriv name={{ site_bitrix }}
+  tags: services_config
+
+
+- name: generate file name for temporary save admin settings
+  set_fact:
+    join_file: "/opt/webdir/generator/{{ lookup('password', '/tmp/generator_file chars=ascii_letters,digits length=20') }}"
+  tags: samba_config
+
+- name: temp directory
+  file: path=/opt/webdir/generator state=directory
+    owner=root group=root mode=0700
+  tags: samba_config
+
+- name: save password info to the the file
+  template: src=options/ntlm_join.j2
+    dest={{ join_file }}
+    owner=root group=root mode=0400
+  tags: samba_config
+
+- name: join the ADS domain
+  bx_ntlm: state=join safe_file={{ join_file }}
+  tags: samba_config
+
+- name: enable services smb and winbind in the system
+  service: name={{ item }} state=started enabled=yes
+  with_items:
+    - smb
+    - winbind
+  tags: services_config
+
+- name: restart all working services
+  service: name={{ item }} state=restarted
+  with_items:
+    - smb
+    - winbind
+    - nginx
+    - httpd
+  tags: services_config
+
+- name: delete generator file
+  file: path=/tmp/generator_file
+    state=absent
+  tags: sites_configs 
+
+####
+############ /Configure Winbind (samba, kerberos and etc.)

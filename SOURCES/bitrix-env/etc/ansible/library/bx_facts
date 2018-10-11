@@ -1,0 +1,127 @@
+#!/usr/bin/perl
+# get information about current site(s) configuration
+# run as ansible module
+# gathering facts about sites
+# options:
+# "name=list password=0 status=finished type=DBName site=default"
+# dbname=sitemanager0
+use strict;
+use warnings;
+
+use lib "/opt/webdir/lib";
+use Output;
+use Pool;
+use bxSites;
+use Data::Dumper;
+use Getopt::Long;
+use File::Basename qw( dirname basename );
+
+#my $log_file = "/tmp/test.log";
+#open( my $h, '>', $log_file )
+#  or die "Cannot open file $log_file: $!";
+
+# program options
+my $prog_name = basename $0;
+my $prog_dir  = dirname $0;
+
+my $o_action = "status";    # type of action that script must do.
+     # status  - information about site(s) that live on this system
+     # list    - list all sites and its info
+     # cluster_test - test cluster and scale modules for sites
+my $o_site       = undef;    # site short name
+my $o_hiden      = 0;        # hiden or not password value
+my $o_request    = 'all';    # output only for defined attribute
+my $o_dbname     = undef;
+my $o_status     = undef;
+my $o_install    = undef;
+my $o_site_dir   = undef;
+my $o_site_error = undef;
+
+# get command line options
+my $opt_file = $ARGV[0];
+
+#print $h "opt_file=$opt_file\n";
+
+# if change opts via module options
+if ($opt_file) {
+    open( my $oh, $opt_file ) or die "Cannot open $opt_file: $!";
+    my $lines = <$oh>;
+
+    #print $h "data=$lines\n";
+    if ( defined $lines ) {
+        my @opts = split( /\s+/, $lines );
+        foreach my $opt (@opts) {
+            if ( $opt =~ /=/ ) {
+                my ( $key, $val ) = split( "=", $opt );
+                if ( $val =~ /^\'.+\'$/ ) {
+                    $val = substr $val, 1, -1;
+                }
+                elsif ( $val =~ /^\".+\"$/ ) {
+                    $val = substr $val, 1, -1;
+                }
+
+                #print $h $opt, "\n";
+                $o_action     = $val if ( $key eq "name" );
+                $o_site       = $val if ( $key eq "site" );
+                $o_hiden      = $val if ( $key eq "password" );
+                $o_request    = $val if ( $key eq "type" );
+                $o_status     = $val if ( $key eq "status" );
+                $o_dbname     = $val if ( $key eq "dbname" );
+                $o_install    = $val if ( $key eq "install" );
+                $o_site_dir   = $val if ( $key eq "site_dir" );
+                $o_site_error = $val if ( $key eq "error" );
+            }
+        }
+    }
+    close $oh;
+}
+
+#close $h;
+
+# process request
+my $sites = undef;
+if ( $o_action =~ /^list$/ ) {
+    my $filters = {};
+    if ( defined $o_site && $o_site !~ /^NOT_DEFINED$/ ) {
+        $filters->{'SiteName'} = $o_site;
+    }
+    if ( defined $o_status && $o_status !~ /^NOT_DEFINED$/ ) {
+        $filters->{'SiteStatus'} = $o_status;
+    }
+    if ( defined $o_dbname && $o_dbname !~ /^NOT_DEFINED$/ ) {
+        $filters->{'DBName'} = $o_dbname;
+    }
+    if ( defined $o_install && $o_install !~ /^NOT_DEFINED$/ ) {
+        $filters->{'SiteInstall'} = $o_install;
+    }
+    if ( defined $o_site_dir && $o_site_dir !~ /^NOT_DEFINED$/ ) {
+        $filters->{'DocumentRoot'} = $o_site_dir;
+    }
+    if ( defined $o_site_error ) {
+        $filters->{'error'} = $o_site_error;
+    }
+
+    my $bx = bxSites->new( filters => $filters );
+    $sites = $bx->listSite();
+}
+elsif ( $o_action =~ /^status$/ ) {
+    my $bx = bxSite->new(
+        site_name => $o_site,
+        site_dir  => $o_site_dir,
+    );
+    $sites = $bx->statusSite();
+}
+elsif ( $o_action =~ /^cluster_test$/ ) {
+    my $bx = bxSites->new();
+    $sites = $bx->testClusterConfig();
+
+}
+else {
+    $sites = Output->new(
+        error   => 1,
+        message => "Unknown action option. PLease use -h for help message."
+    );
+}
+
+print $sites->printAnsible( $o_request, $o_hiden, $o_status );
+

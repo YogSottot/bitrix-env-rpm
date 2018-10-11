@@ -1,0 +1,69 @@
+---
+# dehydrated_type: test|prod
+- name: create domains directory
+  file:
+    path: /home/bitrix/dehydrated/domains
+    owner: bitrix
+    state: directory
+
+- name: create dehydrated config
+  template: 
+    src: dehydrated/config.j2
+    dest: /home/bitrix/dehydrated/config
+    owner: bitrix
+    group: bitrix
+    mode: 0640
+
+- name: create dehydrated domains.txt for site
+  template:
+    src: dehydrated/tmp-domains.txt.j2
+    dest: "/home/bitrix/dehydrated/domains/{{ site_names[0] }}.txt"
+
+- name: get common name
+  shell: "awk '{print $1}' /home/bitrix/dehydrated/domains/{{ site_names[0] }}.txt"
+  register: common_name
+
+- name: create main dehydrated domains.txt
+  assemble:
+    src: /home/bitrix/dehydrated/domains
+    dest: /home/bitrix/dehydrated/domains.txt
+
+- name: register dehydrated 
+  shell: /home/bitrix/dehydrated/dehydrated --register --accept-terms
+
+- name: create certificates
+  shell: "/home/bitrix/dehydrated/dehydrated -c > /home/bitrix/dehydrated_update.log 2>&1"
+  when: dehydrated_type == 'test'
+
+- name: create certificates
+  shell: "/home/bitrix/dehydrated/dehydrated -c --force > /home/bitrix/dehydrated_update.log 2>&1"
+  when: dehydrated_type == 'prod'
+
+- name: change access rigths
+  file:
+    path: /home/bitrix/dehydrated
+    state: directory
+    owner: bitrix
+    group: bitrix
+    recurse: yes
+
+- name: change access rigths
+  file:
+    path: /home/bitrix/dehydrated_update.log
+    owner: bitrix
+    group: bitrix
+
+- name: delete old crontab strings
+  lineinfile:
+    dest: /etc/crontab
+    regexp: "{{ item }}"
+    state: absent
+  with_items:
+    - "/home/bitrix/dehydrated/dehydrated"
+    - "/home/bitrix/dehydrated/certs"
+
+- name: update crontab
+  lineinfile:
+    dest: /etc/crontab
+    line: "0 12 1 * * root /opt/webdir/bin/bx-dehydrated"
+

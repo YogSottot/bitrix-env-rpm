@@ -1,0 +1,201 @@
+---
+################# upgrade mysql and php for installation
+# 1. create backup for databases in found sites
+# 2. configure remi repository,  enable default 
+# 3. upgrade configuration files for php 
+# 4. upgrade mysql (mysql_upgrade)
+- name: upgrade mysql and php
+  hosts: bitrix-hosts
+  vars:
+    cluster_enabled: disable
+  gather_facts: True
+  tasks:
+    - include_vars: /etc/ansible/roles/common/vars/default.yml
+    
+    - include_vars: /etc/ansible/group_vars/bitrix-mysql.yml
+
+    - include_vars: /etc/ansible/group_vars/bitrix-web.yml
+
+    - name: get host info
+      bx_vat:
+
+    - name: change cluster mark if web cluster configured
+      set_fact: cluster_enabled=enable
+      when: "cluster_web_configure == 'enable'"
+      tags: sites
+
+    - name: change cluster mark if mysql cluster configured
+      set_fact: cluster_enabled=enable
+      when: "cluster_mysql_configure == 'enable'"
+      tags: configure_site
+
+    - name: gathering facts about installed sites
+      delegate_to: "{{ monitoring_server }}"
+      bx_facts: name=list password=0 install='(kernel|ext_kernel)'
+      tags: sites
+
+    - name: create variable bx_sites_info
+      set_fact:
+        bx_sites_info: "{{ hostvars[inventory_hostname]['bx_sites'] }}"
+      tags: sites
+
+    - name: create backup folder
+      delegate_to: "{{ monitoring_server }}"
+      file: path={{ item }} state=directory
+        owner=bitrix group=bitrix mode=0770
+      tags: backup
+      with_items:
+        - "/home/bitrix/backup"
+        - "/home/bitrix/backup/archive"
+      when: "inventory_hostname == master_server" 
+
+    - name: test default my.cnf file exist in the system
+      delegate_to: "{{ monitoring_server }}"
+      stat: path=/root/.my.cnf get_md5=no
+      register: my_cfg_stat
+
+    - name: create /root/.my.cnf 
+      delegate_to: "{{ monitoring_server }}"
+      template: src=templates/upgrade-my.cnf.j2
+        dest=/root/.my.cnf
+        owner=root group=root mode=0600
+      when: "inventory_hostname == master_server and not {{ my_cfg_stat.stat.exists }}"
+
+    - name: create backup files general case
+      delegate_to: "{{ monitoring_server }}"
+      with_items: "{{ bx_sites_info }}"
+      mysql_db: name="{{ item.DBName }}" state=dump 
+        target="/home/bitrix/backup/archive/update_{{ item.DBName }}.sql.bz2"
+        login_unix_socket="{{ mysql_socket }}"
+      when: "cluster_enabled == 'disable' and inventory_hostname == master_server"
+      tags: backup
+
+    - name: create backup files cluster case
+      delegate_to: "{{ monitoring_server }}"
+      with_items: "{{ bx_sites_info }}"
+      mysql_db: name="{{ item.DBName }}" state=dump 
+        target="/home/bitrix/backup/archive/update_{{ item.DBName }}.sql.bz2"
+        login_host="{{ master_server }}"
+      when: "cluster_enabled == 'enable' and inventory_hostname == master_server"
+      tags: backup
+
+    - name: save list php disabled modules
+      bx_php: action=safe
+
+    - name: upgrade bitrix-env
+      yum: name={{ bx_package_name }} state=latest
+      tags: bitrix
+ 
+    - name: import gpg-keys
+      shell: rpm --import "http://rpms.famillecollet.com/RPM-GPG-KEY-remi" 
+        creates=/etc/pki/rpm-gpg/RPM-GPG-KEY-remi
+      tags: php54
+
+    - name: install Remi repository
+      yum: name="http://rpms.famillecollet.com/enterprise/remi-release-6.rpm"
+        state=present
+      tags: php54
+
+    - name: enable remi main repository
+      ini_file: dest=/etc/yum.repos.d/remi.repo
+        section=remi option=enabled value=1
+      tags: php54
+
+    - name: update system by remi repository
+      yum: name=* state=latest
+      tags: php54
+
+    - name: install opcache for new version
+      yum: name=php-pecl-zendopcache state=latest
+      tags: php54
+
+    - name: test apcu module in php
+      shell: /usr/bin/php -m
+      register: phpmodules
+      always_run: yes 
+
+    - name: delete apc configuration file
+      file: path=/etc/php.d/apc.ini state=absent
+      when: phpmodules.stdout.find("apcu") != -1
+      tags: php54
+
+    - name: create apcu php54 configuration file
+      template: src=templates/{{ item }}.j2 dest=/etc/php.d/{{ item }}
+        mode=0644 owner=root group=root
+      with_items:
+        - "apcu.ini"
+      when: phpmodules.stdout.find("apcu") != -1
+      tags: php54
+
+    - name: replace max_input_vars in bitrixenv.ini 
+      lineinfile: dest=/etc/php.d/bitrixenv.ini
+        regexp='^max_input_vars ' line='max_input_vars = 10000'
+        mode=0644 owner=root group=root
+      tags: php54
+    
+    - name: restore list php disabled modules
+      bx_php: action=restore
+
+    - name: disable new unused modules
+      shell: mv /etc/php.d/{{ item }} /etc/php.d/{{ item }}.disabled
+        creates=/etc/php.d/{{ item }}.disabled
+      with_items:
+        - dom.ini
+        - gmp.ini
+        - posix.ini
+        - sybase_ct.ini
+        - sysvmsg.ini 
+        - sysvsem.ini
+        - sysvshm.ini
+        - wddx.ini
+        - xsl.ini
+    
+    - name: create terminator for next update
+      file: path=/etc/php.d/{{ item }} state=touch
+      with_items:
+        - dom.ini
+        - gmp.ini
+        - posix.ini
+        - sybase_ct.ini
+        - sysvmsg.ini 
+        - sysvsem.ini
+        - sysvshm.ini
+        - wddx.ini
+        - xsl.ini
+
+    - name: add configuration options in mysql service for upgrade time
+      template: src=templates/upgrade_mysql.cnf.j2 dest=/etc/mysql/conf.d/upgrade_mysql.cnf 
+        owner=root group=mysql mode=0664
+      tags: mysql55
+
+    - name: restarted mysql service
+      service: name=mysqld state=restarted
+      tags: mysql55
+
+    - name: disable sql_log_bin for upgrade
+      mysql_variables: variable=sql_log_bin value=0
+        login_unix_socket={{ mysql_socket }}
+      tags: mysql55
+      when: "cluster_mysql_configure == 'enable' and inventory_hostname == master_server" 
+
+    - name: upgrade mysql data
+      shell: /usr/bin/mysql_upgrade
+      tags: mysql55
+      ignore_errors: true
+
+    - name: delete temporary mysql config file
+      file: path=/etc/mysql/conf.d/upgrade_mysql.cnf state=absent
+      tags: mysql55
+
+    - name: bitrix settings
+      shell: /etc/init.d/bvat start
+
+    - name: restarted mysql service
+      service: name=mysqld state=restarted
+      tags: mysql55
+
+    - name: restart httpd service
+      service: name=httpd state=restarted
+      tags: php54
+
+

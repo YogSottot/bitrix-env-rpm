@@ -1,0 +1,15 @@
+---
+- name: configure mysql shutdown
+  shell: mysql --execute="SET GLOBAL innodb_fast_shutdown=0"
+  tags: mysql
+
+- name: shutdown mysql
+  shell: mysqladmin shutdown
+  tags: mysql
+
+- name: wait mysql shutdown
+  wait_for: path=/var/lib/mysqld/mysqld.sock
+    state=absent
+    delay=10
+  tags: mysql
+

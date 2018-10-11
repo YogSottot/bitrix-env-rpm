@@ -1,0 +1,24 @@
+---
+######## create database and user for site
+####
+- name: create new mysql user for kernel site - non-cluster case
+  delegate_to: "{{ web_site_dbserv }}"
+  mysql_user: "name={{ web_site_dbuser }} password={{ web_site_dbpass }} host={{ item }}
+    priv={{ web_site_db }}.*:ALL state=present
+    login_unix_socket={{ mysql_socket }}
+    append_privs=yes check_implicit_admin=yes"
+  with_items:
+    - localhost
+    - '%'
+  tags: site_mysql
+  when: "is_cluster == 'disable'"
+
+- name: create mysql database for site - non-cluster case
+  delegate_to: "{{ web_site_dbserv }}"
+  mysql_db: name={{ web_site_db }}
+    collation={{ bitrix_site_collation }} encoding={{ bitrix_site_encoding }}
+    login_unix_socket={{ mysql_socket }}
+  tags: site_mysql
+
+####
+######## /create database and user for site

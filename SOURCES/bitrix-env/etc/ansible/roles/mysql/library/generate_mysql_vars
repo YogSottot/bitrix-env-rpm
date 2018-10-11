@@ -1,0 +1,115 @@
+#!/usr/bin/perl
+# generate mysql vars
+# input: super_login, super_password, cluster_login, cluster_password, replica_login, replica_password
+
+use strict;
+use warnings;
+use File::Spec;
+use File::Basename qw( dirname basename );
+use JSON;
+use Data::Dumper;
+
+
+# search="server_name www.bitrix.ru;" basedir=/etc/nginx/bx/site_avaliable regexp=\.conf$
+my $options_file  = $ARGV[0];
+
+# parse ansible argv file
+my $gtn_parse_ansible_argv = parse_ansible_argv ( $options_file );
+if ( $gtn_parse_ansible_argv->[0] > 0 ) {
+  print_message( 
+    { 'msg' => $gtn_parse_ansible_argv->[1], 'failed' => "true" },
+    $gtn_parse_ansible_argv->[0],
+  );
+}
+
+my $super_login     = $gtn_parse_ansible_argv->[1]->{'super_login'};
+my $super_password  = $gtn_parse_ansible_argv->[1]->{'super_password'};
+my $cluster_login   = $gtn_parse_ansible_argv->[1]->{'cluster_login'};
+my $cluster_password= $gtn_parse_ansible_argv->[1]->{'cluster_password'};
+my $replica_login   = $gtn_parse_ansible_argv->[1]->{'replica_login'};
+my $replica_password= $gtn_parse_ansible_argv->[1]->{'replica_password'};
+
+if (not defined $super_login or $super_login =~ /^NOT_DEFINED$/){
+  $super_login = 'bx_super';
+}
+
+if (not defined $cluster_login or $cluster_login =~ /^NOT_DEFINED$/){
+  $cluster_login = 'bx_clusteruser';
+}
+
+if (not defined $replica_login or $replica_login =~ /^NOT_DEFINED$/){
+  $replica_login = 'bx_replica';
+}
+
+if (not defined $super_password or $super_password =~ /^$/ or $super_password =~ /^NOT_DEFINED$/){
+  $super_password = generate_password();
+}
+
+if (not defined $cluster_password or $cluster_password =~ /^$/ or $cluster_password =~ /^NOT_DEFINED$/){
+  $cluster_password = generate_password();
+}
+
+if (not defined $replica_password or $replica_password =~ /^$/ or $replica_password =~ /^NOT_DEFINED$/){
+  $replica_password = generate_password();
+}
+
+print_message(
+  { super_login => $super_login, super_password => $super_password, 
+    cluster_login => $cluster_login, cluster_password => $cluster_password,
+    replica_login => $replica_login, replica_password => $replica_password},
+    0,
+);
+
+# print json output for ansible
+# input: return_hash, exit_code
+sub print_message {
+  my $rh = shift;
+  my $c = shift;
+  my $json = to_json( $rh, pretty => 1 );
+  print $json;
+  exit $c;
+}
+
+sub generate_password {
+  my $password = '';
+  my @chars = ("A".."Z", "a".."z", "1".."9");
+  $password .= $chars[rand @chars] for 1..15;
+  return $password;
+}
+
+# parse opt file
+sub parse_ansible_argv {
+  my $f = shift;
+  my $r = {
+    super_login => undef,
+    super_password  => undef,
+    cluster_login => undef,
+    cluster_password   => undef,
+    replica_login => undef,
+    replica_password => undef,
+  };
+
+
+  open ( my $fh, $f ) or return [ 1, "Cannot open options $f: $!" ];
+  while ( <$fh> ){
+    next if ( /^$/ );
+    if ( /\S+=\S+/ ){
+      my @matches = split(/\s+/, $_);
+      foreach my $match (@matches){
+        #print $match,"\n";
+        my ($key,$val)=split('=',$match);
+        $val =~ s/^['"]//;
+        $val =~ s/['"]$//;
+        if (grep /^$key$/, keys %$r){
+          #print "fill out $key\n";
+          $r->{$key} = $val;
+        }
+      }
+    }
+  }
+
+  close $fh;
+  
+  return [ 0, $r ];
+}
+

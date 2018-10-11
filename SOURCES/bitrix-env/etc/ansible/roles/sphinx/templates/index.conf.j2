@@ -1,0 +1,50 @@
+# {{ ansible_managed }}
+# IndexName: {{ item.SiteCsync2 }}
+# SiteName:  {{ item.SiteName }}
+# DBName: {{ item.DBName }}
+index {{ item.SiteCsync2 }}
+{
+	# Main settings
+	type			= rt
+	path			= {{ sphinx_lib_dir }}/{{ item.SiteCsync2 }}/index
+	docinfo 		= inline
+
+	# Choose appropriate type of morphology to use
+	#morphology 		= lemmatize_ru_all, lemmatize_en_all, lemmatize_de_all, stem_enru
+	morphology 		= stem_enru, soundex
+
+	# These settings are used by bitrix:search.title component
+	dict 			= keywords
+	prefix_fields 		= title
+	infix_fields		=
+	min_prefix_len 		= 2
+	enable_star 		= 1
+
+	# All fields must be defined exactly as followed
+	rt_field 		= title
+	rt_field 		= body
+	rt_attr_uint 		= module_id
+	rt_attr_string 		= module
+	rt_attr_uint		= item_id
+	rt_attr_string		= item
+	rt_attr_uint 		= param1_id
+	rt_attr_string 		= param1
+	rt_attr_uint 		= param2_id
+	rt_attr_string 		= param2
+	rt_attr_timestamp 	= date_change
+	rt_attr_timestamp 	= date_to
+	rt_attr_timestamp 	= date_from
+	rt_attr_uint 		= custom_rank
+	rt_attr_multi 		= tags
+	rt_attr_multi 		= right
+	rt_attr_multi 		= site
+	rt_attr_multi 		= param
+
+	# Depends on settings of your site
+	# For UTF use utf-8 else sdcs
+	{% if item.SiteCharset == "utf-8" %}
+  charset_type 		= utf-8
+  {% else %}
+  charset_type    = sbcs
+  {% endif %}
+}

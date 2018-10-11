@@ -1,0 +1,126 @@
+#!/usr/bin/perl
+# manage ansible configs for host
+# hosts - add|remove host from group
+# host_vars - add|remove|modify variables in personal host file
+# group_vars/group add|remove|modify variables in group file
+# ex.
+# - update host, add it to group mysql and set var1 and var2
+#   hostname=vm1 group=mysql state=present|absent|update var1=val1 var2=val1 ...
+# - update group, set val1 and val2
+#   group=mysql state=update var1=val1 var2=val2
+#
+# state:
+# add     - create record in the hosts file and update|create personal file
+# remove  - remove record in the hosts file ( if group not defined => from all group )
+# update  - update host variables in personal file
+# WANT_JSON
+use strict;
+use warnings;
+
+use lib "/opt/webdir/lib";
+use Output;
+use Pool;
+use Host;
+use Data::Dumper;
+use Getopt::Long;
+use File::Basename qw( dirname basename );
+use JSON;
+
+# program options
+my $prog_name = basename $0;
+my $prog_dir  = dirname $0;
+
+my %options = (
+    hostname => undef,
+    group    => undef,
+    state    => 'update',
+);
+my @options = keys %options;
+
+# get command line options
+my $opt_file = $ARGV[0];
+my ($opt_json, $ch, $opt_hash, $bx_return);
+
+
+$opt_json = "";
+unless (open ($ch, '<', $opt_file)){
+    $bx_return = Output->new(
+        error   => 1,
+        message => "Cannot open file: $!",
+    );
+    print $bx_return->printAnsible;
+}
+
+while(<$ch>){ $opt_json .= $_; }
+close $ch;
+
+eval {
+    $opt_hash = decode_json($opt_json);
+};
+if ($@){
+    $bx_return = Output->new(
+        error   => 1,
+        message => "Cannot decode json from input string",
+    );
+}
+
+foreach my $key (keys %$opt_hash){
+    next if ($key =~ /^_ansible/);
+
+    if ($opt_hash->{$key} eq "ABSENT"){
+        $options{$key} = undef;
+    }else{
+        $options{$key} = $opt_hash->{$key};
+    }
+}
+
+# update hosts info
+if ( $options{'hostname'} ) {
+    if ( $options{'state'} =~ /^(update|add)$/ ) {
+        my $bx_host = Host->new( host => $options{'hostname'} );
+        $bx_return = $bx_host->updateHost( \%options );
+    }
+    elsif ( $options{'state'} =~ /^create$/ ) {
+        if ( not defined $options{'ip'} ) {
+            $bx_return = Output->new(
+                error   => 1,
+                message => "ip= must be set for state=" . $options{'state'},
+            );
+        }
+        else {
+            #print "hostname=",$options{'hostname'}," ip=",$options{'ip'},"\n";
+            my $bx_host =
+              Host->new( host => $options{'hostname'}, ip => $options{'ip'} );
+
+            #print Dumper($bx_host);
+            $bx_return = $bx_host->updateHost( \%options );
+        }
+    }
+    elsif ( $options{'state'} =~ /^(delete|remove|absent)$/ ) {
+        my $bx_host = Host->new( host => $options{'hostname'} );
+        $bx_return = $bx_host->deleteHost( \%options );
+    }
+    else {
+        $bx_return = Output->new(
+            error   => 1,
+            message => "Unknown value for option state=" . $options{'state'}
+        );
+    }
+
+# update group info
+}
+elsif ( !$options{'hostname'} && $options{'group'} ) {
+    my $bx_pool = Pool->new();
+    $bx_return = $bx_pool->update_group_vars( \%options );
+}
+else {
+    $bx_return = Output->new(
+        error   => 1,
+        message => "hostname= or group= must be set for state="
+          . $options{'state'}
+    );
+}
+
+#print Dumper($bx_return);
+print $bx_return->printAnsible;
+

@@ -1,0 +1,51 @@
+---
+# create additional directories
+# start on new server
+- include: sites_directories.yml
+
+- name: enable web-services
+  service: name={{ item }} enabled=yes
+  with_items:
+    - nginx
+    - httpd
+  tags: web
+
+# synchronize folders
+- name: sync files for /etc directory
+  synchronize: 
+    src: "{{ item }}/"
+    dest: "{{ item }}/"
+    recursive: yes
+    delete: yes
+    rsync_opts:
+      - "--exclude=https_balancer*.conf"
+      - "--exclude=http_balancer*.conf"
+      - "--exclude=upstream.conf"
+      - "--exclude=pool_manager.conf"
+  with_items:
+    - "/etc/csync2"
+    - "/var/log/lsyncd"
+    - "/etc/nginx/bx/conf"
+    - "/etc/nginx/bx/maps"
+    - "/etc/nginx/bx/site_avaliable"
+    - "/etc/nginx/bx/site_enabled"
+    - "/etc/nginx/bx/site_cluster"
+    - "/etc/httpd/bx/conf"
+    - "/etc/nginx/bx/settings"
+  tags: sync
+  when: "inventory_hostname == new_web_server"
+
+- name: sync files for site directories
+  synchronize: 
+    src: "{{ item.DocumentRoot }}/"
+    dest: "{{ item.DocumentRoot }}/"
+    recursive: yes
+    delete: yes
+    rsync_opts:
+      - "--exclude=bitrix/cache"
+      - "--exclude=bitrix/managed_cache"
+      - "--exclude=bitrix/stack_cache"
+      - "--exclude=upload/resize_cache"
+  tags: sync
+  with_items: "{{ bx_sites_info }}"
+  when: "inventory_hostname == new_web_server"

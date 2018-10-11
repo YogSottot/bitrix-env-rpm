@@ -1,0 +1,57 @@
+## {{ ansible_managed }}
+## load balancer for bx_cluster
+## bx_cluster = upstream for all web nodes
+## bx_local   = upstream with one local node
+{% set nginx_ssl_type = nginx_ssl|default('ssl') %}
+{% set site_name = web_site_name %}
+{% set site_root = web_site_root_dir %}
+{# defined options that differnet on default/first site on the server #}
+{% if site_name == 'default' -%}
+{% set nginx_listen  = 'default_server '+nginx_ssl_type %}
+{% set nginx_srv     = '_' %}
+{%- else -%}
+{% set nginx_listen  = nginx_ssl_type %}
+{% set nginx_srv     = site_name+' www.'+site_name %}
+{%- endif %}
+server {
+    listen			443 {{ nginx_listen }};
+    server_name		{{ nginx_srv }};
+    server_name_in_redirect	off;
+
+    access_log /var/log/nginx/balancer_access.log balancer;
+    error_log  /var/log/nginx/balancer_error.log  warn;
+
+    include bx/conf/ssl.conf;
+
+    proxy_set_header X-Real-IP          $remote_addr;
+    proxy_set_header X-Forwarded-For    $proxy_add_x_forwarded_for;
+    proxy_set_header Host               $host:443;
+    proxy_set_header X-Forwarded-Host   $host;
+    proxy_set_header X-Forwarded-Scheme $scheme;
+    proxy_set_header HTTPS              YES;
+
+	# Redirect requests to server pool
+	location / {
+		proxy_pass  http://bx_cluster;
+	}
+
+    # location for cluster module - test apache status (really need?)
+	location ^~ /server-status$ {
+		proxy_pass http://bx_local;
+	}
+
+    # monitoring locations - nagios
+    location ^~ /nagios {
+        proxy_pass http://bx_local;
+    }
+
+    # monitoring locations - munin
+    location ^~ /munin {
+        proxy_pass http://bx_local;
+    }
+
+    # scale module location
+    location ~* ^/bitrix/admin/scale_.+\.php$ {
+        proxy_pass http://bx_local;
+    }
+}

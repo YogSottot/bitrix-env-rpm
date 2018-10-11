@@ -1,0 +1,6 @@
+{% set cluster_password_esc = cluster_password | regex_replace('([\'\\\\])','\\\\\\1') -%}
+# {{ ansible_managed }}
+[client]
+user={{ cluster_login }}
+password='{{ cluster_password_esc }}'
+

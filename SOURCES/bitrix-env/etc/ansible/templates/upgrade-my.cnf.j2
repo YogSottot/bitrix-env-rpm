@@ -1,0 +1,15 @@
+# {{ ansible_managed }}
+{% set my_login_unix_socket=mysql_socket -%}
+{% set my_login_user=mysql_login -%}
+{% set my_login_password=mysql_password|default('') -%}
+{% if cluster_enabled == 'enable' -%}
+{% set my_login_user=super_login -%}
+{% set my_login_password=super_password -%}
+{%- endif %}
+{% if my_login_password == None -%}
+{% set my_login_password = '' %}
+{%- endif %}
+[client]
+user={{ my_login_user }}
+password={{ my_login_password }}
+

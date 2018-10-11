@@ -1,0 +1,38 @@
+---
+- name: munin - monitoring process
+  file: src=/usr/share/munin/plugins/process_status_
+    dest=/etc/munin/plugins/process_status_searchd state=link
+  tags: monin
+  notify: restart munin-node
+
+- yum: name=python2-pip state=latest
+  when: ansible_distribution == "CentOS"
+    and ansible_distribution_major_version == "7"
+
+- yum: name=python-pip state=latest
+  when: ansible_distribution == "CentOS"
+    and ansible_distribution_major_version == "6"
+
+- name: install sphinxsearch python module
+  pip: name=sphinxsearch
+  tags: munin
+  notify: restart munin-node
+
+- name: install sphinx 
+  copy: src=sphindex_ dest=/usr/share/munin/plugins/sphindex_
+    owner=root group=root mode=0755
+  tags: munin
+  notify: restart munin-node
+
+- name: install sphinx config on the server
+  template: src=sphinx.j2 dest=/etc/munin/plugin-conf.d/sphinx
+    owner=munin group=bitrix mode=0755
+  tags: munin
+  notify: restart munin-node
+
+- name: enable sphinx plugin on the server
+  file: src=/usr/share/munin/plugins/sphindex_
+    dest="/etc/munin/plugins/sphindex_{{ manage_kernel }}"
+    state=link
+  tags: munin
+  notify: restart munin-node

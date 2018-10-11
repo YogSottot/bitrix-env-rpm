@@ -1,0 +1,14 @@
+---
+# create new server with memcached running
+# option: memcached_server=='create'
+
+- include: setup.yml
+
+- include: sites_register.yml
+
+- name: ansible - update group information
+  delegate_to: localhost
+  tags: ansible_hosts
+  bx_conf: hostname={{ inventory_hostname }} group=memcached 
+
+  

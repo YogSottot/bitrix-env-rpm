@@ -1,0 +1,10 @@
+---
+# restart memcached service
+- name: restart memcached
+  service: name=memcached state=restarted
+  tags: service
+
+- name: restart munin-node
+  service: name=munin-node state=restarted
+  tags: service
+

@@ -1,0 +1,6 @@
+---
+#################### delete slave record in the cluster module
+- include: sites-cache_directory-execute.yml
+  vars:
+    php_script: mysql_remove_slave.php
+    php_server: "{{ cluster_web_server }}"

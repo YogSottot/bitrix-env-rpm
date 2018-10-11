@@ -1,0 +1,68 @@
+---
+# lsync_server: cluster_web_server|new_web_server
+# lsync_config: balancer|backend
+# lsync_started: true|false
+# lsync_server_version: 6|7
+- name: create lsyncd config
+  delegate_to: "{{ lsync_server }}"
+  template:
+    src: "{{ lsync_config }}-lsyncd.conf.j2"
+    dest: "/etc/lsyncd-{{ inventory_hostname }}.conf"
+
+- name: create lsyncd sysconfig
+  delegate_to: "{{ lsync_server  }}"
+  template: 
+    src: sysconfig-lsyncd.j2
+    dest: "/etc/sysconfig/lsyncd-{{ inventory_hostname }}"
+
+- name: create lsyncd logrotate config
+  delegate_to: "{{ lsync_server  }}"
+  template: 
+    src: logrotate-lsyncd.j2 
+    dest: /etc/logrotate.d/lsyncd
+
+# Centos 7
+- name: create systemd lsyncd service
+  delegate_to: "{{ lsync_server  }}"
+  template: 
+    src: systemd-lsyncd.service.j2
+    dest: "/etc/systemd/system/lsyncd-{{ inventory_hostname }}.service"
+  when: "lsync_server_version == '7'"
+
+- name: create tmpfiles.d lsyncd config
+  delegate_to: "{{ lsync_server  }}"
+  template: 
+    src: tmpfiles.d-lsyncd.conf.j2
+    dest: /etc/tmpfiles.d/lsyncd.conf
+  when: "lsync_server_version == '7'"
+
+- name: create tmp directory for lsyncd
+  delegate_to: "{{ lsync_server  }}"
+  shell: systemd-tmpfiles --create /etc/tmpfiles.d/lsyncd.conf
+  args:
+    creates: /var/run/lsyncd
+  when: "lsync_server_version == '7'"
+
+# Centos 6
+- name: create init lsyncd service
+  delegate_to: "{{ lsync_server  }}"
+  template: 
+    src: init-lsyncd.j2
+    dest: "/etc/init.d/lsyncd-{{ inventory_hostname }}"
+    mode: 0755
+  when: "lsync_server_version == '6'"
+
+- name: create tmp directory for lsyncd
+  delegate_to: "{{ lsync_server  }}"
+  file: path={{ item }}
+    state=directory owner=bitrix group=bitrix
+  with_items:
+    - /var/run/lsyncd
+    - /var/log/lsyncd
+
+# enable service
+- name: enable service lsyncd
+  delegate_to: "{{ lsync_server }}"
+  service: name=lsyncd-{{ inventory_hostname }} state=started enabled=yes
+  when: lsync_started
+

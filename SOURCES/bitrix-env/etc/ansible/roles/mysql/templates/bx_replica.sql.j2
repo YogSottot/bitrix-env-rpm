@@ -1,0 +1,11 @@
+-- {{ ansible_managed }}
+{% set master_host = master_server -%}
+{% if mysql_manage == 'master' -%}
+{% set master_host = slave_server -%}
+{%- endif %}
+CHANGE MASTER TO
+  MASTER_HOST='{{ master_host }}',
+  MASTER_USER='{{ replica_login }}',
+  MASTER_PASSWORD='{{ replica_password }}',
+  MASTER_LOG_FILE='{{ master_status.File }}',
+  MASTER_LOG_POS={{ master_status.Position }};

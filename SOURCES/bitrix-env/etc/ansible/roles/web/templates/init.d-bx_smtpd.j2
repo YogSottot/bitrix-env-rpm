@@ -1,0 +1,59 @@
+#!/bin/bash
+
+### BEGIN INIT INFO
+# Provides:          msender
+# Required-Start:    $local_fs $remote_fs $network $syslog
+# Required-Stop:     $local_fs $remote_fs $network $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: starts message sender
+# Description:       starts message sender
+### END INIT INFO
+PROGRAM_DIR={{ item.DocumentRoot }}/bitrix/modules/mail
+PROGRAM_NAME=smtpd.php
+LOG_FILE={{ item.DocumentRoot }}/bitrix/modules/smtpd.log
+CHILDREN=1
+PID_FILE=/tmp/bx_smtpd.pid
+
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+
+start(){
+    echo -n $"Starting $PROGRAM_NAME: "
+
+    /usr/bin/php -f $PROGRAM_DIR/$PROGRAM_NAME 1>>$LOG_FILE 2>&1 & 
+    if [[ $? -gt 0 ]]; then
+        echo "error"
+    else
+        echo $! > $PID_FILE 
+        echo "ok"
+    fi
+
+}
+
+stop() {
+  echo -n $"Stop $PROGRAM_NAME: "
+  kill $(ps -ef | grep "$PROGRAM_NAME" | grep -v grep | awk '{print $2}')
+  if [[ $? -gt 0 ]]; then
+    echo "error"
+  else
+    echo "ok"
+  fi
+}
+
+restart() {
+  stop
+  start
+}
+
+case "$1" in
+  "start") start ;;
+  "stop") stop ;;
+  "restart") restart ;;
+  *)
+  echo "Usage: $0 {start|stop|restart}"
+  exit 1
+  ;;
+esac
+
+exit 0
+

@@ -1,0 +1,35 @@
+---
+#  The interface where the all servers listen: nrpe, mysql and other
+iface: '{{ ansible_default_ipv4.interface }}'
+
+# mysql log files
+mysql_logs: /var/log/mysql
+mysql_enable_logs: 1
+mysql_enable_slow: 1
+mysql_time_slow: 3
+
+# binlog options
+mysql_max_binlog_size: 100M
+mysql_expire_logs_days: 5
+
+# mysql additional configs
+mysql_configs: /etc/mysql/conf.d
+
+# master server 
+# master_server: {{ host_ip_address }}
+master_server: {{ hostname }}
+master_server_netaddr: {{ host_ip_address }}
+
+# default opt for mysql
+mysql_host: localhost
+mysql_port: 3306
+mysql_socket: /var/lib/mysqld/mysqld.sock
+mysql_last_id: 1
+
+# innodb_buffer_pool_size - set value here, that replace default from templates
+# mysql_innodb_buffer_pool_size: 512M
+cluster_login: bx_clusteruser
+replica_login: bx_repluser
+super_login: bx_super
+mysql_login: root
+mysql_password: 

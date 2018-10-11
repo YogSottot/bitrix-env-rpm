@@ -1,0 +1,225 @@
+# messages
+BU0001="Bitrix virtual appliance"
+BU0002="BitrixCRM virtual appliance"
+## ask_password_info
+# Пароль не может быть пустым
+BU0003="Password cannot be empty!"
+# Введите пароль ПОЛЬЗОВАТЕЛЯ:
+BU0004="Enter password for __OPT1__: "
+# Повторно введите пароль ПОЛЬЗОВАТЕЛЯ:
+BU0005="Re-enter password for __OPT1__: "
+## print_pool_info
+# Следующие сервера найдены в пуле (конфигурационный пул):
+BU0006="The following servers are available in the pool:"
+# Найдены сервера, которые не могут быть использованы
+BU0007="There are servers that cannot be used!"
+## print_task_by_type
+BU0008="TaskID"
+BU0009="Started at"
+BU0010="Current Step"
+# Вы должны дождаться завершения заданий
+BU0011="Please wait until all the jobs has finished!"
+## get_local_network
+# Найдены следуюющие сетевые интерфейсы на сервере: (нужно коротко так как это заголовок таблицы)
+BU0012="Server network interfaces:"
+BU0013="Int"
+BU0014="Link"
+BU0015="Speed"
+BU0016="MAC"
+BU0017="IPAddress"
+
+## test_passw_bitrix_localhost
+# Вы должны сменить пароль для пользователя bitrix
+BU0018="You must change password for the 'bitrix' user."
+## test_sites_config
+# Создание кластера недоступно, потому что сущетсвует больше одного сайта типа ядро
+BU0019="Cannot create cluster because there are multiple sites with type='kernel'."
+# Найдено КОЛИЧЕСТВО сайтов типа ядро: (заглавие таблицы)
+BU0020="Found __OPT1__ kernel sites:"
+BU0021="SiteName"
+BU0022="DocumentRoot"
+# Создание кластера доступно, только если все сайты создердат модуль Scale
+BU0023="Cannot create cluster because there are sites without the Scale module."
+# Найдены КОЛИЧЕСТВО сайтов без модуля Scale:
+BU0024="Found __OPT1__ sites without the Scale module:"
+# Создание кластера доступно, только если все сайты содержат модуль Claster
+BU0025="Cannot create cluster because there are sites without the Cluster module."
+# Найдены КОЛИЧЕСТВО сайтов без модуля Claster:
+BU0026="Found __OPT1__ sites without the Cluster module:"
+## test_hostname
+# Имя хоста или Доменной имя сервера (DNS) может состоять из следующих символов:
+BU0027="DNS or hostname can include:"
+## -- числа от 0 до 9
+## -- буквы от a до z
+## -- тире
+## -- точка
+BU0028=" -- numbers (0-9);
+ -- Latin characters (a-z);
+ -- hyphens (-);
+ -- periods (.)."
+## print_menu
+# Доступные декствия: (меню)
+BU0029="Available actions: "
+## my_additional_security; 
+# Завершили удаление анонимных пользователей в mysql сервисе
+BU0030="Anonymous users removed from MySQL service"
+# ОТключили удаленный вход пользователя Root для mysql службы
+BU0031="Remote root access to MySQL service disabled"
+# Удалили БД test
+BU0032="The 'test' DB deleted"
+# Удалили все привилегии для БД test
+BU0033="All 'test' DB privileges revoked."
+# Перезапустили привилегии
+BU0034="MySQL privileges restarted."
+## update_site_settings
+# Обновили опции login и password в файле=/ПУТЬ/К/ФАЙЛУ
+BU0035="Login and password options in __OPT1__ updated."
+# Начинаем обновления файла=/ПУТЬ/К/ФАЙЛУ
+BU0036="Updating __OPT1__"
+## update_site_mysql_data
+# Проверяем существование пользователя: ИМЯ_ПОЛЬЗОВАТЕЛЯ
+BU0037="Checking user existence: __OPT1__"
+# Создали пользователя с именем=ИМЯ_ПОЛЬЗОВАТЕЛЯ для сайта default (default - это сокращенное имя в системе)
+BU0038="User __OPT1__ for 'default' site created."
+# Предоставили права пользователю=ИМЯ_ПОЛЬЗОВАТЕЛЯ для БД=ИМЯ_БАЗЫ
+BU0039="Permission for user __OPT1__ to access __OPT2__ database granted."
+# my_generate_rootpw
+# Начинаем генерацию паролья пользователя root дл MySQL версии=ИМЯ_СЕРВИСА(ВЕРСИЯ_СЕРВИСА)
+BU0040="Generating root password for MySQL Version __OPT1__(__OPT2__)"
+# Не найден стандартный клиентский конфигурационный файл=/ПУТЬ/К/ФАЙЛУ
+BU0041="Cannot find default client configuration file __OPT1__."
+# Найден стандартный клиентский конфигурационный файл=/ПУТЬ/К/ФАЙЛУ
+BU0042="Found default client configuration file __OPT1__."
+# Проверка (СОХРАНЕННОГО|ПУСТОГО) пароля пользователя Root - выполнена
+BU0043="Testing __OPT1__ root password - done."
+# Обновление пароля для MySQL выполнена успешно
+BU0044="MySQL password updated successfully."
+# Обновление паролья для MySQL заверша ошибкой
+BU0045="Cannot update MySQL password."
+# Обновили клиентский конфигурационный файл MySQL
+BU0046="MySQL client configuration file updated."
+# Завершена конфигурация основных опций безопасности для MySQL
+BU0047="MySQL security options configured."
+# generate_push
+# Удалена опция SECURITY_KEY из файла
+BU0048="SECURITY_KEY option in /etc/sysconfig/push-server-multi deleted."
+# Выполнен перезапуск push-сервиса и генерация новой опции SECURITY_KEY
+BU0049="Push server restarted; new SECURITY_KEY option generated."
+# ОБновлен файл
+BU0050="/etc/httpd/bx/conf/00-environment.conf updated."
+# ОБновлен пароль для пользователя bitrix
+BU0051="Password for 'bitrix' user updated."
+# Обновлен пароль для пользователя root
+# update_root_password
+BU0052="Password for 'root' user updated."
+# Скрипт горничная (который удаляет ненужные файлы) добавлен в файл
+BU0053="Cleaner script added to /root/.bash_profile"
+# generate_ansible_inventory
+# Создание Bitrix пула на этом сервере
+# Пул - это наше внутреннее название конфигурации , 
+# которая позволяет управлять этим серверов,  а так же всеми серверами , которые подключены к нему
+BU0054="Create Bitrix pool on this server"
+# Будут использованы следующие настройки для пула управления: сетевой интерфейс=ИМЯ адрес=АДРЕС
+BU0055="Management pool settings: primary interface=__OPT1__; address=__OPT2__."
+# ПОожалуйста введите имя хоста (по умолчанию будет использовано: server1):
+BU0056="Please enter hostname (default: server1): "
+# Будут использованы следующие настройки для пула управления: имя хоста=ИМЯ
+BU0057="Management pool settings: hostname=__OPT1__"
+# Выполняется срипт-настройки; пожалуйста подождите
+BU0058="Setup script is now running; please wait."
+## public_firewalld
+# Настройка сервиса Firewalld
+BU0059="Configure Firewalld service"
+# Открыты сервисы http и https в зоне public сервиса Firewalld
+BU0060="HTTP and HTTPS services available in the public zone of Firewalld service."
+## configure_iptables
+# Сервис Firewalld не установлен. Необходимо установить!
+BU0061="Firewall is not installed. Please install it."
+# Открыты порты http и https в цепочке INPUT для iptables
+BU0062="HTTP and HTTPS ports are open in the iptables INPUT chain."
+# Надены следующие фоновые задания типа 'НАЗВАНИЕ_ТИПА':
+BU0063="Found running __OPT1__ background jobs:"
+
+# exits
+BU1001="Press ENTER to exit: "
+BU1002="Please enter any key"
+
+# errors
+# Неправильный выбор. Пожалуйста, попробуйте снова.
+BU2001="Incorrect input. Please, try again."
+# Постой ввод (при приглашение ничего не введено)
+BU2002="Empty input;"
+## ask_password_info
+# Извините, пароль не совпадают! Подалуйста попробуйте снова.
+BU2003="Sorry, passwords do not match! Please try again."
+# Извините, пароль не может быть пустым.
+BU2004="Sorry, password cannot be empty."
+# Превышено количество попыток на смену пароля. Выход.
+BU2005="Exceeded maximum attempts to set password! Exit."
+## get_pool_info
+# Найдена ошибка в конфигурации пула
+BU2006="There is an error in the pool configuration! Exit."
+## get_ansible_sshkey
+# Не найдена информация про ssh-ключ на сервере. Выход.
+BU2007="Cannot find SSH key information on the server! Exit."
+# Не найден ssh файл=ПУТЬ_К_ФАЙЛУ
+BU2008="SSH file __OPT1__ was not found."
+## print_pool_info
+# Вы должны сменить пароль для пользователя bitrix
+BU2009="You must change password for the 'bitrix' user."
+# Вы должны установить версию Bitrix-env больше 5
+BU2010="Bitrix-env version 5.x.x or later is required."
+# НЕ смогли подключится к серверу по ssh
+BU2011="Cannot establish server connection using SSH."
+## exec_pool_task
+# Задание 'ОПИСАНИЕ_ЗАДАНИЯ' вернуло ошибку; Нажмите ENTER для выхода
+BU2012="Task '__OPT1__' returned an error. Press ENTER to exit: "
+# Оно выполнит 'ОПИСАНИЕ_ЗАДАНИЯ' в пуле
+BU2013="It will run '__OPT1__' in the pool."
+BU2014="Start task:"
+BU2015="JobID"
+BU2016="PID" 
+BU2017="Status"
+## get_local_network
+# Не найден рабочий сетевой интерфейс на сервере. Вы должны настроить сеть.
+BU2018="Cannot find any server network interface.\nPlease configure the network."
+# Не возможно использовать сетевой интерфейс=ИМЯ из-за статуса соединения=СТАТУС
+BU2019="Cannot use interface __OPT1__ because connection status is __OPT2__"
+## test_hostname
+# Имя хоста не может быть пустым
+BU2020="Hostname cannot be empty."
+# Имя хоста=ИМЯ содержит один из псевдонимов localhost имени // не понятно
+BU2021="Hostname __OPT1__ contains alias on localhost."
+# Имя хоста=ИМЯ содержит только числа
+BU2022="Hostname __OPT1__ consists entirely of numbers."
+# Длина имени хоста=ИМЯ больше установленного ограничения в РАЗМЕРЕ символов
+BU2023="Hostname __OPT1__ contains more than __OPT2__ characters."
+# Имя хоста содержит некорректные символы
+BU2024="Hostname __OPT1__ contains invalid characters."
+## update_site_settings
+# Не найдена опция password в файле=ПУТЬ_К_ФАЙЛУ
+BU2025="Cannot find the 'password' option in __OPT1__"
+## update_site_mysql_data
+# Запрос к MySQL службе вернул ошибку: (дальше текст ошибки из команды)
+BU2026="Request to the MySQL service returned an error: "
+# Не получилось создать имя пользователя. Выход
+BU2027="Cannot create the user name. Exit"
+# Не получилось выдать права пользователю=ИМЯ на БД=НАЗВАНИЕ
+BU2028="Cannot grant access permissions to user __OPT1__ for database __OPT2__"
+## generate_ansible_inventory
+# Не найдены работающие сетевые интерфейсы на этом сервере
+BU2029="No working network interfaces found on the server."
+## public_firewalld
+# Не найдена зона public в настройках Firewalld. Пожалуйста, откройте порты 443 и 80 вручную.
+BU2030="Cannot find the public zone in firewalld settings. Please open ports 80 and 443 manually."
+# Не получилось добавить порты 80 и 443 в зону public.
+BU2031="Cannot add HTTP and HTTPS services to the public zone."
+## configure_iptables
+# При установке Firewalld возникла ошибка. Пропускаем конфигурацию сервиса.
+BU2032="Cannot install firewalld. Skipping firewalld configuration."
+# При включение сервиса Firewalld возникла ошибка. Пропускаем конфигурацию сервиса
+BU2033="Cannot enable firewalld. Skipping firewalld configuration."
+# Настройка iptables вернула ошибку. Пожалуйста, настройте порты 80 и 443 вручную.
+BU2034="Iptables returned an error. Please open ports 80 and 443 manually."
+# Не получилось добавить порты 80 и 443 в iptables. Пожалуйста, настройте порты 80 и 443 вручную.
+BU2035="Cannot open ports 80 and 443. Please open ports 80 and 443 manually."

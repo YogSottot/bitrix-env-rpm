@@ -1,0 +1,335 @@
+#!/usr/bin/perl
+# manage configuration for bitrix pool of servers
+# create new, add hosts and soo on. Try use -h|--help for detail help message
+
+use strict;
+use warnings;
+
+# WebDir methods live here
+use lib "/opt/webdir/lib";
+use Pool;
+use Host;
+use SSHAuthUser;
+use Output;
+
+# additional modules
+use Data::Dumper;
+use Getopt::Long;
+use File::Basename qw( dirname basename );
+
+# program options
+my $prog_name = basename $0;
+my $prog_dir  = dirname $0;
+
+# command line options
+my $o_format   = 'plain';    # format of stdout message
+my $o_help     = undef;      # print help message
+my $o_verbose  = 0;          # enable verbose mode
+my $o_hostname = undef;      # hostname for add|del|view action
+my $o_ipaddres = undef;      # ip address for add|del|viw action
+my $o_group    = undef;      # group name for add action on host
+my $o_action   = 'view';     # type of action that script must do.
+                             # add     - add host to configuration
+     # view    - view current config for all host or defined
+     # create  - create empty default configuration for father use
+     # key     - get /path/to/ssh/key for ssh connections to hosts in pool
+     # pw      - password change on remote host for user root
+     # copy    - copy sshkey to remote host
+     # timezone- change timezone for servers in the pool
+  # monitor-(enable|disable|status) - enable|disable and get status for monitoring
+my $o_login   = 'root';    # login for ssh connect
+my $o_oldpass = undef;     # current password for user $l_login
+my $o_newpass =
+  undef;  # new password for user $l_login ( usage when password will be change)
+my $o_sshkey  = undef;            # ssh key
+my $o_int     = undef;
+my $o_tz_php  = 0;                # update timezone for php or not
+my $o_tz_name = 'Europe/Moscow';  # timezone name
+my $o_host_id = undef;            # host_id, used while updated network settings
+my $o_update_log   = undef;       # update log path
+my $o_bitrix_type  = 'general';
+my $o_new_hostname = undef;
+
+# debug
+my $cmd_options = join( ' ', @ARGV );
+my $cmd_output = Output->new(
+    error   => 0,
+    logfile => '/opt/webdir/logs/wrapper.log',
+);
+$cmd_output->log_data("start script with options: $cmd_options");
+
+# get command line options
+Getopt::Long::Configure("bundling");
+my $result_option = GetOptions(
+    'v'             => \$o_verbose,
+    'verbose'       => \$o_verbose,
+    'h'             => \$o_help,
+    'help'          => \$o_help,
+    'o:s'           => \$o_format,
+    'ouput:s'       => \$o_format,
+    'H:s'           => \$o_hostname,
+    'host:s'        => \$o_hostname,
+    'i:s'           => \$o_ipaddres,
+    'ip:s'          => \$o_ipaddres,
+    'g:s'           => \$o_group,
+    'group:s'       => \$o_group,
+    "a:s"           => \$o_action,
+    'action:s'      => \$o_action,
+    "u:s"           => \$o_login,
+    'user:s'        => \$o_login,
+    "p:s"           => \$o_oldpass,
+    'pass:s'        => \$o_oldpass,
+    'P:s'           => \$o_newpass,
+    'new:s'         => \$o_newpass,
+    'k:s'           => \$o_sshkey,
+    'key:s'         => \$o_sshkey,
+    'I:s'           => \$o_int,
+    'interface:s'   => \$o_int,
+    't:s'           => \$o_tz_name,
+    'timezone:s'    => \$o_tz_name,
+    'php'           => \$o_tz_php,
+    'host_id:s'     => \$o_host_id,
+    'update_log:s'  => \$o_update_log,
+    'bitrix_type:s' => \$o_bitrix_type,
+    'hostname:s'    => \$o_new_hostname,
+) or unknown_arg();
+
+# help message
+if ($o_help) { print_help( $prog_name, 0 ) }
+
+# formt output
+if ( $o_format !~ /^(json|plain|te?xt)$/ ) { print_help( $prog_name, 1 ) }
+if ( $o_format =~ /^te?xt$/ ) { $o_format = "plain" }
+
+# process request
+########################## pool configuration
+my $p = Pool->new(
+    debug       => $o_verbose,
+    bitrix_type => $o_bitrix_type,
+);
+my $output;
+
+# Pool operations
+if ( $o_action =~ /^(view|status)$/i ) {
+    $output = $p->get_ansible_data( ($o_hostname) ? $o_hostname : $o_ipaddres );
+}
+elsif ( $o_action eq 'create' ) {
+    $output = $p->create_new_pool( $o_hostname, $o_int, $o_ipaddres );
+}
+elsif ( $o_action eq 'delete_pool' ) {
+    $output = $p->delete_pool();
+}
+elsif ( $o_action eq 'forget_host' ) {
+    $output = $p->forget_host($o_hostname);
+}
+elsif ( $o_action eq 'change_hostname' ) {
+    $output = $p->change_hostname( $o_hostname, $o_new_hostname );
+}
+elsif ( $o_action eq 'change_ip' ) {
+    $output = $p->update_network( $o_hostname, $o_ipaddres );
+}
+elsif ( $o_action eq 'update_network' ) {
+    $output = $p->UpdateHostNetwork( $o_host_id, $o_ipaddres );
+}
+elsif ( $o_action eq 'check_network' ) {
+    $output = $p->TestHostNetwork($o_update_log);
+}
+elsif ( $o_action eq 'enable_beta_version' ){
+    $output = $p->beta_version('enable');
+}
+elsif ( $o_action eq 'disable_beta_version' ){
+    $output = $p->beta_version('disable');
+}
+elsif ( $o_action =~ /^(bx_update|bx_upgrade)$/ ) {
+    $output = $p->update_pool( $o_hostname, $1 );
+}
+elsif ( $o_action =~ /^bx_passwd$/ ) {
+    $output = $p->password_on_server( $o_hostname, $o_login, $o_newpass );
+}
+elsif ( $o_action =~ /^bx_reboot$/ ) {
+    $output = $p->reboot_server($o_hostname);
+}
+elsif ( $o_action =~ /^timezone$/ ) {
+    $output = $p->timezone_in_the_pool( $o_tz_name, $o_tz_php );
+}
+elsif ( $o_action =~ /^(sshkey|key)$/ ) {
+    $output = $p->get_ssh_key();
+}
+# Inventory operations
+elsif ( $o_action =~
+/^(bx_php_upgrade|bx_php_upgrade_php56|bx_php_rollback_php7[012]?|bx_php_upgrade_php7[012]?)$/
+  )
+{
+    use bxInventory;
+    my $inventory = bxInventory->new( debug => $o_verbose );
+    $output = $inventory->update_php($o_action);
+}
+elsif ( $o_action =~ /^(bx_upgrade_mysql57)$/ ) {
+    use bxInventory;
+    my $inventory = bxInventory->new( debug => $o_verbose );
+    $output = $inventory->update_mysql($o_action);
+
+    # Host operations
+}
+elsif ( $o_action eq 'add' ) {
+
+    # the parameter corresponds to the identifier in the inventory
+    # my $get_host_ident = $self->get_inventory_hostname($host);
+    # return $get_host_ident if ( $get_host_ident->is_error  );
+    # $host_ident = $get_host_ident->data->[1];
+    my $h = Host->new( host => $o_hostname, ip => $o_ipaddres );
+    if ( not defined $o_group ) {
+        $output = $h->createHost();
+    }
+    else {
+        $output = $h->add_to_group($o_group);
+    }
+
+}
+elsif ( $o_action eq 'del' ) {
+    my $get_hi = $p->get_inventory_hostname($o_hostname);
+    if ( $get_hi->is_error ) {
+        $output = $get_hi;
+    }
+    else {
+        my $h = Host->new( host => $get_hi->data->[1] );
+        if ( not defined $o_group ) {
+            $output = $h->removeHostFromPool();
+        }
+        else {
+            $output = $h->del_from_group($o_group);
+        }
+    }
+}
+elsif ( $o_action eq 'bx_info' ) {
+    my $get_hi = $p->get_inventory_hostname($o_hostname);
+    if ( $get_hi->is_error ) {
+        $output = $get_hi;
+    }
+    else {
+        my $h = Host->new( host => $get_hi->data->[1] );
+        $output = $h->get_bx_info();
+    }
+}
+elsif ( $o_action eq 'dbs_list' ) {
+    my $get_hi = $p->get_inventory_hostname($o_hostname);
+    if ( $get_hi->is_error ) {
+        $output = $get_hi;
+    }
+    else {
+        my $h = Host->new( host => $get_hi->data->[1] );
+        $output = $h->get_bx_dbs();
+    }
+
+# SSH options
+}
+elsif ( $o_action eq 'copy' ) {
+    if ( !( $o_sshkey && $o_ipaddres && $o_oldpass ) ) {
+        $output = Output->new(
+            error   => 1,
+            message => "Mandatory option is missing."
+        );
+    }
+    else {
+        my $sshAuth = SSHAuthUser->new(
+            sship   => $o_ipaddres,
+            sshkey  => $o_sshkey,
+            oldpass => $o_oldpass,
+        );
+
+        $output = $sshAuth->copy_ssh_key();
+
+    }
+}
+elsif ( $o_action =~ /^pw$/ ) {
+    if ( !( $o_ipaddres && $o_oldpass && $o_newpass ) ) {
+        $output = Output->new(
+            error   => 1,
+            message => "Mandatory option is missing."
+        );
+
+    }
+    else {
+        my $sshAuth = SSHAuthUser->new(
+            sship   => $o_ipaddres,
+            newpass => $o_newpass,
+            oldpass => $o_oldpass,
+        );
+
+        $output = $sshAuth->change_user_pass();
+
+    }
+}
+else {
+    $output = Output->new(
+        error   => 1,
+        message => "Unknown action option. PLease use -h for help message.",
+    );
+}
+
+$output->print($o_format);
+exit;
+
+# print usage
+sub print_usage {
+    my $prog = shift;
+    print
+"Usage: $prog [-vh] [-a add|create|view|copy|pw|monitor] [-i|-ip host_ip -H|--hostname hostname -g|--group group] [ -k path/to/ssh/key ] \n";
+}
+
+# help message
+sub print_help {
+    my $prog = shift;
+    my $exit = shift;
+    print_usage($prog);
+    print <<EOT;
+Options:
+  -h|--help      - show this message
+  -v|--verbose   - enable verbose mode.
+  -o|--output    - define output format, plain or json (default: plain)
+  -i|--ip        - add description of host ( group settting by --group option)
+  -H|--host      - hostname for human usage ( default: host_ip )
+  -g|--group     - group name ( default: hosts )
+  -a|--action    - add|create|copy|pw|bx_info|bx_update|bx_reboot|dbs_list configuration in for ansible
+  -u|--user      - user for ssh connection ( default: root )
+  -p|--pass      - password for ssh connection ( used only for key installation  )
+  -P|--new       - new password ( password can|must be changed if password policy demand it)
+  -k|--key       - key file for installation
+  -t|--timezone  - timezone name (default: Europe/Moscow)
+  --php          - update php settings (default: not updated)
+  --host_id      - host ID, used when update network settings
+ Ex.
+  * list of hosts and  groups in the ansible hosts file
+ $prog -o json
+  * add host vm1 with ip address 192.168.1.125 to config file
+ $prog -a add -i 192.168.1.125 -H vm1
+  * create default configuration with manager on local host
+ $prog -a create 
+  * install ssh key on the server
+ $prog -a copy -i 192.168.1.125 -k /etc/ansible/.ssh/lBNltMqvWJ.bxkey.pub -p password
+  * change password for user on remote host
+ $prog -a pw -i 192.168.1.125 -p oldpassword -P newpassword -o json
+  * update all hosts in the pool
+ $prog -a bx_update -o json
+  * update one host in the pool
+ $prog -a bx_update -H vm1 -o json 
+  * status for monitoring in the pool
+ $prog -a monitor-status
+  * reboot server
+ $prog -a bx_reboot -H vm1 -o json
+  * change bitrix password
+ $prog -a bx_passwd -u bitrix -H vm1 -P newpassword -o json
+  * list existen db on host
+ $prog -a dbs_list -H vm1 -o json
+  * server info
+ $prog -a bx_info -H vm1 -o json
+  * set timezone settings for the pool
+ $prog -a timezone -o json --timezone=Europe/Lisbon --php
+  * update host settings by new IP address
+ $prog -a update_network --host_id 1401866581_XXXXXXXX -i 172.17.0.14
+  * check the log and update the network settings if necessary (this action added to crontab)
+ $prog -a check_network --update_log /opt/webdir/logs/update_pool.log
+
+EOT
+    exit;
+}

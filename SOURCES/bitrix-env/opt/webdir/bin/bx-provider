@@ -1,0 +1,156 @@
+#!/usr/bin/perl
+# get providers list, use it's for additional actions
+use strict;
+use warnings;
+
+use lib "/opt/webdir/lib";
+use bxMC;
+use Output;
+use Pool;
+use bxProvider;
+use bxProviders;
+use Data::Dumper;
+use Getopt::Long;
+use File::Basename qw( dirname basename );
+
+
+# program options
+my $prog_name = basename $0;
+my $prog_dir  = dirname $0;
+
+my $o_action  = "list";           # type of action that script must do.
+                                  # options      - supported action by special provider
+                                  # configs      - list supported configurations
+                                  # list         - list all providers that installed on host
+                                  # install      - create initial directories structure for provider
+                                  # init         - additional action while pool created
+                                  # order        - request host configuration for pool
+                                  # order_status - status of the request
+                                  # order_to_host- create host in the pool 
+                                  # orders_list  - all orders and they statuses
+my $o_format  = 'plain';          # format of stdout message
+my $o_verbose = 0;
+my $o_help    = undef;
+my $o_provider        = undef;            # provider name
+my $o_provider_config = undef;            # configuration ID for host request
+my $o_provider_request= undef;            # request ID for status request
+my $o_provider_archive= undef;            # archive with provider files (install op)
+my @script_actions = qw(status list install uninstall pool configs order orders_list order_status order_to_host);
+
+# get command line options
+Getopt::Long::Configure ("bundling");
+my $result_option = GetOptions(
+  'v'     => \$o_verbose,   'verbose'   => \$o_verbose,
+  'h'     => \$o_help,      'help'      => \$o_help,
+  "a:s"   => \$o_action,    'action:s'  => \$o_action,
+  "o:s"   => \$o_format,    'output:s'  => \$o_format,
+  "provider:s"  => \$o_provider,
+  "config_id:s" => \$o_provider_config,
+  "task_id:s"   => \$o_provider_request,
+  "archive:s"   => \$o_provider_archive,
+) or unknown_arg();
+
+
+# help message
+if ($o_help) { print_help($prog_name, 0) };
+# test action
+if (!grep(/^$o_action$/, @script_actions)){ print_help($prog_name, 1); }
+# formt output
+if ($o_format !~ /^(json|plain|te?xt)$/) { print_help($prog_name, 1); }
+if ($o_format =~ /^te?xt$/) { $o_format = "plain" };
+
+my $provider = bxProvider->new(
+  name  => $o_provider,
+  debug => $o_verbose,
+);
+
+my $provider_action = undef;
+# create folders and untar archive to directory
+if ($o_action =~ /^install$/){
+  $provider_action = $provider->installProvider($o_provider_archive);
+}elsif($o_action =~ /^uninstall$/){
+  $provider_action = $provider->uninstallProvider();
+}elsif($o_action =~ /^status$/){
+  $provider_action = $provider->optionsProvider();
+}elsif($o_action =~ /^configs$/){
+  $provider_action = $provider->configsProvider();
+}elsif($o_action =~ /^order$/){
+  $provider_action = $provider->order2Provider($o_provider_config);
+}elsif($o_action =~ /^orders_list$/){
+  if($o_provider){
+    $provider_action = $provider->listOrders4Provider();
+  }else{
+    my $providers = bxProviders->new();
+    $provider_action = $providers->listOrders4Providers();
+  }
+}elsif($o_action =~ /^order_status$/){
+  $provider_action = $provider->order_status2Provider($o_provider_request);
+}elsif($o_action =~ /^order_to_host$/){
+  $provider_action = $provider->order_to_hostProvider($o_provider_request);
+}elsif($o_action =~ /^list$/){
+  my $providers = bxProviders->new();
+  $provider_action = $providers->listProviders;
+}else{
+  $provider_action = Output->new(
+    error => 1,
+    message => "Unknown action=$o_action"
+  );
+}
+
+$provider_action->print($o_format);
+
+exit 0;
+# print usage
+sub print_usage {
+  my $prog = shift;
+  my $action_text = join('|',@script_actions);
+  print "Usage: $prog [-vh] [-a $action_text] [--provider provider_name] 
+   [--config_id configuration_id] [--task_id configuration_task_id] [--archive /path/to/archive.tar.gz ] \n";
+}
+
+# help message
+sub print_help {
+  my $prog = shift;
+  my $exit = shift;
+  my $action_text = join('|',@script_actions);
+  print_usage( $prog );
+  print <<EOT;
+Options:
+  -h|--help    - show this message
+  -v|--verbose - enable verbose mode.
+  -a|--action  - provider actions: $action_text
+  -o|
+  --provider   - provider name that serve the request
+  --archive    - upload files for install operation 
+  --config_id  - send request to the provider for host with defined configuration 
+  --task_id - get info about config request
+ Ex.
+  * list all installed providers
+ $prog -o json
+  * get status and supported options for provider 
+ $prog -a status --provider amazon
+  * get list of configurations
+ $prog -a configs --provider amazon
+ * create default files and folder for provider, upload files from directory to provider
+ $prog -a install --provider amazon --archive /tmp/amazon.tar.gz
+  * run provider action after ssh key will be created (while pool is create) - testing options 
+ $prog -a pool --provider amazon
+  * delete all providers data
+ $prog -a uninstall --provider amazon 
+  * get configurations for provider
+ $prog -a configs --provider amazon
+  * request configuration 
+ $prog -a order --provider amazon --config_id 123
+  * status of requsted configuration
+ $prog -a order_status --provider amazon --task_id 987
+  * check status of requested configuration, 
+    if status=finished create request for adding host to the pool
+ $prog -a order_to_host --provider amazon --task_id 987
+  * get list of orders (modification time, current status)
+ $prog -a orders_list --provider amazon
+ 
+EOT
+;
+  exit;
+}
+

@@ -1,0 +1,18 @@
+[Unit]
+Description=BX smtpd service
+After=mysqld.target
+After=bvat.service
+
+[Service]
+Type=forking
+ExecStart=/etc/init.d/bx_smtpd start
+ExecStop=/etc/init.d/bx_smtpd stop
+Restart=always
+RestartSec=30
+User=bitrix
+WorkingDirectory={{ item.DocumentRoot }}
+PIDFile=/tmp/bx_smtpd.pid
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+
+[Install]
+WantedBy=multi-user.targe

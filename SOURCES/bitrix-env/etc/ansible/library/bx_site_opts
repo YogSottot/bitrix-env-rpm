@@ -1,0 +1,120 @@
+#!/usr/bin/env perl 
+#===============================================================================
+#
+#         FILE: bx_site_opts
+#
+#        USAGE: bx_site_opts: name=cron state=enable|disable  
+#
+#  DESCRIPTION: manage site options
+#
+#      VERSION: 1.0
+#      CREATED: 08/13/2015 02:18:24 PM
+#===============================================================================
+
+use strict;
+use warnings;
+
+use lib "/opt/webdir/lib";
+use bxSite;
+use Output;
+use Data::Dumper;
+my %opts = (
+    state => undef,
+    name  => undef,
+    site  => undef,
+    dir   => undef,
+);
+
+# get command line options
+my $opt_file = $ARGV[0];
+
+# if change opts via module options
+if ( $opt_file ){
+  open (my $oh, $opt_file) or die "Cannot open $opt_file: $!";
+  my $lines = <$oh>;
+  if (defined $lines){
+    my @opts = split(/\s+/, $lines);
+    foreach my $opt (@opts){
+      # if we need update option from file
+      if ($opt =~ /^([^=]+)=(\S+)$/){
+        my $key = $1;
+        my $val = $2;
+        $val =~ s/^['"]//;
+        $val =~ s/['"]$//;
+
+        $opts{$key} = $val;
+      }
+    }
+    close $oh;
+  }
+}
+
+my $bx_return;
+foreach my $opt (keys %opts){
+    if (not defined $opts{$opt}){
+        $bx_return = Output->new(
+            error => 1,
+            message => "The option $opt= must be defined.",
+        );
+        print $bx_return->printAnsible;
+        exit 1;
+    }
+}
+my $bx_site = my $bx = bxSite->new(
+    site_name => $opts{'site'},
+    site_dir  => $opts{'dir'},
+);
+if ($opts{'name'} eq 'cron') {
+    if ($opts{'state'} eq 'enable'){
+        $bx_return = $bx_site->enableCronForSite();
+    }elsif ($opts{'state'} eq 'disable'){
+        $bx_return = $bx_site->disableCronForSite();
+    }else{
+        $bx_return = Output->new(
+            error => 1,
+            message => "This option state= can have the following values: enable or disable.",
+        );
+    }
+    
+
+}elsif ($opts{'name'} eq 'mail') {
+    if ($opts{'state'} eq 'enable'){
+        # mail options
+        my %smtp_opts = (
+            'SMTPPort' => ($opts{'smtp_port'}) ? $opts{'smtp_port'} : 25,
+            'SMTPTLS'  => ($opts{'smtp_tls'}) ? 'on' : 'off',
+            'SMTPAuth' => ($opts{'smtp_auth'}) ? $opts{'smtp_auth'} : 'auto',
+        ); 
+        if ($opts{'smtp_host'} && $opts{'mail_address'}){
+            $smtp_opts{'SMTPHost'} = $opts{'smtp_host'};
+            $smtp_opts{'EmailAddress'} = $opts{'mail_address'};
+        }else{
+            $bx_return = Output->new(
+                error => 1,
+                message => "Options smtp_host= and mail_address= are mundatory for mail enable"
+            );
+        }
+        if ($opts{'smtp_user'}){
+            $smtp_opts{'SMTPUser'} = $opts{'smtp_user'};
+        }
+        if ($opts{'smtp_pass'}){
+            $smtp_opts{'SMTPPassword'} = $opts{'smtp_pass'};
+        }
+        $bx_return = $bx_site->createEmailForSite(\%smtp_opts);
+    }elsif ($opts{'state'} eq 'disable'){
+        $bx_return = $bx_site->deleteEmailForSite();
+    }else{
+        $bx_return = Output->new(
+            error => 1,
+            message => "This option state= can have the following values: enable or disable.",
+        );
+    }
+}else{
+    $bx_return = Output->new(
+        error => 1,
+        message => "This option name= can have the following values: cron, mail.",
+    );
+}
+print $bx_return->printAnsible;
+
+

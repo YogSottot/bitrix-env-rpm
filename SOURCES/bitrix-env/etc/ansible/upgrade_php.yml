@@ -1,0 +1,89 @@
+---
+################# upgrade php for installation
+# 1. configure remi repository, enable php56 
+# 2. update php
+# 2. upgrade configuration files for php 
+- name: upgrade php
+  hosts: bitrix-hosts
+  vars:
+    cluster_enabled: disable
+  gather_facts: True
+  tasks:
+    - include_vars: /etc/ansible/roles/common/vars/default.yml
+    
+    - include_vars: /etc/ansible/group_vars/bitrix-mysql.yml
+
+    - include_vars: /etc/ansible/group_vars/bitrix-web.yml
+
+    - name: get host info
+      bx_vat:
+
+    - name: change cluster mark if web cluster configured
+      set_fact: cluster_enabled=enable
+      when: "cluster_web_configure == 'enable'"
+      tags: sites
+
+    - name: change cluster mark if mysql cluster configured
+      set_fact: cluster_enabled=enable
+      when: "cluster_mysql_configure == 'enable'"
+      tags: configure_site
+
+    - name: save list php disabled modules
+      bx_php: action=safe56
+
+    - name: upgrade bitrix-env
+      yum: name={{ bx_package_name }} state=latest
+      tags: bitrix
+ 
+    - name: import gpg-keys
+      shell: rpm --import "http://rpms.famillecollet.com/RPM-GPG-KEY-remi" 
+        creates=/etc/pki/rpm-gpg/RPM-GPG-KEY-remi
+      tags: php56
+
+    - name: install Remi repository
+      yum: name="http://rpms.famillecollet.com/enterprise/remi-release-6.rpm"
+        state=present
+      tags: php56
+
+    - name: enable remi main repository
+      ini_file: dest=/etc/yum.repos.d/remi.repo
+        section=remi-php56 option=enabled value=1
+      tags: php56
+
+    - name: update system by remi repository
+      yum: name=* state=latest
+      tags: php56
+
+    - name: test apcu module in php
+      shell: /usr/bin/php -m
+      register: phpmodules
+      always_run: yes 
+
+    - name: delete apc configuration file
+      file: path=/etc/php.d/apc.ini state=absent
+      when: phpmodules.stdout.find("apcu") != -1
+      tags: php56
+
+    - name: create apcu php56 configuration file
+      template: src=templates/apcu.ini.j2 dest=/etc/php.d/40-apcu.ini
+        mode=0644 owner=root group=root
+      when: phpmodules.stdout.find("apcu") != -1
+      tags: php56
+
+    - name: replace max_input_vars in bitrixenv.ini 
+      lineinfile: dest=/etc/php.d/bitrixenv.ini
+        regexp='^max_input_vars ' line='max_input_vars = 10000'
+        mode=0644 owner=root group=root
+      tags: php56
+    
+    - name: restore list php disabled modules
+      bx_php: action=restore56
+      tags: php56
+
+    - name: bitrix settings
+      shell: /etc/init.d/bvat start
+
+    - name: restart httpd service
+      service: name=httpd state=restarted
+      tags: php56
+

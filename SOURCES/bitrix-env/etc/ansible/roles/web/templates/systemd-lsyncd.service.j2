@@ -1,0 +1,14 @@
+[Unit]
+Description=Live Syncing (Mirror) Daemon for {{ inventory_hostname }}
+After=network.target
+
+[Service]
+Type=simple
+Nice=19
+EnvironmentFile=-/etc/sysconfig/lsyncd-{{ inventory_hostname }}
+ExecStart=/usr/bin/sh -c 'eval `/usr/bin/lsyncd -nodaemon $LSYNCD_OPTIONS`'
+User=bitrix
+Group=bitrix
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,48 @@
+---
+- name: remove from ansible inventory
+  lineinfile: 
+    dest: /etc/ansible/hosts
+    regexp: "^{{ forget_bx_hostname }}"
+    state: absent
+
+- name: remove personal inventory file
+  file:
+    path: "/etc/ansible/host_vars/{{ forget_bx_hostname }}"
+    state: absent
+
+- name: remove nagios cfg
+  file:
+    path: "/etc/nagios/bitrix-pool/{{ forget_bx_hostname }}.cfg"
+    state: absent
+  when: monitoring_status == 'enable'
+
+- name: remove munin cfg
+  lineinfile:
+    dest: /etc/munin/conf.d/munin-hosts.conf
+    state: absent
+    regexp: "{{ item }}"
+  with_items:
+    - "{{ forget_bx_hostname }}"
+    - "{{ forget_bx_host }}"
+    - "{{ forget_bx_netaddr }}"
+  when: monitoring_status == 'enable'
+
+- name: remove nagios group cfg
+  lineinfile:
+    dest: /etc/nagios/objects/localhost.cfg
+    state: absent
+    regexp: "{{ item }}"
+  with_items:
+    - "{{ forget_bx_hostname }}"
+    - "{{ forget_bx_host }}"
+    - "{{ forget_bx_netaddr }}"
+  when: monitoring_status == 'enable'
+
+- name: restart nagios and munin
+  service:
+    name: "{{ item }}"
+    state: restarted
+  with_items:
+    - nagios
+  when: monitoring_status == 'enable'
+

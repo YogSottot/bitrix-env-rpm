@@ -1,0 +1,110 @@
+#!/bin/bash
+# insert block of line into the file
+
+export LANG=en_EN.UTF-8
+export PATH=$PATH:/sbin:/usr/sbin
+
+[[ -z $DEBUG  ]] && DEBUG=0
+TMP=/opt/webdir/logs
+LOG=$TMP/bx_blocklines.log
+[[ $DEBUG -gt 0  ]] 2>/dev/null && echo -n "" > $LOG
+
+debug() {
+    msg=$1
+
+    [[ $DEBUG -gt 1  ]] && printf "%s: %d: %s\n" "$(date +%F-%H-%M-%S)" "$$" "$msg" >> $LOG
+}
+
+# print error message
+print_error() {
+  msg=$1
+  echo "{\"changed\":false,\"failed\":true,\"msg\":\"$msg\"}"
+  exit 1
+}
+
+# print timezone info
+print_ok() {
+  msg=$1
+
+  echo "{\"changed\":true,\"msg\":\"$msg\"}"
+  exit 0
+}
+
+print_notchanged() {
+  msg=$1
+
+  echo "{\"changed\":false,\"msg\":\"$msg\"}"
+  exit 0
+
+}
+
+update_file(){
+
+    [[ -z $from_file ]] && print_error "No defined the file with block of strings from_file= opt."
+    insertafter_line=$(grep -n "$insertafter" $dest | \
+        head -n 1 | awk -F':' '{print $1}')
+    if [[ -z $insertafter_line ]]; then
+        print_error "Not found insertafter=$insertafter in the file=$dest"
+    fi
+
+    {
+        head -n $(( $insertafter_line )) $dest
+        cat $from_file
+        tail -n +$(( $insertafter_line+1 )) $dest
+    } > $tmp_dest
+    mv -f $tmp_dest $dest
+    print_ok "Update file dest=$dest"
+}
+
+delete_file(){
+    insertafter_line=$(grep -n "$insertafter" $dest | \
+        head -n 1 | awk -F':' '{print $1}')
+    if [[ -z $insertafter_line ]]; then
+        print_notchanged "Not found insertafter=$insertafter in the file=$dest"
+    fi
+
+    [[ -z $insertbefore ]] && insertbefore="${insertafter}" 
+
+    insertbefore_line=$(grep -n "$insertbefore" $dest | \
+        tail -n 1 | awk -F':' '{print $1}')
+    if [[ -z $insertbefore_line ]]; then
+        print_notchanged "Not found insertafter=$insertbefore_line in the file=$dest"
+    fi
+
+    {
+        head -n $(( $insertafter_line-1 )) $dest
+        tail -n +$(( $insertbefore_line+1 )) $dest
+    } > $tmp_dest
+    mv -f $tmp_dest $dest
+    print_ok "Update file dest=$dest"
+}
+
+dest_link(){
+    if [[ -L $dest ]]; then
+        orig_file=$(file $dest | \
+            grep "symbolic link to" | awk -F'`' '{print $2}' | sed -e "s/'$//" )
+        dest="$orig_file"
+    fi
+}
+
+# get ansible variables
+source ${1} 2>/dev/null
+
+[[ -z $dest ]] && print_error "Not defined the file to modify dest=."
+[[ -z $insertafter ]] && print_error "Not defined specified regular expression insertafter=."
+[[ -z $state ]] && state="update"
+debug "from_file=$from_file dest=$dest insertafter=$insertafter insertbefore=$insertbefore state=$state"
+
+# convert link to orig file name and update it
+dest_link
+
+bn_dest=$(basename "$dest")
+dn_dest=$(dirname "$dest")
+tmp_dest="${dn_dest}/$(date +%s)_${bn_dest}"
+
+case "$state" in
+    "update") update_file;;
+    "delete") delete_file;;
+    *) print_error "Unknown state option";;
+esac
+

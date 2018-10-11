@@ -1,0 +1,28 @@
+---
+- name: enable web-services
+  service: name={{ item  }} enabled=no state=stopped
+  with_items:
+    - nginx
+    - httpd
+  tags: web
+
+- name: remove web-services directories
+  file: 
+    path: "{{ item }}" 
+    state: absent
+  with_items:
+    - "{{ nginx_base_dir  }}/{{ nginx_config_dir }}"
+    - "{{ nginx_base_dir  }}/{{ nginx_maps_dir  }}"
+    - "{{ nginx_base_dir  }}/{{ nginx_available_sites_dir }}"
+    - "{{ nginx_base_dir  }}/{{ nginx_enabled_sites_dir }}"
+    - "{{ nginx_base_dir  }}/{{ nginx_available_sites_dir_cluster }}"
+    - "{{ httpd_base_dir  }}/{{ httpd_config_dir }}"
+  tags: web
+
+- name: remove files for site directories
+  file: 
+    path: "{{ item.DocumentRoot }}/"
+    state: absent
+  tags: web
+  with_items: "{{ bx_sites_info }}"
+

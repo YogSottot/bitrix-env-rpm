@@ -1,0 +1,21 @@
+---
+# redis
+redis_socket: /tmp/redis.sock
+redis_pidfile: /var/run/redis_6379.pid
+redis_logdir: /var/log/redis
+redis_logfile: "{{ redis_logdir }}/redis.log"
+redis_datadir: /var/lib/redis
+
+# nodejs
+nodejs_pub: "/bitrix/pub/"
+nodejs_sub: "/bitrix/sub/"
+nodejs_subws: "/bitrix/subws/"
+nodejs_rest: "/bitrix/rest/"
+
+rpm_name: bx-push-server
+rpm_name_old: push-server
+
+ansible_playbook_file: NOT_DEFINED
+ansible_playbook_debug: NOT_DEFINED
+push_server: NOT_DEFINED
+

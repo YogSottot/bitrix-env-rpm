@@ -1,0 +1,42 @@
+---
+# This role contains common plays that will run on all nodes in bitrix-hosts
+- name: include variables from temporary config
+  include_vars: "{{ ansible_playbook_file }}"
+  when: "ansible_playbook_file != 'NOT_DEFINED'"
+
+- include: remove.yml
+  when: "common_manage == 'remove' and common_server == inventory_hostname"
+  static: no
+
+- include: forget.yml
+  when: "common_manage == 'forget' and inventory_hostname == cluster_web_server"
+  static: no
+
+- include: update.yml
+  when: "common_manage == 'update' or common_manage == 'forget'"
+  static: no
+
+- include: push.yml
+  when: "common_manage == 'update' and push_server is defined and inventory_hostname == push_server"
+  static: no
+
+- include: version.yml
+  when: "common_manage == 'version'"
+  static: no
+
+- include: update_packages.yml
+  when: "common_manage == 'update_packages'"
+  static: no
+
+- include: time.yml
+  when: "common_manage == 'time'"
+  static: no
+
+- include: reboot.yml
+  when: "common_manage == 'reboot' and common_server == inventory_hostname"
+  static: no
+
+- include: password.yml
+  when: "common_manage == 'password' and common_server == inventory_hostname"
+  static: no
+

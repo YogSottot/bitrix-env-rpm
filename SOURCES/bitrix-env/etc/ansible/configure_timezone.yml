@@ -1,0 +1,126 @@
+---
+########### change timezone for hosts in group bitrix-hosts
+# timezone_string=
+# timezone_default=
+###########
+# priority sequence from smallest to largest
+# timezone_default -> timezone_settings_on_master -> timezone_string
+- name: configure timezone
+  hosts: bitrix-hosts
+  vars:
+    timezone_string: NOT_DEFINED
+    timezone_default: Europe/Moscow
+    timezone_php_update: update
+  handlers:
+    - name: restart httpd
+      service: name=httpd state=restarted
+      tags: httpd
+
+    - name: restart mysqld
+      service: name=mysqld state=restarted
+      tags: mysqld
+  tasks:
+    - name: include variables from temporary config
+      include_vars: "{{ ansible_playbook_file }}"
+      when: "ansible_playbook_file != 'NOT_DEFINED'" 
+
+    - name: gather facts about localhost/manager
+      delegate_to: localhost
+      time_facts: option=status
+      tags: time_facts
+      when: "timezone_string == 'NOT_DEFINED'"
+
+    - name: set variables by facts from localhost/manager
+      set_fact: 
+        bx_tz: "{{ hostvars[inventory_hostname]['tz'] }}"
+        bx_tz_is_default: "{{ hostvars[inventory_hostname]['tz_default'] }}"
+        bx_tz_php: "{{ hostvars[inventory_hostname]['tz_php'] }}"
+      tags: time_facts
+      when: "timezone_string == 'NOT_DEFINED'"
+
+    - name: set variables by options from command line
+      set_fact:
+        bx_tz: "{{ timezone_string }}"
+        bx_tz_is_default: 'False'
+        bx_tz_php: "not_defined"
+      tags: time_facts
+      when: "timezone_string != 'NOT_DEFINED'"
+
+    - name: output debug information - env options
+      debug: msg="Time will be updated on bitrix-hosts by timezone={{ bx_tz }}; default={{ bx_tz_is_default }} php_time={{ bx_tz_php }}"
+      tags: time_facts
+
+    - name: output debug information - cmd options
+      debug: msg="timezone_string={{ timezone_string }} timezone_php_update={{ timezone_php_update }}"
+
+    # /etc/sysconfig/clock file 
+    # controls the interpretation of values read from the system hardware clock.
+    - name: update file /etc/sysconfig/clock
+      template: src=templates/sysconfig-clock.j2 dest=/etc/sysconfig/clock 
+        owner=root group=root mode=0644
+      tags: time_configure
+      notify: restart mysqld
+
+    # /etc/localtime
+    # file configures the system-wide timezone of the local system 
+    # that is used by applications for presentation to the user
+    - name: remove file /etc/localtime
+      file: path=/etc/localtime state=absent
+      tags: time_configure
+      notify: restart mysqld
+
+    - name: create link /etc/localtime to defined timezone
+      file: src=/usr/share/zoneinfo/{{ bx_tz }} 
+        dest=/etc/localtime 
+        state=link force=yes
+      tags: time_configure
+      notify: restart mysqld
+
+    # configure nptd service
+    - name: install packages for ntp services
+      yum: pkg={{ item }} state=present
+      with_items:
+        - ntp
+        - ntpdate
+      tags: ntpd_configure
+
+    - name: enable ntpd service
+      service: name=ntpd state=started enabled=yes
+      tags: ntpd_configure
+
+    - name: restart ntpd service
+      service: name=ntpd state=restarted
+      tags: ntpd_configure
+
+    - name: create update time string
+      shell: date +"%Y-%m-%d %H:%M:%S"
+      register: phpupdate_date
+      when: "'bitrix-web' in group_names and bx_tz != bx_tz_php"
+
+    - name: delete artifacts from /etc/php.d/bitrixenv.ini
+      lineinfile: dest=/etc/php.d/bitrixenv.ini state=absent regexp=' by ansible manager at '
+      tags: php_configure
+      notify: restart httpd
+      when: "'bitrix-web' in group_names and bx_tz != bx_tz_php"
+
+    - name: update /etc/php.d/bitrixenv.ini - ansible comment
+      lineinfile: dest=/etc/php.d/bitrixenv.ini state=present regexp='date.timezone' 
+        line=';set timezone={{ bx_tz }} by ansible manager at {{ phpupdate_date.stdout }}' 
+      tags: php_configure
+      notify: restart httpd
+      when: "'bitrix-web' in group_names and bx_tz != bx_tz_php"
+
+    - name: update /etc/php.d/bitrixenv.ini - time string
+      lineinfile: dest=/etc/php.d/bitrixenv.ini state=present regexp='date.timezone' 
+        line='date.timezone = {{ bx_tz }}' 
+      tags: php_configure
+      notify: restart httpd
+      when: "'bitrix-web' in group_names and bx_tz != bx_tz_php"
+
+    - name: restart system services
+      service: name={{ item }} state=restarted
+      with_items:
+        - rsyslog
+        - crond
+      tags: service
+

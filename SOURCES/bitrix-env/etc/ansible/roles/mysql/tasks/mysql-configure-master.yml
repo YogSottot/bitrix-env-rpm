@@ -1,0 +1,38 @@
+---
+# remove replication from slave server
+# set read-only mode 
+- name: update replication settings in /etc/mysql/conf.d/bx_replica.cnf
+  template: src=bx_replica.cnf.j2 dest={{ mysql_configs }}/bx_replica.cnf
+    owner=root group=root mode=0644
+  tags: mysql
+
+- name: restart mysqld service 
+  service: name=mysqld state=restarted
+  tags: mysql
+
+- debug: msg="src={{ mysql_socket }}"
+
+- name: reset replication option on the new master-server
+  bx_slave: src={{ mysql_socket }}
+  tags: mysql
+
+- name: stop mysqld service on the new master-server
+  service: name=mysqld state=stopped
+  tags: mysql
+
+- name: delete replication files on the new master-server
+  file: path=/var/lib/mysql/{{ item }} state=absent
+  with_items:
+    - master.info
+    - relay-bin.info
+    - relay-bin.index
+  tags: mysql
+
+- name: start mysqld service on the new master-server
+  service: name=mysqld state=started
+  tags: mysql
+
+- name: set the read-only mode from new master server
+  mysql_variables: variable=read_only value=1 login_unix_socket={{ mysql_socket }}
+  tags: mysql
+

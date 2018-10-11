@@ -1,0 +1,145 @@
+---
+# configure csync 
+- name: create csync2-script lock
+  file: path=/tmp/csync2_{{ cluster_web_server }}.lock state=touch
+  when: "'bitrix-web' in group_names or inventory_hostname == new_web_server"
+  tags: csync
+
+- name: install csync2
+  yum: name=csync2 state=latest
+  when: "'bitrix-web' in group_names or inventory_hostname == new_web_server"
+  tags: csync
+ 
+- name: csync2 logs path
+  file: path="/var/log/csync2"
+    state=directory owner={{ site_bitrix }} group={{ site_bitrix }}
+  when: "'bitrix-web' in group_names or inventory_hostname == new_web_server"
+  tags: csync
+
+- name: csync2 logrotate
+  template: src=logrotate-csync2.j2 dest=/etc/logrotate.d/csync2
+    owner=root group=root mode=0644
+  when: "'bitrix-web' in group_names or inventory_hostname == new_web_server"
+  tags: csync
+
+- name: create csync2 variables
+  set_fact:
+    csync2_key: "{{ csync_configdir }}/{{ csync_cluster_key }}"
+    csync2_priv: "{{ csync_configdir }}/{{ csync_cluster_priv }}"
+    csync2_csr: "{{ csync_configdir }}/{{ csync_cluster_csr }}"
+    csync2_cert: "{{ csync_configdir }}/{{ csync_cluster_cert }}"
+  tags: csync
+
+- name: create csync2 cluster key
+  shell: csync2 -k "{{ csync2_key }}"
+    creates="{{ csync2_key }}"
+  when: "inventory_hostname == cluster_web_server"
+  tags: csync
+
+- name: create csync2 openssl private key
+  shell: openssl genrsa -out "{{ csync2_priv }}" 1024
+    creates="{{ csync2_priv }}"
+  when: "inventory_hostname == cluster_web_server"
+  tags: csync
+
+- name: create csync2 openssl cert request
+  shell: openssl req -batch -new -key "{{ csync2_priv }}" -out "{{ csync2_csr }}"
+    creates="{{ csync2_csr }}"
+  when: "inventory_hostname == cluster_web_server"
+  tags: csync
+
+- name: access rights for csync files
+  file: path={{ item }}
+    owner={{ site_root }} group={{ site_bitrix }}
+    mode=0640
+  with_items:
+    - "{{ csync2_key }}"
+    - "{{ csync2_priv }}"
+    - "{{ csync2_cert }}"
+  tags: csync
+  when: "inventory_hostname == cluster_web_server"
+
+# create configs on balancer host;
+# expect csync synchronyze configs fo other nodes
+- name: csync-config for /etc synchronize
+  template: src="csync2/bx_cluster_config.cfg.j2"
+    dest="{{ csync_configdir }}/csync2_bxcluster.cfg"
+    owner={{ site_root }} group={{ site_bitrix }}
+    mode=0640
+  tags: csync
+  when: "inventory_hostname == cluster_web_server"
+
+- name: create csync-config for site document roots
+  template: src="csync2/bx_cluster_site.cfg.j2"
+    dest="{{ csync_configdir }}/csync2_{{ item.SiteCsync2 }}.cfg"
+    owner={{ site_root }} group={{ site_bitrix }}
+    mode=0640
+  with_items: "{{  bx_sites_info }}"
+  tags: csync
+  when: "inventory_hostname == cluster_web_server"
+
+- name: create csync2 dbs directory
+  file: path={{ csync_db_dir }}
+    owner={{ site_bitrix }} group={{ site_root }}
+    mode=0770
+    state=directory
+  tags: csync
+  when: "'bitrix-web' in group_names or inventory_hostname == new_web_server"
+
+- name: xinetd config for csync2
+  template: src=xinetd.d-csync2.j2
+    dest=/etc/xinetd.d/csync2
+    mode=0644 owner={{ site_root }} group={{ site_root }}
+  tags: csync
+  when: "'bitrix-web' in group_names or inventory_hostname == new_web_server"
+
+- name: enable xinetd
+  service: name=xinetd state=started enabled=yes
+  tags: csync
+  when: "inventory_hostname == new_web_server or inventory_hostname == cluster_web_server"
+
+- name: restart xinetd
+  service: name=xinetd state=restarted
+  tags: csync
+  when: "inventory_hostname == new_web_server or inventory_hostname == cluster_web_server"
+
+- name: delete csync DB on hosts
+  file: path="{{ csync_db_dir }}/{{ inventory_hostname }}_bxcluster.db" state=absent
+  tags: csync
+  when: "inventory_hostname == new_web_server"
+
+- name: delete sites csync DB on hosts
+  file: path="{{ csync_db_dir }}/{{ inventory_hostname }}_{{ item.SiteCsync2 }}.db"
+    state=absent
+  with_items: "{{ bx_sites_info }}"
+  tags: csync
+  when: "inventory_hostname == new_web_server"
+
+# initial sync data from balancer to backend
+- include: sites_synchronize.yml
+  when: "inventory_hostname == new_web_server or inventory_hostname == cluster_web_server"
+
+- name: initial csync files for /etc directory 
+  delegate_to: "{{ cluster_web_server }}"
+  shell: csync2 -x -C bxcluster && touch /tmp/bxcluster_finished
+  tags: csync
+  when: "inventory_hostname == new_web_server"
+
+#- name: initial csync files for site directories
+#  delegate_to: "{{ cluster_web_server }}"
+#  shell: csync2 -x -C {{ item.SiteCsync2 }}
+#  with_items: "{{ bx_sites_info }}"
+#  tags: csync
+#  when: "inventory_hostname == new_web_server"
+
+- name: add csync2 cron task
+  template: src=cron-bx_csync.j2 dest=/etc/cron.d/bx_csync
+    owner={{ site_root }} group={{ site_root }} mode=0644
+  tags: csync
+  when: "'bitrix-web' in group_names or inventory_hostname == new_web_server"
+
+- name: remove csync2-script lock
+  file: path=/tmp/csync2_{{ cluster_web_server }}.lock state=absent
+  when: "'bitrix-web' in group_names or inventory_hostname == new_web_server"
+ 
+

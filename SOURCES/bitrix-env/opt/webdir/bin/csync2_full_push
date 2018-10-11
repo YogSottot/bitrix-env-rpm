@@ -1,0 +1,82 @@
+#!/bin/bash
+# set -x
+
+CSYNC2_NAME=$1
+VERBOSE=$2
+[[ -z $CSYNC2_NAME ]] && CSYNC2_NAME=bxcluster
+[[ -z $VERBOSE ]] && VERBOSE=0
+
+LOG_NAME="/var/log/csync2/update_$CSYNC2_NAME.log"
+LOCK_NAME=/tmp/csync2_$CSYNC2_NAME.lock
+DATE_FORMAT='+%F_%H:%M:%S'
+
+# save message to log
+save_to_log(){
+  log_message=$1
+  # print message for debug
+  [[ $VERBOSE -gt 0 ]] && echo "$( date ${DATE_FORMAT} ): [$$] $log_message"
+
+  echo "$( date ${DATE_FORMAT} ): [$$] $log_message" >> $LOG_NAME
+}
+
+# create lock
+create_lock_file(){
+  if [[ -f $LOCK_NAME ]]; then
+    process_pid=$(cat $LOCK_NAME)
+    if [[ $(ps -ef | grep $process_pid | grep -cv grep) -gt 0 ]]; then
+      save_to_log "Another csync2 running. Exit."
+      exit 2
+    fi
+  fi
+  echo $$ > $LOCK_NAME
+  save_to_log "Created lock file"
+}
+
+# delete lock
+delete_lock_file(){
+  if [[ -f $LOCK_NAME ]]; then
+    rm -f $LOCK_NAME
+    save_to_log "Removed lock file"
+  fi
+}
+
+# check LA, stop if it is too high
+check_la_value(){
+  LA=$(/usr/bin/uptime | /bin/awk -F"load average: " '{print $2}' | /bin/awk -F\. '{print $1}')
+
+  if [[ $LA -ge 10 ]]; then
+    save_to_log "Load average - $LA - too high! Exit."
+    exit 3
+  fi
+}
+
+# 01. Check LA on host
+check_la_value
+
+# 02. Create sync lock file
+create_lock_file
+
+# log info
+save_to_log "----- Start push: $CSYNC2_NAME -----"
+save_to_log "Checking updates..."
+save_to_log "Enter FULL mode:"
+save_to_log "Start -cr /:"
+# 03. Check files and maybe add to dirty db (-cr)
+/usr/sbin/csync2 -C $CSYNC2_NAME -B -cr /
+
+# 04. list all updates to log file
+# -B - everything into big SQL transactions ( slow but allow multiple process )
+# -M - List all dirty files from status db
+save_to_log "Detected updates:"
+/usr/sbin/csync2 -C $CSYNC2_NAME -B -M >> $LOG_NAME 2>&1
+
+# 05. push updates
+# -u - transfer dirty files to peers and mark as clear
+save_to_log "Push updates to other nodes of cluster:"
+/usr/sbin/csync2 -C $CSYNC2_NAME -B -u >> $LOG_NAME 2>&1
+
+# 06. remove local file
+delete_lock_file
+
+save_to_log "Work done."
+exit 0

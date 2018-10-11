@@ -1,0 +1,51 @@
+# {{ ansible_managed }}
+# Additional website http
+{% set nginx_ssl_type = nginx_ssl|default('ssl') %}
+server {
+  {% if web_site_name == 'default' %}
+  listen {{ nginx_server_https_port }} default_server {{ nginx_ssl_type }};
+  {% else %}
+  listen {{ nginx_server_https_port }} {{ nginx_ssl_type }};
+  {% endif %}
+
+  {% if web_site_name == 'default' %}
+  server_name _;
+  {% else %}
+  server_name {{ web_site_name }} www.{{ web_site_name }};
+  {%endif %}
+
+  include bx/conf/ssl.conf;
+
+  access_log /var/log/nginx/{{ web_site_shname }}_access.log main;
+  error_log  /var/log/nginx/{{ web_site_shname }}_error.log warn;
+
+  #charset utf-8;
+  server_name_in_redirect off;
+
+  proxy_set_header	X-Real-IP $remote_addr;
+  proxy_set_header	X-Forwarded-For $proxy_add_x_forwarded_for;
+  proxy_set_header	Host $host:443;
+  proxy_set_header  HTTPS YES;
+  proxy_set_header  X-Forwarded-Proto https;
+
+  {% if web_site_name == 'default' %}
+  set $proxyserver	"http://127.0.0.1:8888";
+  {% else %}
+  set $proxyserver  "http://127.0.0.1:8887";
+  {% endif %}
+
+  {% if web_site_name != 'default' %}
+  set $imcontenttype	"text/html; charset=utf-8";
+  {% endif %}
+  set $docroot		"{{ web_site_root_dir }}";
+
+  index index.php;
+  root "{{ web_site_root_dir }}";
+  proxy_ignore_client_abort {{ proxy_ignore_client_abort|default('off') }};
+
+  # Include parameters common to all websites
+  include bx/conf/bitrix.conf;
+
+  # Include munin and nagios web
+  include bx/server_monitor.conf;
+}

@@ -1,0 +1,32 @@
+---
+- name: cluster password
+  set_fact:
+    cluster_password: "{{ lookup('file', cluster_password_file) }}"
+  when: cluster_password_file is defined
+  tags: vars
+
+- name: replica password
+  set_fact:
+    replica_password: "{{ lookup('file', replica_password_file) }}"
+  when: replica_password_file is defined
+  tags: vars
+
+# update mysql settings
+- include: setup.yml
+
+# group vars
+- name: update bitrix-mysql group
+  delegate_to: 127.0.0.1
+  bx_conf: group=mysql state=update 
+    cluster_login={{ cluster_login }} cluster_password_file={{ cluster_password_file }}
+    replica_login={{ replica_login }} replica_password_file={{ replica_password_file }}
+  tags: ansible_hosts
+  run_once: true
+
+- name: update bitrix-web group
+  delegate_to: 127.0.0.1
+  bx_conf: group=web state=update
+    web_mysql_login={{ cluster_login }} web_mysql_password_file={{ cluster_password_file }}
+  tags: ansible_hosts
+  run_once: true
+

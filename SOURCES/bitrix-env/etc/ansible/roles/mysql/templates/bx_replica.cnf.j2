@@ -1,0 +1,31 @@
+# {{ ansible_managed }}
+#
+{% set play_role = new_replication_role|default('slave') %}
+[mysqld]
+ server-id = {{ mysql_serverid }}
+{% if mysql_enable_logs == 1 %}
+ ## enable logging message
+ log-error                       = {{ mysql_logs }}/error.log
+{% endif %}
+{% if mysql_enable_slow == 1 %}
+## enable slow requests logging
+ slow-query-log-file             = {{ mysql_logs }}/slow.log
+ slow-query-log                  = {{ mysql_enable_slow }}
+ long-query-time                 = {{ mysql_time_slow }}
+ log-slow-slave-statements
+{% endif %}
+{% if mysql_replication_role == 'master' or play_role == 'master'  %}
+## define binlog options for master server
+ binlog_cache_size = 128K
+ expire_logs_days  = {{ mysql_expire_logs_days }}
+ max_binlog_size   = {{ mysql_max_binlog_size }}
+ binlog-format     = mixed
+ log-bin           = mysql-bin
+## enable this options for security, but it decrease performance
+# innodb_flush_log_at_trx_commit = 1
+sync_binlog = 3000
+{% endif %}
+ relay-log            = relay-bin
+ relay-log-index      = relay-bin.index
+ relay-log-info-file  = relay-bin.info
+ skip-name-resolve

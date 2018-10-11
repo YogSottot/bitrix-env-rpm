@@ -1,0 +1,15 @@
+---
+# enable or disable beta version of bitrix-env
+- hosts:
+    - bitrix-hosts
+  vars:
+    beta_version: disable
+
+  tasks:
+    - include: inc_vars.yml
+
+    - template:
+        src: templates/bitrix.repo.j2
+        dest: /etc/yum.repos.d/bitrix.repo
+
+    - shell: yum clean all

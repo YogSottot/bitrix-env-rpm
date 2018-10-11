@@ -1,0 +1,8 @@
+<?php
+/* {{ ansible_managed }} */
+{% if bitrix_site_charset == 'windows-1251' -%}
+$DB->Query("SET NAMES 'cp1251'");
+{%- else %}
+$DB->Query("SET NAMES 'utf8'");
+$DB->Query('SET collation_connection = "utf8_unicode_ci"');
+{%- endif %}

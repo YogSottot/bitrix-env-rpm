@@ -1,0 +1,101 @@
+#!/bin/bash
+# get info disabled modules
+# options:
+# action=status
+export LANG="en_US.UTF-8"
+LOG=/tmp/php_modules.list
+
+# print error message
+print_error() {
+  msg=$1
+  echo "{\"changed\":false,\"failed\":true,\"msg\":\"$msg\"}"
+  exit 1
+}
+
+# print timezone info
+print_ok() {
+  msg=$1
+
+  echo "{\"changed\":true,\"msg\":\"$msg\",\"php_list\":\"$LOG\"}"
+  exit 0
+}
+
+# get ansible options
+source ${1}
+
+# default values
+php_include_dir=/etc/php.d
+[[ -z "$action" ]] && action=safe
+[[ ! -d $php_include_dir ]] && print_ok "Not found $php_include_dir"
+
+## 5.4 upgrade
+# save modules wich disabled, but don't have empty one file (update created it)
+if [[ "$action" == "safe" ]]; then
+  echo -n > $LOG
+  for f_disabled in `find $php_include_dir/ -name "*.disabled" -type f`; do
+    f_ini=$(echo "$f_disabled" | sed -e 's:\.disabled$::')
+    echo "$f_ini"
+    [[ ! -f $f_ini ]] && echo $f_ini >> $LOG
+  done
+  print_ok "Save list files"
+fi
+
+# disable modules and create empty files 
+if [[ ( "$action" == "restore" ) && ( -e $LOG ) ]]; then
+  while read file; do
+    mv -f $file ${file}.disabled
+    echo -n > $file
+  done < $LOG
+  print_ok "Restore files"
+fi
+
+## 5.6 upgrade
+## file name changed from  /etc/php.d/opcache.ini to  /etc/php.d/10-opcache.ini
+if [[ "$action" == "safe56" ]]; then
+    echo -n > $LOG
+    for ini_file in `find $php_include_dir/ -name "*.ini" -type f`; do
+        ini_base=$(basename $ini_file)
+        ini_status="enabled"
+        if [[ -f $ini_file.disabled ]]; then
+            ini_status="disabled"
+        fi
+        echo "$ini_base:$ini_status" >> $LOG
+    done
+    print_ok "Save list files"
+fi
+
+## restore/disabled modules with was disabled before update
+if [[ "$action" == "restore56" ]]; then
+    while read line; do
+        ini_base=$(echo "$line" | awk -F':' '{print $1}')
+        ini_status=$(echo "$line" | awk -F':' '{print $2}')
+        # find new file
+        new_name=$(find $php_include_dir/ -iname "[0-9][0-9]-$ini_base")
+        if [[ ( -n "$new_name" ) && ( -f "$new_name" ) ]]; then
+            if [[ "$ini_status" == "disabled" ]]; then
+                mv $new_name $new_name.disabled
+                touch $new_name
+                rm -f $php_include_dir/$ini_base.rpmsave \
+                    $php_include_dir/$ini_base.disabled 
+            else
+                mv -f $php_include_dir/$ini_base.rpmsave $new_name
+            fi
+        fi
+    done < $LOG
+    print_ok "Restore files"
+fi
+
+## 7.0 rollback to 56
+## file name is /etc/php.d/10-opcache.ini
+if [[ "$action" == "safe70" ]]; then
+    echo -n > $LOG
+    for ini_file in `find $php_include_dir/ -name "*.ini" -type f`; do
+        ini_base=$(basename $ini_file | sed -e 's/^[0-9]\+-//;')
+        ini_status="enabled"
+        if [[ -f $ini_file.disabled ]]; then
+            ini_status="disabled"
+        fi
+        echo "$ini_base:$ini_status" >> $LOG
+    done
+    print_ok "Save list files"
+fi

@@ -1,0 +1,36 @@
+---
+# push_host
+- name: get current settings
+  bx_vat:
+
+- name: update push configuration
+  lineinfile:
+    dest: /etc/sysconfig/push-server-multi
+    regexp: "WS_HOST={{ push_host }}"
+    line: "WS_HOST={{ push_server_netaddr }}"
+  register: push
+
+- name: reset configuration
+  shell: /etc/init.d/push-server-multi reset
+  when: push.changed
+
+- name: stop service
+  shell: pgrep node -P 1 -u bitrix | xargs kill -9
+  when: push.changed
+
+- name: start service
+  service:
+    name: push-server
+    state: restarted
+  when: push.changed 
+    and ansible_distribution == "CentOS"
+    and ansible_distribution_major_version == "7"
+
+- name: start service
+  service:
+    name: push-server-multi
+    state: restarted
+  when: push.changed 
+    and ansible_distribution == "CentOS"
+    and ansible_distribution_major_version == "6"
+

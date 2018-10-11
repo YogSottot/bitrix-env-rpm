@@ -1,0 +1,51 @@
+---
+# get bitrix-env version from server
+- name: version on master server
+  bx_vat:
+  tags: master_facts
+  delegate_to: localhost
+
+- name: set variable for master version
+  set_fact:
+    bx_system_master: "{{ hostvars[inventory_hostname]['bx_version'] }}"
+  tags: master_facts
+  delegate_to: localhost
+
+# get bitrix-env version from server
+- name: version on client server
+  bx_vat:
+  tags: client_facts
+
+- name: set variable for client version
+  set_fact:
+    bx_system_client: "{{ hostvars[inventory_hostname]['bx_version'] }}"
+    bx_base_system_client: "{{ hostvars[inventory_hostname]['bx_base_version'] }}"
+  tags: master_facts
+
+- name: compare version on master and client
+  debug: msg="Different version on master and client for bitrix-env; client_version={{ bx_system_client }}, master_version={{ bx_system_master }}, base_version={{ bx_base_system_client }}"
+  when: bx_system_client != bx_system_master
+  tags: debug
+
+- name: clean yum info
+  shell: yum clean all
+  tags: yum_update
+  when: "inventory_hostname == common_server or common_server == 'NOT_DEFINED'"
+
+- name: install http-parser
+  yum: 
+    name: "https://kojipkgs.fedoraproject.org//packages/http-parser/2.7.1/3.el7/x86_64/http-parser-2.7.1-3.el7.x86_64.rpm"
+    state: present
+  when: ansible_distribution == "CentOS"
+    and ansible_distribution_major_version == "7"
+    and '7.3.' in ansible_distribution_version 
+
+- name: remove old version bitrix-env4
+  yum: pkg=bitrix-env4 state=absent
+  tags: yum_remove
+  when: "inventory_hostname == common_server or common_server == 'NOT_DEFINED'"
+
+- name: update bitrix-env
+  yum: pkg={{ bx_package_name }} state=latest
+  tags: yum_update
+  when: "inventory_hostname == common_server or common_server == 'NOT_DEFINED'"

@@ -1,0 +1,28 @@
+# Найдено запущенное задание типа memcached в пуле. Необходимо дождаться завершения
+MC0001="A running memcached task was found in the pool. Please wait until it completes."
+# Обновление настроек Memcached сервисов
+MC0002="Update settings for memcached services"
+# Введите имя хоста
+MC0003="Enter hostname: "
+# Настройка memcached службы на сервер
+MC0004="Configure memcached instance on __OPT1__"
+# Удаление memcached службы на сервере
+MC0005="Remove memcached instance on __OPT1__"
+# Меню
+MC0006="1. Configure memcached service"
+MC0007="2. Update settings for all memcached services"
+MC0008="3. Remove memcached service"
+MC0009="Manage memcached configuration in the pool"
+
+MC0200="Press ENTER to exit."
+MC0201="0. Previous screen or exit"
+MC0202="Enter 0 to exit:"
+MC0203="Enter 1 to start process or 0 to exit:"
+MC0204="Enter hostname or 0 to exit: "
+MC0205="Enter your choice: "
+# Не найден сервер с именем=ИМЯ в пуле.
+MC0206="Cannot find server __OPT1__ in the pool."
+MC0207="Cannot find Memcached server __OPT1__ in the pool."
+# В пуле нет настроенных memcached серверов
+MC0208="Cannot find configured memcached services in pool"
+

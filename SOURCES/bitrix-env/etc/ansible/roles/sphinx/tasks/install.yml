@@ -1,0 +1,46 @@
+---
+# install searchd and perform base configuration
+- name: install software
+  yum: pkg=sphinx state=latest
+  tags: packages
+
+- name: gathering facts
+  bx_vat:
+
+- name: create config directories
+  file: path={{ item }}
+    state=directory mode=0755
+    owner=root group=root
+  with_items:
+    - "{{ sphinx_base_dir }}"
+    - "{{ sphinx_bx_dir }}"
+    - "{{ sphinx_inx_dir }}"
+    - "{{ sphinx_dct_dir }}"
+  tags: sphinx
+
+- name: install dictionaries
+  copy: src=dicts/{{ item }}
+    dest={{ sphinx_dct_dir }}/{{ item }}
+    mode=0644
+    owner=root group=root
+  with_items:
+    - de.pak
+    - en.pak
+    - ru.pak
+  tags: sphinx
+
+- name: create main config
+  template: src=sphinx.conf.j2
+    dest={{ sphinx_base_dir }}/sphinx.conf
+    mode=0644
+    owner=root group=root
+  tags: sphinx
+
+- name: enable searchd service
+  service: name=searchd state=started enabled=yes
+  tags: sphinx
+
+- name: update inventory file
+  delegate_to: 127.0.0.1
+  bx_conf: hostname={{ inventory_hostname }} state=update group=sphinx
+  tags: ansible

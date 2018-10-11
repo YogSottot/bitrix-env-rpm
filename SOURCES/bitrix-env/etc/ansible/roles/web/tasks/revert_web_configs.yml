@@ -1,0 +1,46 @@
+- bx_etckeeper: dest=nginx commit="add_web_{{ inventory_hostname }}"
+  register: nginx_commit
+
+- bx_etckeeper: dest=httpd commit="add_web_{{ inventory_hostname }}"
+  register: httpd_commit
+
+- file:
+    path: /etc/nginx
+    state: absent
+    force: yes
+  when: not nginx_commit.changed
+
+- file:
+    path: /etc/nginx
+    state: directory
+  when: not nginx_commit.changed
+
+- unarchive:
+    src: nginx.tar.gz
+    dest: /etc/nginx/
+    owner: nginx
+  when: not nginx_commit.changed
+
+- file:
+    path: /etc/httpd
+    state: absent
+    force: yes
+  when: not httpd_commit.changed
+
+- file:
+    path: /etc/httpd
+    state: directory
+  when: not httpd_commit.changed
+
+- unarchive:
+    src: httpd_apache24.tar.gz
+    dest: /etc/httpd/
+    owner: apache
+  when: not httpd_commit.changed
+
+- service: name=nginx state=restarted
+  when: not nginx_commit.changed
+
+- service: name=httpd state=stopped
+  when: not httpd_commit.changed
+

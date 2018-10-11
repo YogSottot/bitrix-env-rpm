@@ -1,0 +1,34 @@
+---
+# update all rpm packages
+- name: install yum-utils
+  yum:
+    name: yum-utils
+    state: latest
+  when: "inventory_hostname == common_server or common_server == 'NOT_DEFINED'"
+
+- name: remove old value installonly_limit options
+  lineinfile:
+    dest: /etc/yum.conf
+    line: installonly_limit=5
+    state: absent
+  when: "inventory_hostname == common_server or common_server == 'NOT_DEFINED'"
+
+- name: configure installonly_limit options
+  lineinfile:
+    dest: /etc/yum.conf
+    line: installonly_limit=3
+  when: "inventory_hostname == common_server or common_server == 'NOT_DEFINED'"
+
+- name: delete old kernels
+  shell: package-cleanup --oldkernels --count=3
+  when: "inventory_hostname == common_server or common_server == 'NOT_DEFINED'"
+
+- name: clean yum info
+  shell: yum clean all
+  tags: yum_update
+  when: "inventory_hostname == common_server or common_server == 'NOT_DEFINED'"
+
+- name: update all packages
+  yum: pkg=* state=latest
+  tags: yum_update
+  when: "inventory_hostname == common_server or common_server == 'NOT_DEFINED'"

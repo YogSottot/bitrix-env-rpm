@@ -1,0 +1,3 @@
+# {{ ansible_managed }}
+# test nginx log for network update requests
+*/15 * * * * root {{ pool_main_script }} -a check_network --update_log {{ pool_manager_log }} 1>/dev/null 2>&1

@@ -1,0 +1,18 @@
+# {{ item.SiteName }}
+account   {{ item.SiteName }}
+logfile   /var/log/msmtp.log
+host      {{ smtp_server }}
+port      {{ smtp_port }}
+from      {{ email }}
+keepbcc   on
+{% if smtp_auth == 'Y' %}
+auth      on
+user      {{ smtp_user|default('') }}
+password  {{ smtp_pass|default('') }}
+{% else %}
+auth      off
+{% endif %}
+{% if smtp_tls == 'Y' %}
+tls           on
+tls_certcheck off
+{% endif %}

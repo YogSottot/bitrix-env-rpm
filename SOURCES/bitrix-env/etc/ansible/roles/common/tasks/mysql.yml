@@ -1,0 +1,51 @@
+---
+- name: system info
+  bx_vat:
+
+- name: create mysql dir
+  file:
+    path: /var/log/mysql
+    state: directory
+    owner: mysql
+    group: mysql
+
+- name: enable logging
+  template:
+    src: logging.cnf.j2
+    dest: /etc/mysql/conf.d/logging.cnf
+  register: logging
+
+- name: configure logrotate
+  copy:
+    src: logrotate.d-mysql
+    dest: /etc/logrotate.d/mysql
+
+- name: kill mysqld
+  shell: killall -9 mysqld
+  when: logging.changed
+  ignore_errors: true
+
+- name: defined bx_system variable
+  set_fact:
+    mysql_service: "{{ hostvars[inventory_hostname]['mysql_service'] }}"
+  tags: vars
+
+- name: recreate links
+  file: 
+    src: /usr/lib/systemd/system/mariadb.service
+    dest: "/etc/systemd/system/{{ item }}"
+    state: link
+  with_items:
+    - mysqld.service
+    - mysql.service
+  when: mysql_service == 'mariadb'
+
+- name: reload systemd configuration
+  shell: systemctl daemon-reload
+  when: mysql_service == 'mariadb'
+
+- name: start mysql service
+  service: name={{ mysql_service }} state=started enabled=yes
+  tags: mysql
+
+

@@ -1,0 +1,7 @@
+# {{ ansible_managed }}
+# cron tasks for site {{ web_site_name }}
+#
+
+* * * * * {{ site_bitrix }} test -f {{ web_site_root_dir }}/bitrix/modules/main/tools/cron_events.php && { /usr/bin/php -f {{ web_site_root_dir }}/bitrix/modules/main/tools/cron_events.php; } >/dev/null 2>&1
+
+

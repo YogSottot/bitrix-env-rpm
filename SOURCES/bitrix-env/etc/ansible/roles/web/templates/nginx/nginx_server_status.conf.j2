@@ -1,0 +1,20 @@
+# {{ ansible_managed }}
+# cofigure nginx status server
+#
+server {
+  listen {{ nginx_monitoring_netaddr }}:{{ nginx_monitoring_port }};
+  server_name monitor;
+
+  server_name_in_redirect off;
+  access_log off;
+
+  location  / {
+    stub_status on;
+    allow 127.0.0.1;
+    {% for host in groups['bitrix-web'] %}{% if host != deleted_web_server %}
+    allow {{ hostvars[host].bx_netaddr }};
+    {% endif %}
+    {% endfor %}
+    deny all;
+  }
+}

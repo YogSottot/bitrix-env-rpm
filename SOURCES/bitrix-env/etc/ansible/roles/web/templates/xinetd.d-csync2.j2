@@ -1,0 +1,14 @@
+# {{ ansible_managed }}
+# description: csync2
+service csync2
+{
+	flags		= REUSE
+	socket_type	= stream
+	wait		= no
+	user		= root
+	group		= root
+	server		= /usr/sbin/csync2
+	server_args	= -i
+	port		= 30865
+	type		= UNLISTED
+}

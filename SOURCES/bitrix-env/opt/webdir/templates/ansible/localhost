@@ -1,0 +1,29 @@
+---
+# current host options
+mysql_replication_role: master
+
+# host-id
+mysql_serverid: 1
+
+# host-id in the pool
+host_id: {{ host_id }}
+host_pass: {{ host_pass }}
+
+# hostname
+bx_hostname: {{ hostname }}
+bx_host: {{ hostname }}
+
+# netaddr
+bx_netaddr: {{ host_ip_address }}
+
+# connect to host, by IPv4 or FQDN
+bx_connect: {{ netaddr_type }}
+
+# hostname for system, /etc/hostname and etc
+# FQDN or generated hostname
+bx_netname: {{ host_netname }}
+
+#  The interface where the all servers listen: nrpe, mysql and other
+iface: {{ local_interface }}
+ifaddr: {{ host_ip_address }}
+

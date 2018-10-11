@@ -1,0 +1,6 @@
+---
+# update/create slave records in cluster
+- include: sites-cache_directory-execute.yml
+  vars:
+    php_script: mysql_create_slave.php
+    php_server: "{{ cluster_web_server }}"

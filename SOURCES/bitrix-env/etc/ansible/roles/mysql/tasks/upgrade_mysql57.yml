@@ -1,0 +1,39 @@
+---
+- include: shutdown_mysqld.yml
+
+- name: remove installed mysql
+  shell: rpm -e --nodeps Percona-Server-client-56 Percona-Server-server-56 Percona-Server-shared-56
+
+- name: install Percona packages
+  yum: name="{{ item }}"
+  with_items:
+    - Percona-Server-client-57
+    - Percona-Server-server-57
+    - Percona-Server-shared-57
+  tags: yum
+
+- name: create mysqld service
+  file: src=/etc/init.d/mysql
+    dest=/etc/init.d/mysqld state=link
+  when: ansible_distribution == "CentOS"
+    and ansible_distribution_major_version == "6"
+
+- name: additional gathering facts
+  bx_vat:
+
+- name: restore my.cnf
+  template: src=my.cnf.j2
+    dest=/etc/my.cnf 
+    mode=0644 owner=root group=mysql
+  tags: mysql
+
+- include: upgrade_dbs.yml
+
+- include: upgrade_bvat.yml
+
+- name: enable mysqld service
+  service: name=mysqld state=started enabled=yes
+  when: ansible_distribution == "CentOS"
+    and ansible_distribution_major_version == "7"
+
+

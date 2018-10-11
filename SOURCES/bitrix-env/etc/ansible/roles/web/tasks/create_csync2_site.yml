@@ -1,0 +1,18 @@
+---
+######## create csync configuration and sync data for site between nodes for new site
+####
+- name: configuration for site sync - /etc/csync2/bx_cluster_site.cfg
+  template: src="csync2/bx_cluster_newsite.cfg.j2"
+    dest="{{ csync_configdir }}/csync2_{{ web_site_csync2 }}.cfg"
+    owner={{ site_root }} group={{ site_bitrix }}
+    mode=0640
+  tags: csync2_configs
+  when: "'bitrix-web' in group_names"
+
+- name: add cron task for update csync data
+  template: src=cron-bx_csync.j2 dest=/etc/cron.d/bx_csync
+    owner={{ site_root }} group={{ site_root }} mode=0644
+  tags: csync2_configs
+  when: "'bitrix-web' in group_names"
+####
+######## /create csync configuration and sync data for site between nodes for new site

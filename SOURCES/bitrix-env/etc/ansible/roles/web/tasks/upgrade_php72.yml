@@ -1,0 +1,33 @@
+---
+# upgrade php package from 7.1 version to 7.2
+- name: disable remi php71 repository
+  ini_file: 
+    dest: /etc/yum.repos.d/remi-php71.repo
+    section: remi-php71 
+    option: enabled 
+    value: 0
+  tags: remi
+  when: "'bitrix-web' in group_names"
+
+- name: enable remi php72 repository
+  ini_file: 
+    dest: /etc/yum.repos.d/remi-php72.repo
+    section: remi-php72 
+    option: enabled 
+    value: 1
+  tags: remi
+  when: "'bitrix-web' in group_names"
+
+- name: update system by remi repository
+  yum: 
+    name: php* 
+    state: latest
+    update_cache: yes
+  tags: php7
+  when: "'bitrix-web' in group_names"
+
+- name: restart httpd
+  service: name=httpd state=restarted
+  when: "inventory_hostname == cluster_web_server"
+  tags: php7
+

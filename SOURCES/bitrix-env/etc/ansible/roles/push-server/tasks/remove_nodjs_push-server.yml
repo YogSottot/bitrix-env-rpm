@@ -1,0 +1,113 @@
+---
+- name: additional gathering facts
+  bx_vat:
+
+# remove settings from sites
+- include: sites-delete_push_server_settings.yml
+  static: no
+
+# remove apache settings
+- name: remove apache22 settings
+  lineinfile:
+    dest: /etc/sysconfig/httpd
+    line: "BX_PUSH_SECURITY_KEY"
+    state: absent
+
+- name: remove apache24 settings
+  lineinfile: 
+    dest: /etc/httpd/bx/conf/00-environment.conf
+    line: "SetEnv BX_PUSH_SECURITY_KEY"
+    state: absent
+  when: ansible_distribution == "CentOS"
+    and ansible_distribution_major_version == "7"
+
+- name: service httpd restart
+  delegate_to: "{{ cluster_web_server }}"
+  service:
+    name: httpd
+    state: restarted
+
+#  remove nginx settings
+- name: remove nginx configs
+  file: 
+    path: "{{ item }}"
+    state: absent
+  delegate_to: "{{ cluster_web_server }}"
+  with_items:
+    - /etc/nginx/bx/settings/rtc-im_settings.conf
+    - /etc/nginx/bx/site_enabled/rtc-server.conf
+    - /etc/nginx/bx/conf/rtc-im_subscrider.conf
+
+- name: remove sub and pub locations
+  file: 
+    path: /etc/nginx/bx/conf/blank-im_subscrider.conf
+    state: touch
+  delegate_to: "{{ cluster_web_server }}"
+
+- name: nginx push-server links
+  delegate_to: "{{ cluster_web_server  }}"
+  file:
+    src: /etc/nginx/bx/site_avaliable/push.conf
+    dest: /etc/nginx/bx/site_enabled/push.conf
+    state: link
+    force: yes
+
+- name: nginx push-module location
+  delegate_to: "{{ cluster_web_server  }}"
+  file:
+    src: /etc/nginx/bx/conf/push-im_subscrider.conf
+    dest: /etc/nginx/bx/conf/im_subscrider.conf
+    state: link
+    force: yes
+
+- name: service nginx restart
+  delegate_to: "{{ cluster_web_server  }}"
+  service:
+    name: nginx
+    state: restarted
+
+# nodejs service
+- name: service nodejs stop
+  service:
+    name: "push-server"
+    state: stopped
+    enabled: no
+  when: ansible_distribution == "CentOS"
+    and ansible_distribution_major_version == "7"
+
+- name: service nodejs stop
+  service:
+    name: "push-server-multi"
+    state: stopped
+    enabled: no
+  when: ansible_distribution == "CentOS"
+    and ansible_distribution_major_version == "6"
+
+- name: remove service configs
+  file: 
+    path: "{{ item }}"
+    state: absent
+  with_fileglob:
+    - "/etc/push-server/push-server-pub-901*"
+    - "/etc/push-server/push-server-sub-801*"
+
+- name: remove service settings
+  lineinfile:
+    dest: /etc/sysconfig/push-server-multi
+    regexp: "{{ item }}"
+    state: absent
+  with_items:
+    - WS_HOST
+    - SECURITY_KEY
+
+# redis
+- name: service redis stop
+  service: 
+    name: redis
+    state: stopped
+    enabled: no 
+
+# ansible inventory
+- include: push-server-inventory-remove.yml
+  static: no
+

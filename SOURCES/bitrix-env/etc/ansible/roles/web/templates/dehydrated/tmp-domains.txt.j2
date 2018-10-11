@@ -1,0 +1,5 @@
+{% set space = ' ' %}
+{% for domain in dns_names -%}
+{{ domain }}{{ space }}
+{%- endfor %}
+

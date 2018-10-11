@@ -1,0 +1,11 @@
+CFGL0000="0. Previous screen or exit"
+CFGL0001="1. Configure hostname"
+CFGL0002="2. Configure network interface via DHCP"
+CFGL0003="3. Configure network interface manually"
+CFGL0004="4. Reboot server"
+CFGL0005="5. Shutdown server"
+CFGL0006="6. Update server"
+CFGL0007="Configure local server"
+CFGL0008="Enter selection: "
+CFGL0009="7. Enable or disable beta version of bitrix-env"
+

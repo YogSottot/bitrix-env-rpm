@@ -1,0 +1,4 @@
+# custom file for settings
+[mysqld]
+#innodb_file_per_table
+#innodb_flush_log_at_trx_commit  = 2

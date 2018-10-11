@@ -1,0 +1,213 @@
+#!/usr/bin/expect -f
+#
+# performs password changes via ssh
+# Usage: ssh_chpasswd server port user oldpwd newpwd 
+# ksh770, 03/02/14
+
+set timeout 1
+# ip address or hostname
+set server [lindex $argv 0]
+# port address or setting it to default
+set port [lindex $argv 1]
+# user login or root like default
+set user [lindex $argv 2]
+# old password
+set oldpwd [lindex $argv 3]
+# new password
+set newpwd [lindex $argv 4]
+# prompt string
+set prompt "\[>%\\$#\] "
+#catch {set prompt $env(EXPECT_PROMPT)}
+
+# log output to user or not
+# 1 - see all login process
+# 0 - no outputs
+log_user 0
+
+# print help message
+if {[llength $argv] == 0} {
+  send_user "Usage: ssh_chpasswd server port user oldpasswd new_passwd\n"
+  exit 1
+}
+
+# output into log file
+set logfile "/opt/webdir/logs/ssh_chpasswd.log"
+set statusfile "/opt/webdir/logs/ssh_chpasswd.status"
+
+# log process to file
+set LOG [open $logfile a+]
+
+# date
+set DATE [exec date +%m-%d-%y_%H:%M:%S]
+ 
+if { $port == "" }  { set port "22" }
+if { $user == "" }  { set user "root" }
+
+
+puts $LOG "$DATE: SSH_INIT - $user connect to $server:$port"
+
+# run the ssh util
+# send_user "ssh -p $port -l $user $server"
+spawn ssh -p $port -l $user $server
+ 
+# expect - get data from spawn process and run some actions
+# password is expered, we have to changed it after login
+expect {
+  timeout {
+    puts $LOG "$DATE: SSH_CONN - SSH failure for $server:$port"
+    exit 200
+  }
+  eof {
+    puts $LOG "$DATE: SSH_CONN - SSH failure for $server:$port"
+    exit 200
+  }
+  "(yes/no)? " { 
+    send "yes\n"
+    puts $LOG "$DATE: SSH_CONN - adding $server key to known_hosts"
+    exp_continue
+  }
+  "assword:" { 
+    puts $LOG "$DATE: SSH_PSWD - password prompt detected"
+    send "$oldpwd\n" 
+    expect {
+      "Permission denied" { puts $LOG "$DATE: SSH_PASSWD_AFTER - permission denied, cannot login like $user on $server:$port"; exit 201 }
+      -re " UNIX password:|old password:" {
+        puts $LOG "$DATE: SSH_PSWD_AFTER - detect password change process"
+        send "$oldpwd\n" 
+        expect {
+          -re "not match the|password mismatch" {
+            puts $LOG "$DATE: SSH_PSWD_AFTER - incorrect old password"
+            exit 202
+          }
+          -re "\[nN\]ew \[pP\]assword:|\[nN\]ew \[pP\]assword \[aA\]gain:" {
+            puts $LOG "$DATE: SSH_PSWD_AFTER - detect new password input"
+            send "$newpwd\n"
+            expect {
+              "exhausted maximum number of retries" {
+                puts $LOG "$DATE: SSH_PSWD_NEW - exhausted maximum number of retries"
+                exit 203
+              }
+              "BAD PASSWORD" {
+                puts $LOG "$DATE: SSH_PSWD_NEW - does not pass the security policy"
+                exit 204
+              }
+              -re "\[nN\]ew \[pP\]assword:|\[nN\]ew \[pP\]assword \[aA\]gain:" {
+                puts $LOG "$DATE: SSH_PSWD_NEW - reenter new password"
+                send "$newpwd\n"
+                expect {
+                  -re "$prompt" {
+                    puts $LOG "$DATE: SSH_PSWD_CHANGE - detect prompt - password is changed"
+                    exit 0
+                  }
+                  "all authentication tokens updated successfully" {
+                    puts $LOG "$DATE: SSH_PSWD_CHANGE - all authentication tokens updated successfully message"
+                    exit 0
+                  }
+                  -re "Enter selection:" { 
+                    puts $LOG "$DATE: SHEL_CHNG_NEWA - detected bitrix menu command prompt. Key is installed" 
+                    exit 0
+                  }
+                  "exhausted maximum number of retries for service" {
+                    puts $LOG "$DATE: SSH_PSWD_CHANGE - exhausted maximum number of retries"
+                    exit 203
+                  }
+                  -re "Bitrix virtual appliance" { puts $LOG "$DATE: SHEL_CHNG_NEWA - detect bitrix menu prompt - password successfully changed"; exit 0  }
+                  default { puts $LOG "$DATE: SSH_PSWD_NEW - unknown message after newpassword reenter"; exit 255 }
+                } 
+              }
+              default { puts $LOG "$DATE: SSH_PSWD_NEW - unknown message after newpassword enter"; exit 255 }
+            } 
+          }
+        } 
+      }
+      -re "not match the|password mismatch" { puts $LOG "$DATE: SSH_PSWD - change process is falied - oldpwd"; exit 205 }
+      -re "$prompt" { puts $LOG "$DATE: SSH_PSWD - changing password at prompt passwd command" }
+    }
+  }
+  -re "$prompt"{ puts $LOG "$DATE: SSH_CONN - changing password at prompt passwd command" }
+}
+
+puts $LOG "$DATE: SSH_INIT - start changing password via prompt"
+send "\n"
+expect {
+  "Bitrix virtual appliance" {
+    puts $LOG "$DATE: SHEL_INIT - detect bitrix menu prompt";
+    send \003
+  }
+}
+
+send "\n"
+
+expect {
+  -re "$prompt" {
+    puts $LOG "$DATE: SHEL_PSWD - changing password at prompt passwd command"
+    send "passwd\n"
+    expect {
+      -re "\[oO\]ld \[pP\]assword:| UNIX \[pP\]assword:" {
+        puts $LOG "$DATE: SHEL_CHNG -  detect entering old password"
+        send "$oldpwd\n"
+        expect {
+          "You must wait longer" {
+            puts $LOG "$DATE: SHEL_CHNG_PROC - user cannot change passwd via security policy MINDAYS"
+            exit 101
+          }
+          "Authentication token manipulation error" {
+            puts $LOG "$DATE: SHEL_CHNG_PROC - old password doesn't mutch"
+            exit 206
+          }
+          -re "\[nN\]ew \[pP\]assword:|\[nN\]ew \[pP\]assword \[aA\]gain:" {
+            puts $LOG "$DATE: SHEL_CHNG_PROC - detect enter new password"
+            send "$newpwd\n" 
+            expect {
+              "BAD PASSWORD" { puts $LOG "$DATE: SHEL_CHNG_PROC - the new password does not pass the security policy"; exit 204 }
+              -re "\[nN\]ew \[pP\]assword:|\[nN\]ew \[pP\]assword \[aA\]gain:" {  
+                puts $LOG "$DATE: SHEL_CHNG_NEW - detect reenter new password"
+                send "$newpwd\n"
+                expect {
+                  "all authentication tokens updated successfully" { puts $LOG "$DATE: SHEL_CHNG_NEWA - all authentication tokens updated successfully"; exit 0 }
+                  -re "$prompt" { 
+                    puts $LOG "$DATE: SHEL_CHNG_NEWA - detect prompt - password successfully changed"; 
+                    exit 0 
+                    }
+                  -re "Enter selection:" { 
+                    puts $LOG "$DATE: SHEL_CHNG_NEWA - detected bitrix menu command prompt. Key is installed" 
+                    exit 0
+                    }
+                  -re "Bitrix virtual appliance" { 
+                    puts $LOG "$DATE: SHEL_CHNG_NEWA - detect bitrix menu prompt - password successfully changed"; 
+                    exit 0  
+                    }
+                  default { puts $LOG "$DATE: SHEL_CHNG_NEWA - unknown message after newpassword reenter"; exit 255 }
+                }
+              }
+              default { puts $LOG "$DATE: SHEL_CHNG_PROC - unknown message after enter new password "; exit 255 }
+            }
+          }
+          default { puts $LOG "$DATE: SHEL_CHNG - unknown message after enter old password "; exit 255 }
+          
+        }
+      }
+      -re "\[nN\]ew \[pP\]assword:|\[nN\]ew \[pP\]assword \[aA\]gain:" {
+        puts $LOG "$DATE: SHEL_PSWD - detect enter new password"
+        send "$newpwd\n"
+        expect {
+          "BAD PASSWORD" { puts $LOG "$DATE: SHEL_PSWD_NEW - the new password does not pass the security policy"; exit 204 }
+          -re "\[nN\]ew \[pP\]assword:|\[nN\]ew \[pP\]assword \[aA\]gain:" {
+            puts $LOG "$DATE: SHEL_PSWD_NEW - detect reenter new password"
+            send "$newpwd\n"
+            expect {
+              "all authentication tokens updated successfully" { puts $LOG "$DATE: SHEL_PSWD_NEWA - all authentication tokens updated successfully"; exit 0 }
+              -re "$prompt" { puts $LOG "$DATE: SHEL_PSWD_NEWA - detect prompt - password successfully changed"; exit 0 }
+              -re "Enter selection:" { puts $LOG "$DATE: SHEL_PSWD_NEWA - detected bitrix menu command prompt. Key is installed" }
+              -re "Bitrix virtual appliance" { puts $LOG "$DATE: SHEL_CHNG_NEWA - detect bitrix menu prompt - password successfully changed"; exit 0  }
+               default { puts $LOG "$DATE: SHEL_PSWD_NEWA - unknown message after newpassword reenter"; exit 255 }
+            }
+          }
+          default { puts $LOG "$DATE: SHEL_PWSD_NEW - unknown message after enter new password "; exit 255 }
+        }
+      }
+      default { puts $LOG "$DATE: SHEL_PSWD - unknown message after enter passwd cmd"; exit 255 }
+    }
+  }
+  default { puts $LOG "$DATE: SHEL_INIT - unknown prompt after empty cmd"; exit 255 }
+}

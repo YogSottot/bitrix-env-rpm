@@ -1,0 +1,40 @@
+# {{ ansible_managed }}
+{% set nagios_lib_dir = "/usr/lib/nagios" %}
+{% if ansible_architecture == 'x86_64' -%}
+{% set nagios_lib_dir = "/usr/lib64/nagios" %}
+{%- endif %}
+# This is a config file for nrpe agent
+# hostname: {{ inventory_hostname }}
+# arch:     {{ ansible_architecture }}
+<IfModule !mod_cgi>
+	LoadModule cgi_module modules/mod_cgi.so
+</IfModule>
+
+ScriptAlias /nagios/cgi-bin/ "{{ nagios_lib_dir }}/cgi-bin/"
+
+<Directory "{{ nagios_lib_dir }}/cgi-bin/">
+	#SSLRequireSSL
+	Options ExecCGI
+	AllowOverride None
+	Order allow,deny
+	Allow from all
+	AuthName "Nagios Access"
+	AuthType Basic
+	AuthUserFile {{ nagios_server_htpasswd }}
+	Require valid-user
+</Directory>
+
+Alias /nagios "/usr/share/nagios/html"
+
+<Directory "/usr/share/nagios/html">
+	#SSLRequireSSL
+	Options None
+	AllowOverride None
+	Order allow,deny
+	Allow from all
+	AuthName "Nagios Access"
+	AuthType Basic
+	AuthUserFile {{ nagios_server_htpasswd }}
+	Require valid-user
+</Directory>
+

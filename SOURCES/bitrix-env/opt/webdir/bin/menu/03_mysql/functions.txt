@@ -1,0 +1,113 @@
+# Ошибка в получение статуса по MySQL серверам
+MY0001="Cannot get MySQL server status."
+# Сервера MySQL не найдены в пуле.
+MY0002="No MySQL servers were found in the pool."
+# Используется фильтр по типу сервера: ИМЯ_ФИЛЬТРА
+MY0003="Filtered by server type: __OPT1__"
+# Нaйдено N MySQL серверов
+MY0004="Found __OPT1__ MySQL servers: "
+# Описание сокращений
+# P - установлен пароль (Y) или не установлен (N) для mysql пользователя root
+# C - существует клиентский конфигурационный файл для mysql (Y) или нет (N) на сервере
+MY0005="
+P - password is set(Y) or is not (N) for mysql user - root;
+C - client mysql config file exists(Y) or does not(N) on the server.
+"
+# Найдены настройки сайтов, которые не позволяют создать кластерную конфигурацию.
+MY0006="There are site preferences that make cluster configuration impossible."
+# Найдено обновление для bitrix-env. Необходимо установить его для выполнения данного действия.
+# Вы можете установить его через опцию в меню "Управления хостами"
+MY0007="A bitrix-env update was found. 
+It needs to be installed before running this action."
+MY0008="To install it, use the \"Manage servers in the pool\" menu item."
+# Найдены MySQL сервера с пустым паролем для root пользователя
+MY0009="There are MySQL services with empty root password:"
+# Вы можете исправить это используя второй пункт в субменю в меню "Управление MySQL"
+MY0010="To fix this issue, use the second item in the MySQL menu."
+# Найдены MySQL сервера с пустым клиентским mysql конфигом:
+MY0011="There are MySQL services with empty client config:"
+# Найдены выключенные MySQL сервера. Невозможно определить версию и настройки паролей.
+MY0012="Some of the MySQL services are stopped. 
+Cannot get server version and password settings."
+# Вы можете исправить это используя третий пункт в субменю в меню "Управление MySQL"
+MY0013="To fix this issue, use the third item in the MySQL menu."
+# Найдены MySQL сервера, версия которых отличается от версии мастера.
+MY0014="There are MySQL servers whose version does not match master version:"
+# Вы можете попытаться исправить это через последний пункт меню в "Управление серверами"
+MY0015="You can try to fix this issue by using the last item in the \"Manage servers in the pool\" menu."
+# Обновление настроек MySQL службы 
+MY0016="Update MySQL settings"
+# Обновление изменит кофнигурационные файлы и перезапустит MySQL службу на всех MySQL серверах
+MY0017="This update will change config files and restart MySQL services on all the MySQL servers."
+# Хотите ли Вы установить пароль для Mysql пользователя root на сервере ИМЯ_СЕРВЕРА? (Y|n)
+MY0018="Do you want to set the MySQL root password on __OPT1__? (Y|n)"
+# Установка пароля для root пользоватля MySQL службы на сервере ИМЯ
+MY0019="Set MySQL root password on __OPT1__"
+# Хотите ли Вы создать клиентский конфигурационный файл для MySQL? (Y|n)
+MY0020="Do you want to create a MySQL client config file? (Y|n)"
+# Данные конфиг используется для большого количества операция с БД
+MY0021="This config is used in a variety of DB operations"
+# Введите теущий Mysql пароль пользователя root:
+MY0022="Enter current MySQL root password: "
+# Пароль не может быть пустым
+MY0023="Password cannot be empty"
+# Создание клиентского mysql конфига на сервере ИМЯ
+MY0024="Create MySQL client config on __OPT1__"
+# Хотите ли Вы сменить пароль для пользователя root для MySQL службы на сервере ИМЯ?
+MY0025="Do you want to change the MySQL root password on __OPT1__? (N|y)"
+# Изменение пароля для пользователя root для Mysql службы на сервере ИМЯ
+MY0026="Change the MySQL root password on __OPT1__"
+# Не быврано имя хоста
+MY0027="Hostname is not specified"
+# Изменение пароля для Mysql root
+MY0029="Change the MySQL root password"
+# Хотите ли Вы остановить MySQL службу на сервере=ИМЯ?
+# Хотите ли Вы включить MySQL службу на сервере=ИМЯ?
+MY0030="Do you want stop the MySQL service on the server __OPT1__? (N|y)"
+MY0031="Do you want start the MySQL service on the server __OPT1__? (Y|n)"
+# ЗАПУСК|ОСТАНОВКА Mysql службы на СЕРВЕРЕ
+MY0032="__OPT1__ MySQL service on __OPT2__"
+MY0034="Stop/Start MySQL service"
+# Управление MySQL службой
+MY0035="Manage MySQL service"
+# Не найден конфигурационный файл=ПУТЬ mysql группы в пуле
+MY0036="Cannot find MySQL config file __OPT1__"
+# Введите (replica login|replica password|cluster login|cluster password):
+MY0037="Enter "
+# Создание подчиенноего MySQL сервиса на сервере ИМЯ
+# подчиненный = slave (тех. название для такого типа)
+MY0039="Create MySQL slave on __OPT1__"
+# Настройка slave MySQL сервера
+MY0040="Configure MySQL slave"
+# Перенос мастер MySQL службы на СЕРВЕР
+# master - тип службы как и slave
+MY0041="Move MySQL master to __OPT1__"
+# Cмена мастер MySQL сервера
+MY0042="Change MySQL master"
+# Удаление подчиеннного MySQL сервиса на СЕРВЕРЕ
+MY0043="Remove MySQL slave on __OPT1__"
+# Удаление подчиненного MySQL сервера
+MY0044="Remove MySQL slave"
+
+# Центральное меню
+MY0045="1. Update settings for all MySQL servers"
+MY0046="2. Change password for MySQL root user"
+MY0047="3. Stop/Start MySQL service on the server"
+MY0048="4. Create MySQL slave"
+MY0049="5. Change MySQL master"
+MY0050="6. Remove MySQL slave"
+
+# Управление конфигурацией MySQL в пуле
+MY0051="Manage MySQL configuration in the pool"
+
+MY0200="Press ENTER to exit."
+MY0201="0. Previous screen or exit"
+MY0202="Enter 0 to exit:"
+MY0203="Enter 1 to start process or 0 to exit:"
+MY0204="Enter hostname or 0 to exit: "
+MY0205="Enter your choice: "
+# Не найден MySQL сервер с именем=ИМЯ в пуле.
+MY0028="Cannot find MySQL server __OPT1__ in the pool."
+# Не найден сервер=ИМЯ_СЕРВЕРА в пуле
+MY0038="Cannot find server __OPT1__ in the pool."
+

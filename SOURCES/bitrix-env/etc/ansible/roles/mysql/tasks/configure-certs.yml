@@ -1,0 +1,57 @@
+---
+- name: configure CA
+  delegate_to: "{{ cluster_web_server }}"
+  bx_ca: state=init
+  when: "inventory_hostname == slave_server"
+
+- name: install ca-certificates
+  yum: name=ca-certificates state=latest
+
+- name: configure master certificate
+  delegate_to: "{{ cluster_web_server }}"
+  bx_ca: state=add hostname={{ item }}
+  with_items:
+    - "{{ slave_server }}"
+    - "{{ master_server }}"
+  when: "inventory_hostname == slave_server"
+
+- name: copy clients files
+  unarchive:
+    src: "/opt/webdir/openssl/archives/{{ inventory_hostname }}.tar.gz"
+    dest: "/var/lib/mysql"
+    owner: mysql
+    group: mysql
+
+- name: access to files
+  file: 
+    path: /var/lib/mysql/server.key
+    mode: 0440
+
+- name: delete mysql generated files
+  file: 
+    path: "/var/lib/mysql/{{ item }}"
+    state: absent
+  with_items: 
+    - "server-cert.pem"
+    - "server-key.pem"
+    - "server_full.crt"
+    - "ca-key.pem"
+
+- name: update mysql config
+  template:
+    src: ssl-my.cnf.j2
+    dest: /etc/mysql/conf.d/ssl.cnf
+
+- name: copy CA
+  copy:
+    src: /opt/webdir/openssl/ca.pem
+    dest: /etc/pki/ca-trust/source/anchors/bx-ca.pem
+
+- name: enable update-ca-trust
+  shell: update-ca-trust enable
+  when: ansible_distribution == "CentOS"
+    and ansible_distribution_major_version == "6"
+
+- name: execute update-ca-trust
+  shell: update-ca-trust
+

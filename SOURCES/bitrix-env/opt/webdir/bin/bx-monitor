@@ -1,0 +1,132 @@
+#!/usr/bin/perl
+#
+use strict;
+use warnings;
+
+use lib "/opt/webdir/lib";
+use bxDaemon;
+use Output;
+use Pool;
+use Data::Dumper;
+use Getopt::Long;
+use File::Basename qw( dirname basename );
+
+
+# program options
+my $prog_name = basename $0;
+my $prog_dir  = dirname $0;
+
+my $o_action  = "status";           # type of action that script must do.
+                                    # status - current status - enable or disable
+                                    # enbale - enable monitoring
+                                    # disable - monitoring
+                                    # update  - update monitoring node ( usage when node added to the pool )
+my $o_monitoring_server = undef;    # ip address of monitoring
+my $o_monitoring_status = undef;    # status of monitoring system
+my $o_format  = 'plain';            # format of stdout message
+my $o_verbose = 0;
+my $o_help    = undef;
+# monitoring auth options
+my ($o_nagios_user, $o_nagios_password, $o_munin_user, $o_munin_password);
+# email options
+my ($o_smtphost, $o_smtpport, $o_smtppass, 
+    $o_smtplogin, $o_smtptls, $o_smtpmethod, $o_monitor_email,
+    $o_notify_nagios,
+);
+
+# get command line options
+Getopt::Long::Configure ("bundling");
+my $result_option = GetOptions(
+  'v'     => \$o_verbose,   'verbose'   => \$o_verbose,
+  'h'     => \$o_help,      'help'      => \$o_help,
+  "a:s"   => \$o_action,    'action:s'  => \$o_action,
+  "s:s"   => \$o_monitoring_server, 'server:s' => \$o_monitoring_server,
+  "o:s"   => \$o_format,    'output'    => \$o_format,
+  # auth options for monitoring service
+  "nagios_user:s" => \$o_nagios_user,
+  "nagios_password:s" => \$o_nagios_password,
+  "munin_user:s" => \$o_munin_user,
+  "munin_password:s" => \$o_munin_password,
+  # email options for monitoring service
+  "smtphost:s" => \$o_smtphost,
+  "smtpport:s" => \$o_smtpport,
+  "smtppass:s" => \$o_smtppass,
+  "smtplogin:s" => \$o_smtplogin,
+  "smtptls" => \$o_smtptls,
+  "smtpmethod:s" => \$o_smtpmethod,
+  "monitor_email:s" => \$o_monitor_email,
+  "notify_nagios" => \$o_notify_nagios,
+) or unknown_arg();
+
+# help message
+if ( $o_help ) { print_help($prog_name, 0) };
+# formt output
+if ( $o_format !~ /^(json|plain|te?xt)$/ ) { print_help($prog_name, 1)}
+if ( $o_format =~ /^te?xt$/ ) { $o_format = "plain" };
+
+# process request
+my $confPool = Pool->new();
+my $confMonitor = undef;
+if ($o_action =~ /^status$/i){
+  $confMonitor = $confPool->monitorStatus();
+
+# configure server 
+}elsif ($o_action =~ /^enable$/){
+  $confMonitor = $confPool->monitorEnable(
+      { 
+          nagios_server_login => $o_nagios_user,
+          nagios_server_password => $o_nagios_password,
+          munin_server_login => $o_munin_user,
+          munin_server_password => $o_munin_password,
+          monitoring_server => $o_monitoring_server,
+          monitor_email => $o_monitor_email,
+          monitor_smtphost => $o_smtphost, 
+          monitor_smtpport => $o_smtpport,
+          monitor_smtplogin => $o_smtplogin,
+          monitor_smtppass => $o_smtppass,
+          monitor_smtpmethod => $o_smtpmethod,
+          monitor_smtptls => $o_smtptls,
+          notify_nagios => ($o_notify_nagios)? 1: 0,
+      }
+  );
+}elsif ($o_action =~ /^disable$/){
+  $confMonitor = $confPool->monitorDisable();
+}elsif ($o_action =~ /^update$/ ){
+  $confMonitor = $confPool->monitorUpdate();
+}else{
+  $confMonitor = Output->new( error => 1, message => "Unknown action option. PLease use -h for help message." );
+}
+#print Dumper( $confMonitor );
+$confMonitor->print($o_format);
+
+# print usage
+sub print_usage {
+  my $prog = shift;
+  print "Usage: $prog [-vh] [-a enable|disable|status] [-s server_ip] \n";
+}
+
+# help message
+sub print_help {
+  my $prog = shift;
+  my $exit = shift;
+  print_usage( $prog );
+  print <<EOT;
+Options:
+  -h|--help    - show this message
+  -v|--verbose - enable verbose mode.
+  -a|--action  - monitoring action: status|enable|disable
+  -s|--server  - monitoring server ( default: localhost ip address )
+ Ex.
+  * get status of monitoring in pool
+ $prog -o json
+  * enable monitoring
+ $prog -a enable -s 192.168.1.151
+  * disable monitoring
+ $prog -a disable
+  * update monitoring by new host(s)
+ $prog -a update 
+EOT
+;
+  exit;
+}
+

@@ -1,0 +1,92 @@
+---
+######## role is fits for monitoring server and monitored nodes
+# configure:
+# munin
+# munin-node
+# nagios
+# nrpe
+########
+
+# disable nrpe agents
+- name: check if service nrpe exist
+  shell: chkconfig --list nrpe 2>/dev/null && echo "True" || echo "False"
+  register: nrpestatus
+  ignore_errors: True
+  tags: nrpe
+
+- name: disable service for agents
+  service: name=nrpe state=stopped enabled=no
+  when: "'True' in nrpestatus.stdout"
+  tags: nrpe
+
+# disable munin-node agents
+- name: check if service munin-node exist
+  shell: chkconfig --list munin-node 2>/dev/null && echo "True" || echo "False"
+  register: munintatus
+  ignore_errors: True
+  tags: munin
+
+- name: disable service for agents
+  service: name=munin-node state=stopped enabled=no
+  when: "'True' in munintatus.stdout"
+  tags: nrpe
+
+# disable nagios service
+- name: check if service nagios exist
+  shell: chkconfig --list nagios 2>/dev/null && echo "True" || echo "False"
+  register: nagiosstatus
+  ignore_errors: True
+  tags: nagios
+  when: "'bitrix-mgmt' in group_names"
+
+- name: delete msmtp config
+  file: path={{ nagios_msmtp_config }} state=absent
+  tags: nagios
+  when: "'bitrix-mgmt' in group_names"
+
+- name: disable service for agents
+  service: name=munin-node state=stopped enabled=no
+  when: "'bitrix-mgmt' in group_names and 'True' in nagiosstatus.stdout"
+  tags: nagios
+
+- name: disable nginx monitor config
+  file: dest=/etc/nginx/bx/server_monitor.conf 
+    src=/etc/nginx/bx/conf/blank.conf state=link force=yes
+  tags: configure_web_service
+  when: "'bitrix-mgmt' in group_names"
+
+- name: disable httpd monitor config
+  file: dest=/etc/httpd/bx/conf/nagios.conf
+    state=absent
+  tags: configure_web_service
+  when: "'bitrix-mgmt' in group_names"
+
+- name: delete htpasswd files
+  file: dest={{ item }} state=absent
+  with_items:
+    - "{{ munin_server_htpasswd }}"
+    - "{{ nagios_server_htpasswd }}"
+  tags: configure_web_service
+  when: "'bitrix-mgmt' in group_names"
+
+- name: restart web services
+  service: name={{ item }} state=restarted
+  with_items:
+    - nginx
+    - httpd
+  tags: configure_web_service
+  when: "'bitrix-mgmt' in group_names"
+
+# group_vars: bitrix-hosts
+- name: update group variables
+  delegate_to: 127.0.0.1
+  bx_conf: group=hosts state=update monitoring_status=disable
+  when: "'bitrix-mgmt' in group_names"
+  tags: ansible_hosts
+
+- name: delete munin and nagios options
+  delegate_to: 127.0.0.1
+  lineinfile: dest=/etc/ansible/group_vars/bitrix-hosts.yml
+    regexp="^(munin_server_login|munin_server_password|nagios_server_login|nagios_server_password|monitor_email|notify_nagios)" state=absent
+  when: "'bitrix-mgmt' in group_names"
+  tags: ansible_hosts

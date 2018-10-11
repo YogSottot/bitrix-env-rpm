@@ -1,0 +1,52 @@
+---
+- name: disable lsyncd service for backend on balancer
+  delegate_to: "{{ cluster_web_server }}"
+  service: name=lsyncd-{{ inventory_hostname  }} state=stopped enabled=no
+  when: "inventory_hostname == deleted_web_server"
+  tags: lsync
+
+
+- name: disable lsyncd sevice on backend
+  delegate_to: "{{ deleted_web_server }}"
+  service: name=lsyncd-{{ inventory_hostname }} state=stopped enabled=no
+  when: "inventory_hostname == cluster_web_server"
+  tags: lsync
+
+- name: kill lsyncd process
+  shell: pkill lsyncd || true
+  when: "inventory_hostname == deleted_web_server"
+  tags: lsync
+
+- name: delete lsyncd config for backend
+  delegate_to: "{{ deleted_web_server }}"
+  file:
+    state: absent
+    dest: "/etc/lsyncd-{{ inventory_hostname }}.conf"
+  when: "inventory_hostname == cluster_web_server"
+  tags: lsync
+
+- name: delete lsyncd config for balancer
+  delegate_to: "{{ cluster_web_server }}"
+  file:
+    state: absent
+    dest: "/etc/lsyncd-{{ inventory_hostname }}.conf"
+  when: "inventory_hostname == deleted_web_server"
+  tags: lsync
+
+- name: delete ssh key on balancer
+  authorized_key:
+    user: bitrix
+    key: "{{ lookup('file', '/home/bitrix/.ssh/id_rsa-'+deleted_web_server+'.pub' )  }}"
+    state: absent
+  when: "inventory_hostname == cluster_web_server"
+  tags: lsync
+
+- name: delete ssh key on backend
+  authorized_key:
+    user: bitrix
+    key: "{{ lookup('file', '/home/bitrix/.ssh/id_rsa.pub' )  }}"
+    state: absent
+  when: "inventory_hostname == deleted_web_server"
+  tags: lsync
+
+

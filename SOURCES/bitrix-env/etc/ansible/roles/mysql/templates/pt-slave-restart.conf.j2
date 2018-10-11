@@ -1,0 +1,5 @@
+# {{ inventory_hostname }}:3306
+log=/var/log/mysql/slave_restart.log
+socket={{ mysql_socket }}
+pid=/var/run/slave_restart.pid
+error-numbers=1062,1032

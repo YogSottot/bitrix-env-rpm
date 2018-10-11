@@ -1,0 +1,108 @@
+# {{ ansible_managed }}
+# site: {{ web_site_name }}
+{% set server_port = 9887 %}
+{%- set is_require = 0 %}
+{%- set deny_from_all = 'Deny From All' %}
+{%- if ansible_distribution == 'CentOS' and ansible_distribution_major_version == '7' %}
+{%- set is_require = 1 %}
+{%- set deny_from_all = 'Require all denied' %}
+{%- endif %}
+<VirtualHost 127.0.0.1:{{ server_port }}>
+    {% if web_site_name != 'default' -%}
+	ServerName  {{ web_site_name }}
+	ServerAlias www.{{ web_site_name }}
+    {% endif %}
+	ServerAdmin webmaster@localhost
+	DocumentRoot  {{ web_site_root_dir }}
+
+	ErrorLog logs/{{ web_site_shname }}_error_log
+	LogLevel warn
+	CustomLog logs/{{ web_site_shname }}_access_log combined
+
+	<IfModule mod_rewrite.c>
+		#Nginx should have "proxy_set_header HTTPS YES;" in location
+		RewriteEngine On
+		RewriteCond %{HTTP:HTTPS} =YES
+		RewriteRule .* - [E=HTTPS:on,L]
+	</IfModule>
+
+    {{ bitrix_site_php_overload }}
+    {{ bitrix_site_php_internal }}
+
+	<Directory />
+		Options FollowSymLinks
+		AllowOverride None
+	</Directory>
+
+	<DirectoryMatch .*\.svn/.*>
+        {{ deny_from_all }}
+	</DirectoryMatch>
+
+	<DirectoryMatch .*\.git/.*>
+		 {{ deny_from_all }}
+	</DirectoryMatch>
+
+	<DirectoryMatch .*\.hg/.*>
+		 {{ deny_from_all }}
+	</DirectoryMatch>
+
+	<Directory {{ web_site_root_dir }}>
+		Options Indexes FollowSymLinks MultiViews
+		AllowOverride All
+		DirectoryIndex index.php index.html index.htm
+
+        {% if is_require > 0 -%}
+            Require all granted
+        {% else -%}
+            Order allow,deny
+            Allow From All
+        {% endif %}
+
+        php_admin_value session.save_path {{ web_site_sess_dir }}
+        php_admin_value upload_tmp_dir    {{ web_site_upld_dir }}
+	</Directory>
+
+	<Directory {{ web_site_root_dir }}/bitrix/cache>
+		AllowOverride none
+        {{ deny_from_all }}
+	</Directory>
+
+	<Directory {{ web_site_root_dir }}/bitrix/managed_cache>
+		AllowOverride none
+        {{ deny_from_all }}
+	</Directory>
+
+	<Directory {{ web_site_root_dir }}/bitrix/local_cache>
+		AllowOverride none
+        {{ deny_from_all }}
+	</Directory>
+
+	<Directory {{ web_site_root_dir }}/bitrix/stack_cache>
+		AllowOverride none
+        {{ deny_from_all }}
+	</Directory>
+
+	<Directory {{ web_site_root_dir }}/upload>
+		AllowOverride none
+		AddType text/plain php,php3,php4,php5,php6,phtml,pl,asp,aspx,cgi,dll,exe,ico,shtm,shtml,fcg,fcgi,fpl,asmx,pht
+		php_value engine off
+	</Directory>
+
+	<Directory {{ web_site_root_dir }}/upload/support/not_image>
+		AllowOverride none
+        {{ deny_from_all }}
+	</Directory>
+
+	<Directory {{ web_site_root_dir }}/bitrix/images>
+		AllowOverride none
+		AddType text/plain php,php3,php4,php5,php6,phtml,pl,asp,aspx,cgi,dll,exe,ico,shtm,shtml,fcg,fcgi,fpl,asmx,pht
+		php_value engine off
+	</Directory>
+
+	<Directory {{ web_site_root_dir }}/bitrix/tmp>
+		AllowOverride none
+		AddType text/plain php,php3,php4,php5,php6,phtml,pl,asp,aspx,cgi,dll,exe,ico,shtm,shtml,fcg,fcgi,fpl,asmx,pht
+		php_value engine off
+	</Directory>
+
+</VirtualHost>

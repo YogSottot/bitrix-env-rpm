@@ -1,0 +1,68 @@
+---
+# curl, phar and etc
+- set_fact:
+    package: "php"
+    extension_string: "extension"
+
+- set_fact:
+    package: "php-pecl-ssh2"
+  when: extension == 'ssh2'
+
+- set_fact:
+    package: "php-pecl-xdebug"
+    extension_string: "zend_extension"
+  when: extension == 'xdebug'
+
+- set_fact:
+    package: "php-pecl-zip"
+  when: extension == 'zip'
+
+- set_fact:
+    package: "php-pecl-imagick"
+  when: extension == 'imagick'
+
+- name: install package
+  yum: 
+    pkg: "{{ package }}" 
+    state: present
+  when: type == 'enable'
+  notify: restart httpd
+
+- find:
+    paths: /etc/php.d
+    patterns: '^[0-9]+-{{ extension }}\.ini$'
+    use_regex: True
+  register: find
+
+- set_fact:
+    ini: "{{ find.files[0]['path'] }}"
+
+- debug: 
+    msg: "{{ ini }}"
+
+- name: enable extension
+  lineinfile: 
+    dest: "{{ ini }}"
+    line: "{{ extension_string }}={{ extension }}.so"
+  when: type == 'enable' 
+  notify: restart httpd
+
+- name: delete .disabled ini-file
+  file:
+    dest: "{{ ini  }}.disabled"
+    state: absent
+  when: type == 'enable' 
+
+- name: disable extension
+  shell: mv -f "{{ ini }}" "{{ ini }}.disabled"
+  when: type == 'disable'
+  notify: restart httpd
+
+- name: create empty file
+  file: 
+    path: "{{ ini }}" 
+    state: touch
+  when: type == 'disable'
+  notify: restart httpd
+
+

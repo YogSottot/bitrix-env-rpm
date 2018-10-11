@@ -1,0 +1,282 @@
+---
+- file:
+    dest: "{{ item }}"
+    state: absent
+  with_items:
+    - /etc/yum.repos.d/nodesource-el.repo
+    - /etc/yum.repos.d/nodesource-el6.repo
+  when: is_rpm is undefined
+
+- name: configure nodejs repository
+  shell: "curl --silent --location https://rpm.nodesource.com/setup_8.x | bash - >/dev/null 2>&1"
+  when: is_rpm is undefined
+
+- name: delete old nodejs-packages
+  shell: rpm -e --nodeps "{{ item }}"
+  when: is_rpm is undefined
+    and nodejs_major_version != "8"
+  with_items:
+    - "nodejs"
+    - "npm"
+  ignore_errors: true
+
+- name: delete old push-server package
+  shell: rpm -e --nodeps push-server
+  when: push_server_major_version == "1" 
+    and is_rpm is undefined
+
+- shell: yum clean all
+  when: is_rpm is undefined
+
+- name: install packages
+  yum: 
+    name: "{{ item }}" 
+    state: latest
+    update_cache: yes
+  with_items:
+    - "openssl-libs"
+    - "openssl"
+  when: is_rpm is undefined
+    and ansible_distribution == "CentOS"
+    and ansible_distribution_major_version == "7"
+
+- name: install http-parser
+  yum: 
+    name: "https://kojipkgs.fedoraproject.org//packages/http-parser/2.7.1/3.el7/x86_64/http-parser-2.7.1-3.el7.x86_64.rpm"
+    state: present
+  when: is_rpm is undefined
+    and ansible_distribution == "CentOS"
+    and ansible_distribution_major_version == "7"
+    and '7.3.' in ansible_distribution_version 
+
+- name: install packages
+  yum: 
+    name: "{{ item }}" 
+    state: latest
+    update_cache: yes
+  with_items:
+    - "nodejs"
+    - "bx-push-server"
+  when: is_rpm is undefined
+
+- name: delete installed push-server modules
+  file:
+    dest: /opt/push-server/node_modules
+    state: absent
+
+- name: install packages based on package.json.
+  npm:
+    path: /opt/push-server
+    state: latest
+    production: yes
+
+- name: change owner
+  file:
+    dest: /opt/push-server/node_modules
+    owner: bitrix
+    group: bitrix
+    recurse: yes
+
+- name: push-service service file
+  shell: cp -fv /etc/push-server/push-server.service /usr/lib/systemd/system/push-server.service
+  args:
+    creates: /usr/lib/systemd/system/push-server.service
+  when: ansible_distribution == "CentOS"
+    and ansible_distribution_major_version == "7"
+
+# redis
+- name: redis user
+  user: name=redis group=bitrix state=present
+
+- name: configure redis
+  template: 
+    src: redis.conf.j2
+    dest: /etc/redis.conf
+    mode: 0640
+    owner: redis
+    group: root
+
+- name: redis service directory 
+  file:
+    path: /etc/systemd/system/redis.service.d
+    state: directory
+  when: ansible_distribution == "CentOS"
+    and ansible_distribution_major_version == "7"
+
+- name: redis optional config
+  template:
+    src: redis-custom.conf.j2
+    dest: /etc/systemd/system/redis.service.d/custom.conf
+  when: ansible_distribution == "CentOS"
+    and ansible_distribution_major_version == "7"
+
+- name: update systemd config
+  shell: systemctl daemon-reload
+  when: ansible_distribution == "CentOS"
+    and ansible_distribution_major_version == "7"
+
+- name: service redis
+  service:
+    name: redis
+    state: stopped
+
+- name: service redis
+  service: 
+    name: redis
+    state: started
+    enabled: yes
+
+# nodejs
+- name: update sysconfig
+  lineinfile: 
+    dest: /etc/sysconfig/push-server-multi
+    regexp: "^WS_HOST=.+"
+    line: "WS_HOST={{ bx_netaddr }}"
+    backup: yes
+
+- name: generate configs
+  shell: /etc/init.d/push-server-multi reset
+
+- name: service nodejs stop
+  service:
+    name: "push-server"
+    state: stopped
+  when: ansible_distribution == "CentOS"
+    and ansible_distribution_major_version == "7"
+
+- name: service nodejs start
+  service:
+    name: "push-server"
+    state: started
+    enabled: yes
+  when: ansible_distribution == "CentOS"
+    and ansible_distribution_major_version == "7"
+
+- name: service nodejs stop
+  service:
+    name: "push-server-multi"
+    state: stopped
+  when: ansible_distribution == "CentOS"
+    and ansible_distribution_major_version == "6"
+
+   
+- name: service nodejs start
+  service:
+    name: "push-server-multi"
+    state: started
+    enabled: yes
+  when: ansible_distribution == "CentOS"
+    and ansible_distribution_major_version == "6"
+
+# nginx
+- name: additional gathering facts
+  bx_vat:
+
+- set_fact:
+    nodejs_pub: "{{ push_pub }}"
+    nodejs_sub: "{{ push_sub }}"
+    nodejs_subws: "{{ push_subws }}"
+    nodejs_rest: "{{ push_rest }}"
+
+- name: nginx push-server options
+  delegate_to: "{{ cluster_web_server }}"
+  template:
+    src: nginx-rtc-im_settings.conf.j2
+    dest: /etc/nginx/bx/settings/rtc-im_settings.conf
+
+- name: nginx push-server site
+  delegate_to: "{{ cluster_web_server }}"
+  template:
+    src: nginx-rtc-server.conf.j2
+    dest: /etc/nginx/bx/site_enabled/rtc-server.conf
+
+- name: nginx push-server locations
+  delegate_to: "{{ cluster_web_server  }}"
+  template:
+    src: nginx-rtc-im_subscrider.conf.j2
+    dest: /etc/nginx/bx/conf/rtc-im_subscrider.conf
+
+- name: nginx push-module location
+  delegate_to: "{{ cluster_web_server  }}"
+  file:
+    path: "{{ item }}"
+    state: absent
+  with_items:
+    - /etc/nginx/bx/conf/im_subscrider.conf
+    - /etc/nginx/bx/site_enabled/push.conf
+
+- name: nginx push-server links
+  delegate_to: "{{ cluster_web_server  }}"
+  file:
+    src: /etc/nginx/bx/conf/rtc-im_subscrider.conf
+    dest: /etc/nginx/bx/conf/im_subscrider.conf
+    state: link
+
+- name: service nginx restart
+  delegate_to: "{{ cluster_web_server  }}"
+  service:
+    name: nginx
+    state: restarted
+
+# site config
+- name: add apache22 settings
+  delegate_to: "{{ cluster_web_server }}"
+  lineinfile:
+    dest: /etc/sysconfig/httpd
+    line: "BX_PUSH_SECURITY_KEY={{ push_security_key }}"
+    backup: yes
+
+- name: add apache24 settings 
+  delegate_to: "{{ cluster_web_server }}"
+  lineinfile: 
+    dest: /etc/httpd/bx/conf/00-environment.conf
+    line: "SetEnv BX_PUSH_SECURITY_KEY {{ push_security_key }}"
+    backup: yes
+  when: ansible_distribution == "CentOS"
+    and ansible_distribution_major_version == "7"
+
+- name: service httpd restart
+  delegate_to: "{{ cluster_web_server  }}"
+  service:
+    name: httpd
+    state: restarted
+
+# configure push settings for sites
+- include: sites-add_push_server_settings.yml
+  when: is_rpm is undefined
+  static: no
+
+# update ansible inventory file
+- include: push-server-inventory.yml
+  when: is_rpm is undefined
+  static: no
+
+# restart service
+- name: service nodejs start
+  service:
+    name: "push-server"
+    state: stopped
+  when: ansible_distribution == "CentOS"
+    and ansible_distribution_major_version == "7"
+
+- name: service nodejs start
+  service:
+    name: "push-server"
+    state: started
+  when: ansible_distribution == "CentOS"
+    and ansible_distribution_major_version == "7"
+
+- name: service nodejs stop
+  service:
+    name: "push-server-multi"
+    state: stopped
+  when: ansible_distribution == "CentOS"
+    and ansible_distribution_major_version == "6"
+
+- name: service nodejs start
+  service:
+    name: "push-server-multi"
+    state: started
+    enabled: yes
+  when: ansible_distribution == "CentOS"
+    and ansible_distribution_major_version == "6"

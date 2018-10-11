@@ -1,0 +1,15 @@
+<?
+// {{ ansible_managed }}
+// create index page for disabled site
+$_SERVER["DOCUMENT_ROOT"] = '{{ item.DocumentRoot }}';
+$DOCUMENT_ROOT = $_SERVER["DOCUMENT_ROOT"];
+define("NO_KEEP_STATISTIC", true);
+define("NOT_CHECK_PERMISSIONS",true);
+define('BX_NO_ACCELERATOR_RESET', true);
+require($_SERVER["DOCUMENT_ROOT"]."/bitrix/modules/main/include/prolog_before.php");
+
+\Bitrix\Main\Loader::includeModule("scale");
+
+echo \Bitrix\Scale\Helper::getAvailabilityPage({{ site_disabled_minutes|default('360') }});
+
+?>

@@ -1,0 +1,38 @@
+---
+#### nginx configs
+- name: http nginx config
+  template: 
+    src: nginx/http_newsite_template.conf.j2
+    dest: "/etc/nginx/bx/site_cluster/{{ nginx_config_name_http }}"
+    owner: bitrix
+    group: bitrix
+  tags: web_config
+  notify: restart nginx
+
+- name: https nginx config
+  template: 
+    src: nginx/https_balancer_per_new_site.conf.j2
+    dest: "/etc/nginx/bx/site_avaliable/{{ nginx_config_name_https_balancer }}"
+    owner: bitrix
+    group: bitrix
+  tags: web_config
+  notify: restart nginx
+
+- name: enable http configs
+  file: 
+    src: "/etc/nginx/bx/site_cluster/{{ nginx_config_name_http }}"
+    dest: "/etc/nginx/bx/{{ item }}/{{ nginx_config_name_http }}"
+    state: link
+  tags: web_config
+  notify: restart nginx
+  with_items:
+    - site_enabled
+    - site_avaliable
+
+- name: enable https configs
+  file: 
+    src: "/etc/nginx/bx/site_avaliable/{{ nginx_config_name_https_balancer }}"
+    dest: "/etc/nginx/bx/site_enabled/{{ nginx_config_name_https_balancer }}"
+    state: link
+  tags: web_config
+  notify: restart nginx

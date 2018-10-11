@@ -1,0 +1,11 @@
+# upgrade mysql server options (for upgrade time)
+# {{ ansible_managed }}
+{% set play_role = mysql_replication_role|default('slave') %}
+[mysqld]
+  thread_stack = 512K
+  skip-grant-tables
+  skip-networking
+  {% if play_role == 'slave' %}
+  skip-slave-start
+  {% endif  %}
+  

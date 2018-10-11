@@ -1,0 +1,40 @@
+# {{ ansible_managed }}
+# configuration of web services for cluster
+group bxcluster {
+  {% for host in groups['bitrix-web'] %}{% if host != deleted_web_server %}
+  host {{ host }};{% endif %}
+  {% endfor %}
+  {% if new_web_server != 'NOT_DEFINED' %}
+  host {{ new_web_server }};
+  {% endif %}
+
+  key {{ csync_configdir }}/{{ csync_cluster_key }};
+
+  # csync options
+  include {{ csync_configdir }};
+  exclude {{ csync_configdir }}/{{ csync_cluster_key }};
+  exclude {{ csync_configdir }}/{{ csync_cluster_cert }};
+  exclude {{ csync_configdir }}/{{ csync_cluster_priv }};
+
+  # nginx configs
+  include {{ nginx_base_dir }}/{{ nginx_config_dir }};
+  include {{ nginx_base_dir }}/{{ nginx_maps_dir }};
+  include {{ nginx_base_dir }}/{{ nginx_available_sites_dir }};
+  include {{ nginx_base_dir }}/{{ nginx_enabled_sites_dir }};
+  include {{ nginx_base_dir }}/{{ nginx_available_sites_dir_cluster }};
+
+  ## skip main server configs
+  exclude {{ nginx_base_dir }}/{{ nginx_enabled_sites_dir }}/{{ nginx_http_balancer_conf }};
+  exclude {{ nginx_base_dir }}/{{ nginx_enabled_sites_dir }}/{{ nginx_https_balancer_conf }};
+  exclude {{ nginx_base_dir }}/{{ nginx_enabled_sites_dir }}/{{ nginx_upstream_conf }};
+  exclude {{ nginx_base_dir }}/{{ nginx_enabled_sites_dir }}/pool_manager.conf;
+
+  # email configs
+  include {{ msmtprc_config }};
+
+  # httpd configs
+  include {{ httpd_base_dir }}/{{ httpd_config_dir }};
+
+
+  auto first;
+}

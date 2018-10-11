@@ -1,0 +1,153 @@
+---
+# default variables for web role
+push_server: "{{ cluster_web_server }}"
+push_port: 8895
+
+## nginx settings:
+# default http port
+nginx_server_http_port: 80
+# default https port
+nginx_server_https_port: 443
+# internal port for nginx with balancer
+nginx_server_internal_port: 8080
+nginx_server_internal_addr: 127.0.0.1
+
+# server-status options for apache
+apache_monitoring_netaddr: 127.0.0.1
+apache_monitoring_port: 8886
+nginx_to_apache_monitoring_port: 8081
+apache_monitoring_page: /server-status
+
+# status for nginx server - munin monitoring
+nginx_monitoring_netaddr: 127.0.0.1
+nginx_monitoring_port: 8885
+
+# config files live here
+nginx_base_dir: /etc/nginx
+# default ssl options
+nginx_certs_dir: "{{ nginx_base_dir }}/ssl"
+nginx_default_cert: "{{ nginx_certs_dir }}/cert.pem"
+nginx_default_priv: "{{ nginx_certs_dir }}/cert.pem"
+
+# additional config dirs for bitrix env
+nginx_config_dir: bx/conf
+nginx_maps_dir: bx/maps
+
+# change it while cluster created (on balancer)
+nginx_site_port_conf: bx/node_port.conf
+
+# link to enabled sites from nginx.conf: balancer, status, push&pull
+nginx_enabled_sites_dir: bx/site_enabled
+
+# configs for available site, before cluster enabled - all sites live here
+nginx_available_sites_dir: bx/site_avaliable
+
+# configs for available sites, after cluster configuration
+# separate storage for synchronizing ( csync access rights )
+nginx_available_sites_dir_cluster: bx/site_cluster
+
+# balancer configuration
+# Note: Do not think about the white monkey :)
+# ssl certificates for all sites is the same in this version
+nginx_http_balancer_conf: http_balancer.conf
+nginx_https_balancer_conf: https_balancer.conf
+nginx_upstream_conf: upstream.conf
+nginx_default_site_conf: s1.conf
+
+## httpd settings
+httpd_server_listen_port: 8888
+httpd_server_listen_addr: 127.0.0.1
+
+# config files live here
+httpd_base_dir: /etc/httpd
+httpd_config_dir: bx/conf
+httpd_custom_dir: bx/custom
+httpd_enabled_sites_dir: bx/conf
+httpd_available_sites_dir: bx/conf
+
+## csync option
+csync_configdir: /etc/csync2
+csync_cluster_key:  csync2_cluster.key
+# cluster certificate
+csync_cluster_cert: csync2_ssl_cert.pem
+csync_cluster_csr: csync2_ssl_cert.csr
+
+# cluster private key
+csync_cluster_priv: csync2_ssl_key.pem
+csync_db_dir: /var/lib/csync2
+csync_lock_file: /etc/csync2/csync2.lock
+
+## sites
+# error pages for sites
+site_errors_root: /var/www/bitrixenv_error
+# default site name
+site_default_name: default
+# default DocumentRoot for site
+site_default_root: /home/bitrix/www
+# default folder for php sessions
+site_default_php_sess: /tmp/php_sessions/www
+# default folder for uploaded files
+site_default_upload: /tmp/php_upload/www
+# site default db
+site_default_database: sitemanager0
+# site default archive
+site_archive_name: vm
+
+# base folder where DocumentRoot of additional sites exists
+site_extentend_base: /home/bitrix/ext_www
+site_extentend_php_sess: /tmp/php_sessions/ext_www
+site_extentend_upload: /tmp/php_upload/ext_www
+site_extentend_log: /var/log/php
+
+# user and group
+site_bitrix: bitrix
+site_root: root
+site_file_mode: "0664"
+site_dirs_mode: "0775"
+
+# email settings file
+msmtprc_config: /home/bitrix/.msmtprc
+
+# bitrix site defaults encodings: utf8 or cp1251
+bitrix_site_encoding: utf8
+
+# utf8_unicode_ci or cp1251_general_ci
+bitrix_site_collation: utf8_unicode_ci
+
+# charset: utf-8 or windows-1251
+bitrix_site_charset: utf-8
+
+# site mbstring settings
+# cp1251 - "php_admin_value mbstring.func_overload 0"
+bitrix_site_php_overload: " "
+
+# cp1251 - "php_admin_value mbstring.internal_encoding latin"
+bitrix_site_php_internal: " "
+
+# debug for web part
+web_debug: prod
+
+# 
+ntlm_web_configure: disable
+ntlm_web_dir: /home/bitrix/www_ntlm
+ntlm_http_port: 8890
+ntlm_https_port: 8891
+
+# web_mysql_cluster_configure
+web_mysql_cluster_configure: disable
+
+# ansible temporary folder for php-script
+bx_ansible_temp_dir_fn: /opt/webdir/.ansible
+bx_ansible_owner: root
+bx_ansible_group: bitrix
+bx_ansible_executer: bitrix
+
+# bx idmap
+idmap_range_start: 10000
+idmap_range_end: 40000
+
+lsync_logdir: /var/log/lsyncd 
+# temporary files
+cache_directory: /opt/webdir/tmp
+# mysql connect: local or cluster
+mysql_playbook: local

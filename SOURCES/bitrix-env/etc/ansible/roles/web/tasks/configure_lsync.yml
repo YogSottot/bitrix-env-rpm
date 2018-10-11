@@ -1,0 +1,89 @@
+---
+# initial synchronize for site configs and site data
+- name: balancer vars
+  set_fact:
+    lb_distribution_version: "{{ hostvars[cluster_web_server]['ansible_distribution_major_version'] }}"
+    backend_distribution_version: "{{ hostvars[new_web_server]['ansible_distribution_major_version'] }}"
+
+- name: install lsync
+  yum: name=lsyncd state=latest
+  when: "'bitrix-web' in group_names or inventory_hostname == new_web_server"
+  tags: lsyncd
+
+# ssh keys
+- name: create ssh-key for bitrix user
+  user: name=bitrix generate_ssh_key=yes ssh_key_bits=2048 ssh_key_file=/home/bitrix/.ssh/id_rsa
+  when: "'bitrix-web' in group_names or inventory_hostname == new_web_server"
+
+- name: install balancer key on backend
+  authorized_key:
+    user: bitrix
+    key: "{{ lookup('file', '/home/bitrix/.ssh/id_rsa.pub') }}"
+  when: "inventory_hostname == new_web_server"
+
+- name: pull backend key on balancer
+  synchronize:
+    mode: pull
+    src: /home/bitrix/.ssh/id_rsa.pub
+    dest: "/home/bitrix/.ssh/id_rsa-{{ new_web_server }}.pub"
+  when: "inventory_hostname == new_web_server"
+
+- name: install backend key on balancer
+  authorized_key:
+    user: bitrix
+    key: "{{ lookup('file', '/home/bitrix/.ssh/id_rsa-'+new_web_server+'.pub' ) }}"
+  when: "inventory_hostname == cluster_web_server"
+
+- name: check host in ssh known_hosts on backend
+  shell: ssh-keygen -f /etc/ssh/ssh_known_hosts -F {{ cluster_web_server }}
+  when: "inventory_hostname == new_web_server"
+  register: ssh_known_host_backend
+  ignore_errors: yes
+
+- name: check host in ssh known_hosts on balancer
+  shell: ssh-keygen -f /etc/ssh/ssh_known_hosts -F {{ new_web_server }}
+  when: "inventory_hostname == cluster_web_server"
+  register: ssh_known_host_balancer
+  ignore_errors: yes
+
+- name: manage ssh known_hosts on balancer
+  shell: ssh-keyscan -H -T 10 {{ cluster_web_server }} >> /etc/ssh/ssh_known_hosts
+  when: "inventory_hostname == new_web_server and ssh_known_host_backend.stdout == ''"
+
+- name: manage ssh known_hosts on backend
+  shell: ssh-keyscan -H -T 10 {{ new_web_server }} >> /etc/ssh/ssh_known_hosts
+  when: "inventory_hostname == cluster_web_server and ssh_known_host_balancer.stdout == ''"
+
+# configure inotify watches options
+- name: update sysctl.conf for max_user_watches
+  sysctl: 
+    name: fs.inotify.max_user_watches
+    value: 1500000
+    reload: yes
+  when: "inventory_hostname == cluster_web_server or inventory_hostname == new_web_server"
+
+- name: update sysctl.conf for max_queued_events
+  sysctl: 
+    name: fs.inotify.max_queued_events
+    value: 65536
+    reload: yes
+  when: "inventory_hostname == cluster_web_server or inventory_hostname == new_web_server"
+
+# BALANCER
+- include: configs_lsyncd.yml
+  vars:
+    lsync_server: "{{ cluster_web_server }}"
+    lsync_config: "balancer"
+    lsync_started: true
+    lsync_server_version: "{{ lb_distribution_version }}"
+  when: "inventory_hostname == new_web_server"
+
+# BACKEND
+- include: configs_lsyncd.yml
+  vars:
+    lsync_server: "{{ new_web_server }}"
+    lsync_config: "backend"
+    lsync_started: false
+    lsync_server_version: "{{ backend_distribution_version }}"
+  when: "inventory_hostname == cluster_web_server"
+

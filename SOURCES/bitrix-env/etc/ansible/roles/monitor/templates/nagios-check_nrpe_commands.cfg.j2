@@ -1,0 +1,16 @@
+# {{ ansible_managed }}
+{% set nagios_plugins_dir = "/usr/lib/nagios/plugins" %}
+{% if ansible_architecture == 'x86_64' -%}
+{% set nagios_plugins_dir = "/usr/lib64/nagios/plugins" %}
+{%- endif %}
+
+# check remote host by check_nrpe command with arguments
+define command{
+  command_name    check_nrpe_cmd3argv
+  command_line    {{ nagios_plugins_dir }}/check_nrpe -H $HOSTADDRESS$ -c "$ARG1$" -a "$ARG2$" "$ARG3$" "$ARG4$"
+}
+# check remote host by check_nrpe command
+define command{
+  command_name    check_nrpe_cmd
+  command_line    {{ nagios_plugins_dir }}/check_nrpe -H $HOSTADDRESS$ -c "$ARG1$" 
+}

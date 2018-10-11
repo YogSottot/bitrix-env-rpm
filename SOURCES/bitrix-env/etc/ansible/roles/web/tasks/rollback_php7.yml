@@ -1,0 +1,85 @@
+---
+# downgrade php package from 7.0 version to 5.6
+# 3. configure remi repo (php56)
+# 4. downgrade php version
+# 5. change httpd settings and php.d settings (Centos 6)
+# create list bx_sites_info
+- include: sites-gathering_facts-not_mandatory.yml
+
+# configure and upgrade remi
+- name: save list php disabled modules
+  bx_php: action=safe70
+  tags: php56
+  when: "'bitrix-web' in group_names"
+
+- name: save list php-packages
+  shell: rpm -qa --queryformat '%{name}\n' | grep '^php' | grep -v '\(php-pecl-apcu-bc\|php-pdo-dblib\)'
+  args:
+    executable: /bin/bash
+  register: php70_packages
+  when: "'bitrix-web' in group_names"
+
+- include: configure_remi_php56.yml
+  when: "'bitrix-web' in group_names"
+
+- name: remove package without deps
+  shell: rpm -qi {{ item }} && rpm -e --nodeps {{ item }} || true
+  with_items: 
+    - "{{ php70_packages.stdout_lines }}"
+    - 'php-pecl-apcu-bc'
+    - 'php-pdo-dblib'
+  when: "'bitrix-web' in group_names"
+
+- name: reinstall php56 
+  yum: name={{ item }} state=latest
+  with_items: 
+    - "{{ php70_packages.stdout_lines }}"
+    - php-mssql
+    - php-pecl-xhprof
+  when: "'bitrix-web' in group_names"
+
+- name: disable additional modules
+  shell: "[ -f /etc/php.d/{{ item }} ] && mv -f /etc/php.d/{{ item }} /etc/php.d/{{ item  }}.disabled && touch /etc/php.d/{{ item  }}"
+  args:
+    executable: /bin/bash
+  with_items:
+    - 20-mssql.ini
+    - 40-xhprof.ini
+  when: "'bitrix-web' in group_names"
+  ignore_errors: True
+
+- name: restore list php disabled modules
+  bx_php: action=restore56
+  tags: php56
+  when: "'bitrix-web' in group_names"
+
+- name: enable additional modules
+  shell: "[ -f /etc/php.d/{{ item }}.disabled ] && mv -f /etc/php.d/{{ item }}.disabled /etc/php.d/{{ item  }}"
+  args:
+    executable: /bin/bash
+  with_items:
+    - 20-pdo.ini
+  when: "'bitrix-web' in group_names"
+  ignore_errors: True
+
+- name: get rpmsave file list
+  find:
+    paths: "/etc/php.d"
+    patterns: "*.rpmsave,*.rpmnew"
+    file_type: file
+  register: rpmsave
+
+- name: delete rpmsave files
+  file:
+    path: "{{ item.path }}"
+    state: absent
+  with_items: "{{ rpmsave.files }}"
+
+# configure apache service
+- include: configure_httpd_php56.yml
+  when: "'bitrix-web' in group_names"
+
+- name: restart httpd
+  service: name=httpd state=restarted
+  when: "inventory_hostname == cluster_web_server"
+

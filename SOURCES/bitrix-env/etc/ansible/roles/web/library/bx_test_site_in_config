@@ -1,0 +1,136 @@
+#!/usr/bin/perl
+# search string in sitename in configs that fits regexp in the basedir
+#
+
+use strict;
+use warnings;
+use File::Spec;
+use File::Basename qw( dirname basename );
+use JSON;
+use Data::Dumper;
+
+
+# search="server_name www.bitrix.ru;" basedir=/etc/nginx/bx/site_avaliable regexp=\.conf$
+my $options_file  = $ARGV[0];
+
+# parse ansible argv file
+my $gtn_parse_ansible_argv = parse_ansible_argv ( $options_file );
+if ( $gtn_parse_ansible_argv->[0] > 0 ) {
+  print_message( 
+    { 'msg' => $gtn_parse_ansible_argv->[1], 'failed' => "true" },
+    $gtn_parse_ansible_argv->[0],
+  );
+}
+
+# get list files on config directory
+my $gtn_file_list = get_file_list( 
+  $gtn_parse_ansible_argv->[1]->{'basedir'}, 
+  $gtn_parse_ansible_argv->[1]->{'regexp'},
+);
+if ( $gtn_file_list->[0] > 0 ) {
+  print_message( { 
+    'msg' => $gtn_file_list->[1], 'failed' => "true" },
+    $gtn_file_list->[0],
+  );
+}
+
+# search string in founded files
+my $gtn_file_search = search_string( 
+  $gtn_file_list->[1],
+  $gtn_parse_ansible_argv->[1]->{'search'},
+  $gtn_parse_ansible_argv->[1]->{'basedir'},
+);
+if ( $gtn_file_search->[0] > 0 ){
+  print_message( 
+    { 'msg' => $gtn_file_search->[1], 'failed' => "true" },
+    $gtn_file_search->[0],
+  );
+}
+# test found string or not
+if ( $gtn_file_search->[1] == 0 ){
+  print_message( { "found" => "0" }, 0 );
+}else{
+  print_message( { "found" => "1" }, 0 );
+}
+
+exit 0;
+
+# print json output for ansible
+# input: return_hash, exit_code
+sub print_message {
+  my $rh = shift;
+  my $c = shift;
+  my $json = to_json( $rh, pretty => 1 );
+  print $json;
+  exit $c;
+}
+
+# parse opt file
+sub parse_ansible_argv {
+  my $f = shift;
+  my $r = {};
+
+  open ( my $fh, $f ) or return [ 1, "Cannot open options file: $!" ];
+  while ( <$fh> ){
+    next if ( /^$/ );
+    if ( /search=(\S+)/ )                   { $r->{'search'}  = $1 };
+    if ( /search=[\"\']([^\"\']+)[\"\']/ )  { $r->{'search'}  = $1 };
+    if ( /basedir=(\S+)/ )                  { $r->{'basedir'} = $1 };
+    if ( /regexp=(\S+)/ )                   { $r->{'regexp'}  = $1 };
+  }
+
+  close $fh;
+
+  if ( ! $r->{'search'} ) { return [ 1, "You must send search_string via search option." ] };
+  if ( ! $r->{'basedir'} ) { $r->{'basedir'} = "/etc/nginx/bx/site_avaliable" };
+  if ( ! $r->{'regexp'} ) { $r->{'regexp'} = '\.conf$' };
+
+  return [ 0, $r ];
+}
+
+# get file list from directory
+# input: /path/to/dircetory regexp
+# return: [0, [list_files] ] OR [ 1, error_message ]
+sub get_file_list {
+  my $dir = shift;
+  my $rg  = shift;
+
+  if ( $rg =~ /^$/ ){ $rg = '\.conf$'; }
+
+  opendir ( my $dh, $dir ) or return [ 1, "Cannot open $dir: $!" ];
+  my @files = grep { /$rg/ && -f  File::Spec->catfile( $dir, $_ ) } readdir( $dh );
+  close $dh;
+
+  my $count_files = @files;
+  if ( $count_files == 0 ) { return [ 1, "Not found files '$rg' in $dir" ] ; }
+  return [ 0, \@files ];
+
+}
+
+
+# search string in file
+# input: [ list_files ], string
+# output: [ 0, 1|0 ], 1 - found, 0 - not found
+#         [ 1, error_message ]
+sub search_string {
+  my $fl = shift;
+  my $st = shift;
+  my $bd = shift;
+  my $if = 0;
+
+  foreach my $f ( @$fl ){
+    my $fp =  File::Spec->catfile( $bd, $f );
+    open ( my $fh, $fp ) or return [ 1, "Cannot open $fp: $!" ];
+    while ( <$fh> ){
+      next if ( /^#/ );
+      next if ( /^$/ );
+      if ( /$st/ ){ $if=1 }
+    }
+
+    close $fh;
+    if ( $if == 1 ) { return [ 0, 1] };
+  }
+
+  return [ 0, 0 ];
+
+}

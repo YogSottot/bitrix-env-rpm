@@ -1,0 +1,70 @@
+---
+# This role contains common plays that will run on all nodes in bitrix-hosts
+- name: remove from ansible inventory
+  lineinfile: 
+    dest: /etc/ansible/hosts
+    regexp: "^{{ inventory_hostname }}"
+    state: absent
+  delegate_to: "{{ cluster_web_server }}"
+
+- name: remove personal inventory file
+  file:
+    path: "/etc/ansible/host_vars/{{ inventory_hostname }}"
+    state: absent
+  delegate_to: "{{ cluster_web_server }}"
+
+- name: remove nagios cfg
+  file:
+    path: "/etc/nagios/bitrix-pool/{{ inventory_hostname }}.cfg"
+    state: absent
+  delegate_to: "{{ cluster_web_server }}"
+  when: monitoring_status == 'enable'
+
+- name: remove nagios group cfg
+  lineinfile:
+    dest: /etc/nagios/objects/localhost.cfg
+    state: absent
+    regexp: "{{ item }}"
+  with_items:
+    - "{{ inventory_hostname }}"
+    - "{{ bx_host|default(inventory_hostname) }}"
+    - "{{ bx_netaddr }}"
+  delegate_to: "{{ cluster_web_server }}"
+  when: monitoring_status == 'enable'
+
+- name: remove munin cfg
+  lineinfile:
+    dest: /etc/munin/conf.d/munin-hosts.conf
+    state: absent
+    regexp: "{{ item }}"
+  with_items:
+    - "{{ inventory_hostname }}"
+    - "{{ bx_host|default(inventory_hostname) }}"
+    - "{{ bx_netaddr }}"
+  delegate_to: "{{ cluster_web_server }}"
+  when: monitoring_status == 'enable'
+
+- name: restart nagios and munin
+  service:
+    name: "{{ item }}"
+    state: restarted
+  with_items:
+    - nagios
+  when: monitoring_status == 'enable'
+  delegate_to: "{{ cluster_web_server }}"
+
+- name: stopped munin-node
+  service:
+    name: "munin-node"
+    state: stopped
+    enabled: no
+  when: monitoring_status == 'enable'
+
+- name: remove pool information for child
+  file: path=/etc/ansible/ansible-roles state=absent
+  tags: pool_configuration
+
+- name: remove ansible key from root directory
+  lineinfile: dest=/root/.ssh/authorized_keys regexp="ANSIBLE_KEY_" state=absent
+  tags: pool_configuration
+

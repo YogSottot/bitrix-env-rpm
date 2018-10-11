@@ -1,0 +1,135 @@
+---
+# configure Let's Encrypt certificates
+# dns_names: - array for domain names
+# email: email address
+# site_name: - bitrix site names
+- include: sites-gathering_facts_site_names.yml
+
+- name: set cluster mark to disabled state
+  set_fact:
+    is_cluster: "disable"
+
+- name: change cluster mark if web cluster configured
+  set_fact:
+    is_cluster: "enable"
+  when: "cluster_web_configure == 'enable'"
+
+- name: download dehydrated
+  git: 
+    repo: "https://github.com/lukas2511/dehydrated.git"
+    dest: /home/bitrix/dehydrated
+    clone: yes
+    update: yes
+
+- name: create directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: bitrix
+    group: bitrix
+    force: yes
+    recurse: yes
+  with_items:
+    - /home/bitrix/dehydrated
+    - /var/www/dehydrated
+
+- name: create nginx config
+  template:
+    src: nginx/letsencrypt-challenge-tokens.conf.j2
+    dest: /etc/nginx/bx/conf/letsencrypt-challenge-tokens.conf
+
+- name: delete include for http-config
+  lineinfile:
+    dest: "{{ item.NginxHTTPDir  }}/{{ item.NginxHTTPConfig }}"
+    regexp: "letsencrypt-challenge-tokens.conf;$"
+    state: absent
+  when: is_cluster == 'disable'
+  with_items: "{{ bx_sites_info }}"
+
+# fix for:
+# bx/conf/bitrix_general.conf and bx/conf/bitrix.conf
+- name: update site http-config 
+  lineinfile:
+    dest: "{{ item.NginxHTTPDir }}/{{ item.NginxHTTPConfig }}"
+    insertbefore: "bx/conf/bitrix"
+    line: "include bx/conf/letsencrypt-challenge-tokens.conf;"
+  with_items: "{{ bx_sites_info }}"
+  when: is_cluster == 'disable'
+
+- name: delete include for https-config
+  lineinfile:
+    dest: "{{ item.NginxHTTPDir  }}/{{ item.NginxHTTPSConfig }}"
+    regexp: "letsencrypt-challenge-tokens.conf;$"
+    state: absent
+  when: is_cluster == 'disable'
+  with_items: "{{ bx_sites_info }}"
+
+# fix for:
+# bx/conf/bitrix_general.conf and bx/conf/bitrix.conf
+- name: update site https-config 
+  lineinfile:
+    dest: "{{ item.NginxHTTPDir }}/{{ item.NginxHTTPSConfig }}"
+    insertbefore: "bx/conf/bitrix"
+    line: "include bx/conf/letsencrypt-challenge-tokens.conf;"
+  with_items: "{{ bx_sites_info }}"
+  when: is_cluster == 'disable'
+
+- name: delete include
+  lineinfile:
+    dest: "/etc/nginx/bx/site_enabled/http_balancer.conf"
+    regexp: "letsencrypt-challenge-tokens.conf;$"
+    state: absent
+  when: is_cluster == 'enable'
+
+- name: update site config
+  lineinfile:
+    dest: "/etc/nginx/bx/site_enabled/http_balancer.conf"
+    insertafter: "proxy_set_header"
+    line: "include bx/conf/letsencrypt-challenge-tokens.conf;"
+  when: is_cluster == 'enable'
+
+- name: restart nginx
+  service: 
+    name: nginx
+    state: restarted
+
+# prod configuration
+- include: dehydrated.yml
+  vars:
+    dehydrated_type: "prod"
+
+- name: update ssl_options
+  template:
+    src: nginx/ssl_options.conf.j2
+    dest: /etc/nginx/bx/conf/ssl_options.conf
+
+- name: delete old settings from nginx config
+  lineinfile:
+    dest: "{{ item.NginxHTTPSFullPath }}"
+    regexp: "ssl.conf;\\s*$"
+    state: absent
+  with_items: "{{ bx_sites_info }}"
+
+- name: delete previously settings
+  bx_blockinfile: insertafter="CERTIFICATE ANSIBLE MANAGED BLOCK" state="delete"
+    dest="{{ item.NginxHTTPSFullPath }}"
+  with_items: "{{ bx_sites_info }}"
+
+- name: add new settings to nginx config 
+  blockinfile:
+    dest: "{{ item.NginxHTTPSFullPath }}"
+    insertbefore: "proxy_set_header"
+    marker: "# CERTIFICATE ANSIBLE MANAGED BLOCK"
+    content: |
+      include bx/conf/ssl_options.conf;
+      ssl_certificate   /home/bitrix/dehydrated/certs/{{ common_name.stdout }}/fullchain.pem;
+      ssl_certificate_key  /home/bitrix/dehydrated/certs/{{ common_name.stdout }}/privkey.pem;
+      ssl_trusted_certificate /home/bitrix/dehydrated/certs/{{ common_name.stdout }}/chain.pem;
+  with_items: "{{ bx_sites_info }}"
+
+- name: restart nginx
+  service: 
+    name: nginx
+    state: restarted
+
+

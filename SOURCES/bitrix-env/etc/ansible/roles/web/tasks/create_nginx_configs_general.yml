@@ -1,0 +1,32 @@
+---
+#### nginx configs
+- name: http nginx config
+  template: 
+    src: nginx/http_newsite_template.conf.j2
+    dest: "/etc/nginx/bx/site_avaliable/{{ nginx_config_name_http }}"
+    owner: bitrix
+    group: bitrix
+  tags: web_config
+  notify: restart nginx
+
+- name: https nginx config
+  template: 
+    src: nginx/https_newsite_template.conf.j2
+    dest: "/etc/nginx/bx/site_avaliable/{{ nginx_config_name_https }}"
+    owner: bitrix
+    group: bitrix
+  tags: web_config
+  when: "inventory_hostname == cluster_web_server"
+  notify: restart nginx
+
+- name: enable site configs
+  file: 
+    src: "/etc/nginx/bx/site_avaliable/{{ item }}"
+    dest: "/etc/nginx/bx/site_enabled/{{ item }}"
+    state: link
+  tags: web_config
+  with_items: 
+    - "{{ nginx_config_name_http }}"
+    - "{{ nginx_config_name_https }}"
+  notify: restart nginx
+

@@ -1,0 +1,103 @@
+#!/usr/bin/perl
+# start ansible playbook for:
+# 1. create memcached server
+# 2. remove memcached server
+# 3. update configs on memcached
+# 4. view status of memcached servers
+# this script is wrapper for ansible playbook ( we need json output for web-interface)
+use strict;
+use warnings;
+
+use lib "/opt/webdir/lib";
+use bxMC;
+use Output;
+use Pool;
+use Data::Dumper;
+use Getopt::Long;
+use File::Basename qw( dirname basename );
+
+
+# program options
+my $prog_name = basename $0;
+my $prog_dir  = dirname $0;
+
+my $o_action  = "list";           # type of action that script must do.
+                                    # status - status the server: role: options
+                                    # list   - serverList
+                                    # create - create memcached instance
+                                    # remove - remove memcached instance
+                                    # update - update memcached instances
+my $o_config = '/etc/ansible/group_vars/bitrix-memcached.yml';
+my $o_mc_server = undef;     # ip address or hostname for mysql server
+my $o_format  = 'plain';     # format of stdout message
+my $o_verbose = 0;
+my $o_help    = undef;
+# get command line options
+Getopt::Long::Configure ("bundling");
+my $result_option = GetOptions(
+  'v'     => \$o_verbose,   'verbose'   => \$o_verbose,
+  'h'     => \$o_help,      'help'      => \$o_help,
+  "a:s"   => \$o_action,    'action:s'  => \$o_action,
+  "s:s"   => \$o_mc_server, 'server:s'  => \$o_mc_server,
+  "o:s"   => \$o_format,    'output'    => \$o_format,
+) or unknown_arg();
+
+
+# help message
+if ( $o_help ) { print_help($prog_name, 0) };
+# formt output
+if ( $o_format !~ /^(json|plain|te?xt)$/ ) { print_help($prog_name, 1)}
+if ( $o_format =~ /^te?xt$/ ) { $o_format = "plain" };
+
+# process request
+my $confPool = bxMC->new();
+my $confMC = undef;
+if ($o_action =~ /^status$/i){
+  $confMC = $confPool->serverOptions($o_mc_server);
+}elsif ($o_action =~ /^list$/){
+  $confMC = $confPool->serverList();
+}elsif ($o_action =~ /^create$/){
+  $confMC = $confPool->createMC($o_mc_server);
+}elsif ($o_action =~ /^remove$/){
+  $confMC = $confPool->removeMC($o_mc_server);
+}elsif ($o_action =~ /^update$/ ){
+  $confMC = $confPool->updateMC();
+}else{
+  $confMC = Output->new( error => 1, message => "Unknown action option. PLease use -h for help message." );
+}
+$confMC->print($o_format);
+
+# print usage
+sub print_usage {
+  my $prog = shift;
+  print "Usage: $prog [-vh] [-a status|list|create|remove|update] [-s server_ip] \n";
+}
+
+# help message
+sub print_help {
+  my $prog = shift;
+  my $exit = shift;
+  print_usage( $prog );
+  print <<EOT;
+Options:
+  -h|--help    - show this message
+  -v|--verbose - enable verbose mode.
+  -a|--action  - memcached action: list|status|create|remove|update
+  -s|--server  - mysql server
+ Ex.
+  * get status of all memcached servers
+ $prog -o json
+  * get status for one server
+ $prog -a status -s vm1
+  * create memcached instance on the server
+ $prog -a create -s vm2
+  * remove memcached instance from the server
+ $prog -a remove -s vm2
+  * update configuration on all memcached servers
+ $prog -a update
+
+EOT
+;
+  exit;
+}
+

@@ -1,0 +1,47 @@
+#!/bin/bash
+# {{ ansible_managed }}
+# configure firewalld on Centos7
+# 1. check the existence of zones: bx_trusted
+# 2. configure public zone
+# 3. configure trusted zone
+set -e
+
+firewalld_status=$(firewall-cmd --state 1>/dev/null 2>&1 && echo $?  || echo $?)
+if [[ $firewalld_status -gt 0 ]]; then
+    systemctl enable firewalld && systemctl start firewalld
+fi
+
+is_bx_trusted=$(firewall-cmd --get-zones | grep {{ trusted_zone }} >/dev/null 2>&1 && echo 1 || echo 0)
+
+if [[ $is_bx_trusted -eq 0 ]]; then
+    firewall-cmd --permanent --new-zone={{ trusted_zone }}
+fi
+
+# accept all traffic between nodes in the pool
+firewall-cmd --zone={{ trusted_zone }} --permanent --add-port=1-65535/tcp
+firewall-cmd --zone={{ trusted_zone }} --permanent --add-port=1-65535/udp
+
+# trusted zone - add all ip-addresses from cluster
+{% for host in groups['bitrix-hosts'] %}
+    firewall-cmd --zone={{ trusted_zone }} --permanent \
+        --add-source={{ hostvars[host].bx_netaddr   }}/32
+{% endfor %}
+
+# public zone
+{% if 'bitrix-mgmt' in group_names %}
+    {% for port in pool_manager_ports %}
+       firewall-cmd --zone={{ public_zone }} --permanent \
+           --add-port={{ port }}/tcp 
+    {% endfor %}
+{% endif %}
+
+
+{% if 'bitrix-web' in group_names %}
+    {% for port in web_ports %}
+        firewall-cmd --zone={{ public_zone  }} --permanent \
+            --add-port={{ port  }}/tcp
+    {% endfor %}
+{% endif %}
+
+# save iptables rules
+firewall-cmd --reload

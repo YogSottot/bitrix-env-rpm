@@ -1,0 +1,30 @@
+# {{ ansible_managed }}
+# memory: {{ ansible_memtotal_mb }}
+{% set bvat_st = 'general' %}
+{% if ansible_virtualization_type == 'openvz' %}
+{% set bvat_st = 'openvz' %}
+{% endif %}
+
+{% set bvat_mt = 'type'+bx_system %}
+
+{% set limit_innodb_buffer_pool_size = bvat_settings[bvat_st][bvat_mt]['innodb_buffer_pool_size'] %}
+{% if ansible_architecture == 'i386' %}
+{% if limit_innodb_buffer_pool_size > 2048 %}
+{% set limit_innodb_buffer_pool_size = 2048 %}
+{% endif %}
+{% endif %}
+[mysqld]
+    query_cache_size = {{ bvat_settings[bvat_st][bvat_mt]['query_cache_size'] }}
+    query_cache_limit = {{ bvat_settings[bvat_st][bvat_mt]['query_cache_limit'] }}
+    innodb_buffer_pool_size = {{ limit_innodb_buffer_pool_size }}M
+    max_connections = {{ bvat_settings[bvat_st][bvat_mt]['max_connections'] }}
+    table_open_cache = {{ bvat_settings[bvat_st][bvat_mt]['table_open_cache'] }}
+    thread_cache_size = {{ bvat_settings[bvat_st][bvat_mt]['thread_cache_size'] }}
+    max_heap_table_size = {{ bvat_settings[bvat_st][bvat_mt]['max_heap_table_size'] }}
+    tmp_table_size = {{ bvat_settings[bvat_st][bvat_mt]['tmp_table_size'] }}
+    key_buffer_size = {{ bvat_settings[bvat_st][bvat_mt]['key_buffer'] }}
+    join_buffer_size = {{ bvat_settings[bvat_st][bvat_mt]['join_buffer_size'] }}
+    sort_buffer_size = {{ bvat_settings[bvat_st][bvat_mt]['sort_buffer_size'] }}
+    bulk_insert_buffer_size = {{ bvat_settings[bvat_st][bvat_mt]['bulk_insert_buffer_size'] }}
+    myisam_sort_buffer_size = {{ bvat_settings[bvat_st][bvat_mt]['myisam_sort_buffer_size'] }}
+

@@ -1,0 +1,4 @@
+---
+# apc memory
+apc_shm_size: "{{ (ansible_memtotal_mb / 8)|int }}"
+opcache_memory_consumption: "{{ (ansible_memtotal_mb / 8)|int }}"

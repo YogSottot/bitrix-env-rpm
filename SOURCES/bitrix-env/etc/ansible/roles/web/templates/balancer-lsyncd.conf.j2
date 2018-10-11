@@ -1,0 +1,94 @@
+----
+-- /etc/lsyncd-{{ inventory_hostname }}.conf
+-- {{ ansible_managed }}
+-- 
+-- For more examples, see /usr/share/doc/lsyncd*/examples/
+-- 
+
+
+-- settings 
+-- logfile        - log into this file
+-- statusFile     - periodically writes a status report to this file
+-- statusInterval - writes the status file at shortest after this number of seconds has passed
+-- inotifyMode    - Modify|CloseWrite 
+-- maxProcesses   - Lysncd will not spawn more than these number of processes.
+settings {
+  logfile         = "/var/log/lsyncd/daemon-{{ inventory_hostname }}.log",
+  statusFile      = "/var/log/lsyncd/daemon-{{ inventory_hostname }}.status",
+  statusInterval  = 20,
+  inotifyMode     = "CloseWrite",
+  maxProcesses    = 1,
+  insist          = true,
+}
+
+-- sync options for configs
+-- nginx
+sync {
+  default.rsyncssh,
+  host        = "{{ inventory_hostname }}",
+  source      = "{{ nginx_base_dir }}/bx/",
+  targetdir   = "{{ nginx_base_dir }}/bx/",
+  exclude   = {
+    "site_enabled/http_balancer*.conf",
+    "site_enabled/https_balancer*.conf",
+    "site_enabled/upstream.conf",
+    "site_enabled/pool_manager.conf",
+    "site_ext_enabled/",
+    "server_monitor.conf",
+    "pool_passwords",
+  },
+  rsync  = {
+    archive     = true,
+    compress    = true,
+    owner       = true,
+    perms       = true,
+  },
+  delay = 5,
+  maxProcesses = 1,
+}
+
+-- httpd
+sync {
+  default.rsyncssh,
+  host        = "{{ inventory_hostname }}",
+  source      = "{{ httpd_base_dir }}/bx/conf/",
+  targetdir   = "{{ httpd_base_dir }}/bx/conf/",
+  rsync  = {
+    archive     = true,
+    compress    = true,
+    owner       = true,
+    perms       = true,
+  },
+  delay = 5,
+  maxProcesses = 1,
+}
+
+
+-- sync options for sites
+--
+{% for s in bx_sites_info %}
+-- Settings start for {{ s.SiteName  }}
+sync {
+  default.rsyncssh,
+  host        = "{{ inventory_hostname }}",
+  source      = "{{ s.DocumentRoot }}/",
+  targetdir   = "{{ s.DocumentRoot }}/",
+  exclude   = {
+    "bitrix/cache/",
+    "bitrix/managed_cache/",
+    "bitrix/stack_cache/",
+    "upload/resize_cache/",
+    "*.log",
+  },
+  rsync  = {
+    archive     = true,
+    compress    = true,
+    owner       = true,
+    perms       = true,
+  },
+  delay = 20,
+  maxProcesses = 2,
+}
+-- Settings end for {{ s.SiteName  }}
+
+{% endfor %}

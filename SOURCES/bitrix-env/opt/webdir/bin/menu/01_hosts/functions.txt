@@ -1,0 +1,300 @@
+# Заголовки меню
+HM1001="Add new host to the pool"
+HM1002="Remove host from the pool"
+HM1003="Reboot host"
+HM1004="Update packages on host"
+HM1005="Change 'bitrix' user password on host"
+HM1006="Configure pool timezone"
+HM1007="Remove pool configuration"
+HM1008="Update PHP and MySQL"
+
+# Добавление сервера в пул серверов
+HM0001="1. $HM1001"
+# Удаление сервера из пула серверов
+HM0002="2. $HM1002"
+# Перезагрузка сервера
+HM0003="3. $HM1003"
+# Обновление сервера
+HM0004="4. $HM1004"
+# Изменение пароля пользователя bitrix
+HM0005="5. $HM1005"
+# Изменение временной зоны для пула серверов
+HM0006="6. $HM1006"
+# Удаление пула серверов
+HM0007="7. $HM1007"
+# Обновление php и/или MySQL
+HM0008="8. $HM1008"
+# Переход на предыдущий экран или выход из меню
+HM0009="0. Previous screen or exit"
+# Заголовок таблицы
+# Управлние серверами в пуле
+HM0010="Manage servers in the pool"
+# Выбирайте
+HM0011="Enter your choice: "
+# Сервер найден. но его нельзя использовать из-а ошибки в настройке
+HM0013="Server __OPT1__ was found but cannot be used due to configuration error"
+
+# Оповещения о списке сайтов:
+# Совместимые с php 7
+HM0014="PHP7 compatible"
+# Несовместимые с php 7
+HM0015="PHP7 incompatible"
+# Не удалось протестировать
+HM0016="PHP7 status unknown"
+
+# Оповещения о статусе MySQL и php пакетов в системе
+# Пакет ИМЯ не установлен
+HM0017="__OPT1__ is not installed"
+# Не поддерживаемая версия php(VERSION)
+HM0018="Unsupported PHP version(__OPT1__)"
+# Доступно обновление php до версии НОМЕР_ВЕРСИИ
+HM0019="PHP package can be updated to version __OPT1__"
+# Не получилось определить версию php пакета
+HM0020="Cannot get PHP package version"
+# Доступно понижение php до версии НОМЕР_ВЕРСИИ
+HM0021="PHP package can be downgraded to version __OPT1__"
+
+# Не поддерживаемая версия MySQL(VERSION)
+HM0022="Unsupported MySQL version(__OPT1__)"
+# Доступно обновление MySQL до версии НОМЕР_ВЕРСИИ
+HM0023="MySQL package can be updated to version __OPT1__"
+# Не получилось определить версию MySQL пакета
+HM0024="Cannot get MySQL package version"
+# На сервере установлена последняя версия MySQL пакета
+HM0025="The latest supported version of MySQL is already installed on the server"
+
+# Найдены сервера неподключенные к основному серверу (мастеру): СПИСОК
+# В первую очередь, необходимо исправить это.
+HM0026="There are servers that are not connected to the master: __OPT1__.
+You have to fix this first."
+# Невозможно понижение версии для BitrixCRM Env.
+HM0027="BitrixCRM Environment does not support downgrading the PHP"
+# Найдено несколько MySQL-серверов
+HM0028="There are several MySQL servers"
+# Для использования php версии 7 необходим модуль main старше ВЕРСИИ
+HM0029="Bitrix main module version __OPT1__ or better is required to use PHP7"
+# Список сайтов с меньшей версией:
+HM0030="There are sites with lower version: "
+# Не смогли определить версию модуля main для следующих сайтов
+HM0031="Cannot get the 'main' module version for these sites: "
+# Сервер=СЕРВЕР уже существует в пуле.
+HM0032="Server __OPT1__ already exists in configuration!"
+# Пожалуйста, введите имя сервера в пуле
+HM0033="Please enter the host name in the pool"
+# Введите пароль  пользовател=ИМЯ (для подключения к серверу): 
+HM0034="Enter password for user __OPT1__: "
+# Начинается настройка сервера=ИМЯ
+HM0035="Starting __OPT1__ server configuration"
+# Ошибка во время смены пароля: ТЕКСТ_ОШИБКИ.
+# Подробнее смотрите в логе=/ПУТЬ/К/ЛОГУ
+HM0036="Error while changing password: __OPT1__.
+Please view log in __OPT2__"
+# Ошибка во время копирования ssh ключа: ТЕКСТ_ОШИБКИ
+# Подробнее смотрите в логе=/ПУТЬ/К/ЛОГУ
+HM0037="Error while copying ssh key: __OPT1__.
+Please view log in __OPT2__"
+# SSH-ключ=ПУТЬ_К_КЛЮЧУ скопирован на сервер=сервер
+HM0038="SSH key __OPT1__ has been copied to the server __OPT2__"
+# Проблема обновления конфигурации пула: 
+HM0039="Pool configuration error: "
+# Сервер=ИМЯ_СЕРВЕРА(АДРЕС_СЕРВЕРА) добавлен в пул
+HM0040="The server __OPT1__(__OPT2__) has been added to the pool."
+# Список в меню
+# Добавление нового сервера в пул
+HM0041="Add new server to the pool"
+# Невозможно подключится к серверу
+HM0045="Cannot connect to the server __OPT1__"
+# Пожалуйста, подтвердите удаление сервера
+HM0046="Please confirm you want to delete the server"
+# Данное действие удалит информацию о сервере из конфигурационных файлов
+HM0047="This will remove server information from pool configuration files"
+# При удаление хоста произошла ошибка:
+HM0048="Error deleting the host: "
+# Сервер=ИМЯ удален из пула
+HM0049="The server __OPT1__ was deleted from the pool."
+# Необходимо удалить все роли с сервера=ИМЯ: СПИСОК_РОЛЕЙ
+HM0050="You have to delete all roles from the server __OPT1__: __OPT2__"
+# Удаление включает в себя:
+# -- удаление информации о хосте из конфигурации
+# -- удаление конфигурационных файлов на сервере
+HM0051="This action will:
+-- remove server information from pool configuration files
+-- remove configuration files on the server"
+# Удаление хоста их пула
+HM0052="Remove host from the pool"
+# Пожалуйста, подтвердите перезагрузку сервера
+HM0053="Please confirm you want to reboot the server __OPT1__ (y|N): "
+# Перезагрузить сервер
+HM0054="Reboot server"
+# Пожалуйста, выбирите тип обновления (bitrix|all): 
+HM0055="Please choose update type (bitrix|all): "
+# all - обновляет все пакеты; bitrix - только bitrix-env пакет
+HM0056="all - will update all packages; bitrix - will update ONLY bitrix-env."
+# Неизвестный тип обновления
+HM0057="Unknown update type __OPT1__"
+# Обновление сервера
+HM0058="Update server"
+# Пожалуйста, подвердите обновления пароля для пользователя=ИМЯ на сервере=ИМЯ
+HM0059="Please confirm you want to update password for user __OPT1__ on the server __OPT2__"
+# Изменение пароля пользователя на сервере
+HM0060="Change bitrix password on a server"
+# Команда tzselect вернула ошибку
+HM0061="Tzselect utility returned an error."
+# Хотите ли Вы установить НАЗВАНИЕ временную зону в php конфигурации?
+HM0062="Do you want to set the timezone __OPT1__ in PHP configuration? (Y|n): "
+# Установка временной зоны изменит следующие файлы на всех серверах пула: СПИСОК_ФАЙЛОВ
+HM0063="Setting the timezone will change the following files on all servers:"
+# Следующие службы будут перезапущены: СПИСОК_СЛУЖБ
+HM0064="These services will be restarted: "
+# Пожалуйста, подтвердите обновление временной зоны
+HM0065="Please confirm you want to update the timezone (y|N): "
+# Настройка временной зоны для пула
+HM0066="Configure the pool timezone"
+# Необходимо удалить неподключенные сервера из пула
+HM0067="You have to delete unconnected servers from the pool."
+# Найдено несколько MYSQL|WEB-серверов в пуле. 
+# Информация о данной конфигурации будет потеряна при удаление пула.
+HM0068="Found multiple __OPT1__ servers in the pool.
+Deleting the pool will also delete this configuration information."
+# Обнаружено, что MySQL сервис перенесен на удаленный сервер=ИМЯ_СЕРВЕРА
+# Информация о данной конфигурации будет потеряна при удаление пула.
+HM0069="MySQL service has been moved to remote server __OPT1__.
+Deleting the pool will also delete this configuration information."
+# Удаление конфигурации не рекомендуется в следующих случаях:
+# -- настроен MySQL-кластер
+# -- настроен web-кластер
+# -- MySQL-служба перенесена на другой сервер
+HM0070="Deleting a configuration is not recommended if:"
+HM0071=" – a configured MySQL cluster exists, or
+ -- a configured web cluster exists, or
+ -- MySQL master service has been moved to a remote host."
+# Пожалуйста, подтвердите удаление
+HM0072="Please confirm you want to delete the configuration (y|N): "
+# Конфигурация пула удалена
+HM0073="Pool configuration has been deleted"
+# Удаление конфигурации пула
+HM0074="Delete pool configuration"
+# Обновлене занимает длительное время. Включает в себя следующие шаги:
+# -- удаление xhprof расширения
+# -- включение MySQLi расширения и настройка его для сайтов
+# -- обновление rpm-пакетов - установка php 7.0 версии
+HM0075="Update may take a while.
+It will: "
+HM0076=" -- remove xhprof extension
+ -- enable MySQLi extension and configure it on the sites
+ -- update rpm packages and install PHP 7.0"
+# Откат о предыдущей версии может занять длительное время.
+# Включает в себя следующие шаги
+# -- откат rpm-пакетов - установка php версии 7.0
+# -- восстановление работы MySQL расширения
+HM0077="Rollback may take a while.
+It will:"
+HM0078=" -- rollback rpm packages: PHP to version 5.6
+ -- enable MySQL extension"
+# Пожалуйста, подтвердите ОБНОВЛЕНИЕ|ОТКАТ:
+HM0079="Please confirm you want to __OPT1__ (y|N): "
+# Обновление MySQL может занять длительное время.
+# Оно включает в себя следующие шаги:
+# -- создание бэкапов баз сайтов
+# -- остановка MySQL службы
+# -- обновление MySQL до версии 5.6
+# -- обновление структуры баз сайтов
+# -- изменение конфигурации MySQL службы
+# -- обновление MySQL до версии 5.7
+# -- обновление структуры баз сайтов
+# -- запуск MySQL службы
+HM0080="MySQL update may take a while.
+It will:"
+HM0081=" -- create database backups for all sites
+ -- stop MySQL service
+ -- update MySQL service to version 5.6
+ -- update site databases
+ -- change MySQL service configuration
+ -- update MySQL service to version 5.7
+ -- update site databases
+ -- start MySQL service"
+# Включает в себя следующие шаги:
+# -- Обновление php-пакета до версии 5.6
+HM0082=" -- update rpm package: PHP to version 5.6"
+# -- создание бэкапов баз сайтов
+# -- обновление rpm-пакетов - MySQL и php
+# -- обновление MySQL файлов
+# -- перезапуск сервисов apache и MySQL
+HM0083=" -- create database backups for all sites
+ -- update rpm packages: PHP to version 5.4 and MySQL to version 5.5
+ -- update MySQL files
+ -- restart apache and MySQL services"
+# ОБновление MySQL и php не доступно.
+HM0084="PHP or MySQL update is not available."
+# Меню:
+# Обновление php и MySQL 
+HM0085="Update PHP and MySQLd"
+# Обновление php до версии 5.4 и MySQL до версии 5.5
+HM0086="Update PHP to version 5.4 and MySQL to version 5.5"
+# Обновление php до версии 5.6
+HM0087="Update PHP to version 5.6"
+# Обновление php до версии 7
+HM0088="Update PHP to version 7.0"
+HM00881="Update PHP to version 7.1"
+HM00882="Update PHP to version 7.2"
+
+# Откат php до версии 5.6
+HM0089="Rollback PHP to version 5.6"
+HM00891="Rollback PHP to version 7.0"
+HM00892="Rollback PHP to version 7.1"
+
+# Обновление MySQLd до версии 5.7
+HM0090="Update MySQL to version 5.7"
+# Получить текущий статус
+HM0091="Show current status"
+# Пожалуйста, подтвердите перезагрузку сервера
+HM0092="Please confirm you want to change hostname for the server __OPT1__ (y|N): "
+# Изменение имени хоста
+HM0093="Change hostname"
+# Пожалуйста, подтвердте смену имени
+HM0094="Please confirm hostname change"
+# ВВедите новое имя
+HM0095="Please enter a new hostname for the server __OPT1__:"
+# Найден сервер с именем=ИМЯ в пуле серверов.
+# Недопустима конфигурация с несколькими серверами с одинаковыми именами.
+HM0096="A server named __OPT1__ already exists in the pool.
+Servers cannot share the same name."
+# Введенное имя совпадает с текущим. Нечего делать.
+HM0097="The hostname you provided matches the current one. No action taken."
+# Изменить имя сервера
+HM0098="9. Change hostname"
+
+HM0099=" -- update rpm packages and install PHP 7.1"
+HM0100=" -- rollback rpm packages: PHP to version 7.0"
+HM0101=" -- update rpm packages and install PHP 7.2"
+HM0102=" -- rollback rpm packages: PHP to version 7.1"
+
+# Изменение 
+HM0103="Enable beta version of bitrix-env"
+HM0104="Disable beta version of bitrix-env"
+# Изменить версию продукта: стабильная или бета
+HM0105="10. Enable or disable beta version of bitrix-env"
+HM0106="Do you want enable Beta-version for Bitrix Environment? (N|y)"
+HM0107="You need manually run update opration from menu"
+HM0108="Enable beta version"
+HM0109="Do you want disable Beta-version for Bitrix Environment? (Y|n)"
+HM0110="Disable beta version"
+
+
+
+# Не найден сервер=ИМЯ_СЕРВЕРА в пуле
+HM0012="Cannot find server __OPT1__ in the pool."
+
+# Предыдущее меню или выход
+HM0042="0. Previous screen or exit"
+# Введите адрес сервера (IP адрес или DNS имя) или 0 для выхода: 
+HM0043="Enter server address (IP address or domain name) or 0 for exit:"
+# Имя сервера не может быть пустым
+HM0044="Hostname cannot be empty."
+
+HM0200="Press ENTER to exit: "
+HM0201="Press any key: "
+HM0202="Enter 0 to exit: "
+HM0203="Do you want to try again? (y|N): "
+HM0204="Enter your choice: "
+

@@ -1,0 +1,328 @@
+CS0001="   Create new site"
+CS0002="0. Go to previous screen or exit"
+CS0003="Create new site"
+CS0005="Enter 0 to exit: "
+CS0006="Enter the site name (e.g. example.org) or 0 to exit: "
+CS0007="The following site types are available:"
+CS0008="      link - the new site will share database and kernel files with an existing site; 
+                     web server configuration files will be created"
+CS0009="    kernel - the new site will have a dedicated database 
+                     and a private set of kernel files;
+                     web server configuration files will be created"
+CS0010="ext_kernel - the new site will have a dedicated database and a private set of kernel files; 
+                     it will not be accessible from the web"
+CS0011="Default: link"
+CS0012="Enter site type (link|kernel|ext_kernel): "
+CS0013="Enter site encoding (UTF-8|windows-1251): "
+CS0014="Found configured push-server on host __OPT1__."
+CS0015="Do you want to configure push-server settings for this site? (Y|n) "
+CS0016="Do you want to enable cron for this site? (N|y) "
+CS0017="If cron is disabled, background tasks will be executed when a hit occurs."
+CS0018="If cron is enabled, background tasks will be executed by cron."
+CS0019="These parameters will be assigned automatically:
+1. database name, login and password
+2. site document root"
+CS0020="Do you want to customize them? (N|y) "
+CS0021="Enter the document root path(__OPT1__): "
+CS0022="Enter database name(__OPT1__): "
+CS0023="Enter username: (__OPT1__): "
+CS0024="Enter the document root path of the Bitrix kernel or ext_kernel site (__OPT1__): "
+# errors
+CS0200="Site charset can be 'utf-8' or 'windows-1251' only"
+CS0201="Only 'y' or 'n' are accepted"
+CS0202="Root cannot be used as database login"
+CS0203="Exceeded maximum attempts to create kernel site. Exit"
+CS0204="Exceeded maximum attempts to create external kernel. Exit"
+CS0205="Exceeded maximum attempts to create linked site. Exit"
+CS0206="Enter the full path to the Bitrix installation directory"
+CS0207="Installation directory cannot be empty."
+CS0208="Installation directory __OPT1__ does not exist."
+CS0209="The site name cannot be empty."
+CS0210="The site named __OPT1__ already exists in the system."
+CS0211="The type '__OPT1__' is not valid."
+CS0212="__OPT1__ was not found in __OPT2__"
+
+# Путь к каталогу не может быть пустым
+SM0001="The site path cannot be empty"
+# Указанный каталог ПУТЬ не существует в системе
+SM0002="Directory __OPT1__ doesn't exist in the system"
+# Не найдены конфигурационные файлы Apache и Nginx для САЙТА
+SM0003="Cannot find Nginx and Apache config files for __OPT1__"
+# Найдена нерабочая конфигурация сайта (разломанная)
+# Конфигурационный файл Nginx для http
+# Конфигурационный файл Nginx для https
+# Конфигурационный файл Apache
+# Корневой каталог сайта
+# Каталог сессий
+# Каталог загрузки
+SM0004="Found inconsistent site configuration:"
+SM0005="Nginx http config file"
+SM0006="Nginx https config file"
+SM0007="Apache config config file"
+SM0008="Site root directory"
+SM0009="Session directory"
+SM0010="Upload directory"
+# Хотите ли Вы удалить его 
+SM0011="Do you want to delete it (N|y): "
+# Удаляем кофнигурационный файл
+# Удаляем каталог
+SM0012="Delete config file"
+SM0013="Delete directory"
+# Не найдена bitrix-установка в каталоге
+SM0014="Cannot find bitrix installation in directory"
+# Удаление сайта ИМЯ
+SM0015="Delete site __OPT1__"
+# Пункт меню
+# Удаление сайта
+SM0016="Delete site"
+# Хотите ли Вы выключить крон для сайта?
+# Хотите ли Вы включить крон для сайта?
+SM0017="Do you want to disable cron for the site? (y|N): "
+SM0018="Do you want to enable cron for the site? (Y|n):"
+# Cron ВКЛЮЧЕН|ВЫКЛЮЧЕН для сайта (enabled|disabled)
+SM0020="Cron is __OPT1__ on site"
+# Меню
+# Управление настройкой cron для сайтов
+SM0021="Manage cron configuration"
+# Введите почтовый адрес:
+SM0022="Enter From email address (ex. bob@example.org):"
+# Введите адрес почтового сервера или DNS имя
+SM0023="Enter server address or DNS"
+# Введите порт почтового сервера
+SM0024="Enter server port" 
+# Используется ли SMTP авторизация на СЕРВЕР:ПОРТ
+SM0025="Do you want to use SMTP authentication on __OPT1__:__OPT2__? (N|y)"
+# Введите логин
+SM0026="Enter login"
+# Введите пароль
+SM0027="Enter password"
+# Введите тип SMTP аутентификации на сервере
+SM0028="Enter SMTP authentication method (default: auto): "
+# Возможные варианты методов:
+SM0029="Available methods are"
+# Метод ИМЯ не поддерживается
+SM0030="__OPT1__ method is not supported"
+# Хотите ли Вы включить TLS для сервера СЕРВЕР:ПОРТ
+SM0031="Do you want to enable TLS for __OPT1__:__OPT2__ (n|Y):"
+# Настройка почты для сайта ИМЯ
+SM0032="Configure email for the site __OPT1__"
+# Нельзя использовать пустую строку в качестве имени сайта
+SM0033="The site name cannot be empty"
+# Почтовый адрес настроен для сайта
+# Почтовый адрес не настроен для сайта
+SM0035="Email address is configured for the site __OPT1__"
+SM0036="Email address is not configured for the site __OPT1__"
+# Заголовки для списка
+SM0037="Email address"
+SM0038="SMTP server"
+SM0039="SMTP port"
+SM0040="SMTP login"
+SM0041="TLS status"
+# Хотите ли Вы обновить почтовые настройка для сайта
+SM0042="Do you want to update email settings for __OPT1__ (N|y): "
+# Управление почтовыми настройками для сайта
+SM0043="Manage email settings"
+# Оба протокола http и https работают на сайте
+# Только HTTPS работает на сайте
+SM0044="HTTP and HTTPS are enabled for the site"
+SM0045="Only HTTPS is enabled for the site"
+# Хотите выключить доступ через HTTP на сайт?
+# Хотите включить доступ через HTTP на сайт?
+SM0046="Do you want to disable HTTP access for the site __OPT1__? (Y|n): "
+SM0047="Do you want to enable HTTP access for the site __OPT1__? (y|N): "
+# Доступ через HTTP протокол был закрыт
+# Доступ через HTTP протокол был открыт
+SM0048="HTTP access has been disabled"
+SM0049="HTTP access has been enabled"
+# Управление HTTP/HTTPS настройками сайтов
+SM0050="Manage http/https settings"
+
+# Произошла ошибка во время отключения бэкапа
+SM0051="Error disabling backup:"
+# Бэкап был выключен для сатов с базой данных=ИМЯ
+SM0052="Backup has been disabled for the sites with DB __OPT1__"
+# Будте осторожны: данный мастер заменит текущие настройки для бэкапов сайта ИМЯ
+SM0053="Attention: this wizard will change the current backup settings for the site __OPT1__"
+# Как часто Вы хотите создавать бэкап:
+# 0 - ежедневно
+# 1 - один раз в неделю
+# 2 - один раз в месяц
+SM0054="How often do you want to create a backup?
+0 - once a day
+1 - once a week (default)
+2 - once a month"
+# Выбирите час дня ждя создания бэкапа
+SM0055="Enter the hour of the day when the backup starts (0-23): "
+# Время установлено в __OPT1__:__OPT2__
+SM0056="Backup time is set to __OPT1__:__OPT2__"
+# Некорректное значение для часов
+SM0057="Invalid hour value, please try again."
+# Выбирите день недели для создания бэкапа
+SM0058="Enter the day of the week when the backup starts (0-6): "
+# День недели установлен в значение __OPT1__
+SM0059="Day is set to __OPT1__"
+# Некорректное значение для дня недели
+SM0060="Invalid day of the week, please try again."
+# Выберете день месяца для создания бэкапа
+SM0061="Enter the day of month when the backup starts (1-31): "
+# День месяца установлен в N
+SM0062="Day is set to __OPT1__"
+# Некорректный день месяца
+SM0063="Invalid day of month, please try again."
+# НЕкорректно выбран тип расписания
+SM0064="Incorrect schedule choice."
+# Запущено обновление бэкапных настроек сайт 
+SM0065="Started backup settings update for the site"
+# Настройки бэкапа обновлены для сайта
+SM0066="Backup settings has been updated for the site"
+# Бэкап ВКЛЮЧЕН|ВЫКЛЮЧЕН для сайтов с БД ИМЯ (enabled|disabled)
+SM0067="Backup is __OPT1__ for the sites with DB __OPT2__"
+# Вы хотите обновить текущие настроци бэкапа?
+SM0068="Do you want to update backup settings? (y/N): "
+# Вы хотите изменить время выволнения бэкапа?
+SM0069="Do you want to change backup schedule? (Y/n): "
+# Вы хотите выключить бэкап?
+SM0070="Do you want to disable backup? (y/N): "
+# Управление созданием бэкапов для сайтов
+SM0071="Manage backup settings"
+
+# NTLM настройки
+SM0072="NetBIOS Domain Name (ex. TEST): "
+SM0073="NetBIOS Domain Name cannot be empty. Try again."
+SM0074="NetBIOS Hostname (default: __OPT1__): "
+SM0075="Full Domain Name: (ex. TEST.LOCAL): "
+SM0076="Full Domain Name cannot be empty. Try again."
+SM0077="Domain password server (ex. TEST-DC-SP.TEST.LOCAL): "
+SM0078="Domain password server cannot be empty. Try again."
+SM0079="Domain admin user name (default: Administrator): "
+SM0080="User name cannot be empty. Try again."
+SM0081="Domain admin user password:  "
+SM0082="NTLM Settings: "
+SM0083="NetBIOS Domain"
+SM0084="NetBIOS Hostname"
+SM0085="Full Domain Name"
+SM0086="Password Server"
+SM0087="Domain User"
+SM0088="Domain Password"
+SM0089="Domain Password File"
+
+# Введите имя сайта: 
+# Он и его сатый-ссылки будет настроены на использование NTLM.
+SM0090="Enter the site name (default): "
+SM0091="The site and its shared sites will be configured to use NTLM."
+SM0092="Site name cannot be empty."
+# NTLM не настроен: СПИСК_САЙТВ
+# NTLM настроен: СПИСОК_САЙТОВ
+SM0093="NTLM is not configured for: "
+SM0094="NTLM configured for: "
+# NTLM настроен на сайте ИМЯ.
+# Вы хотите изменить настройки?
+SM0095="NTLM settings found on the site __OPT1__."
+SM0096="Do you want to change them? (N|y): "
+# Модуль LDAP не установлен на сайт ИМЯ
+SM0097="LDAP is not installed on the site __OPT1__"
+# Хотите ли Вы изменить NTLM настройки для сервера?
+# Хост уже находится в домене.
+SM0098="Do you want to change NTLM settings for the server? (N|y): "
+SM0099="The host is already in the domain."
+# Пожалуйста, подтвердите включение NTLM
+SM0100="Please confirm you want to enable NTLM (N|y): "
+# Включение NTLM
+SM0101="Enable NTLM"
+# Меню
+# Настройка NTLM для сайта
+SM0102="1. Configure NTLM settings for the site"
+# Исполльзование существующих NTLM настроек для сайта
+SM0103="2. Use existing NTLM settings for the site"
+# Настройка NTLM авторизации для сайтов
+SM0104="Configure NTLM authentication for the sites"
+# Введите имя службы, которую необходимо настроить:
+SM0105="Enter the service name you want to configure (xmppd|smtpd): "
+# Указано некорректное имя. Вы можете указать одно из следующих имен: smtpd or xmppd
+SM0106="Service name is invalid. 
+Please use a valid service name: smtpd or xmppd"
+# Вы хотите удалить задание в кроне для сервиса ИМЯ для сайта ИМЯ?
+# Вы хотите добавть задание в крон для сервиса ИМЯ для сайта ИМЯ?
+SM0107="Do you want to delete cron task for the service __OPT1__ on the site __OPT2__? (N|y): "
+SM0108="Do you want to enable cron task for the service __OPT1__ on the site __OPT2__? (Y|n): "
+# Меню
+SM0109="Manage XMPPD/SMTPD services for the sites"
+# Не найдены настройки композита для сата ИМЯ. Возможно Вы захотите изменить это в веб-интерфейсе.
+SM0110="Composite preferences were not found for the site __OPT1__. 
+You may want to update settings in Control Panel."
+# Хотите ли Вы обновить настройки композита для сайта ИМЯ
+# Хотите ли Вы удалить настройки композита для сайта ИМЯ
+SM0111="Do you want to update composite settings for the site __OPT1__? (Y|n): "
+SM0112="Do you want to remove composite settings for the site __OPT1__? (y|N): "
+# ОБНОВЛЕНИЕ|УДАЛЕНИЕ настрое композита
+SM0113="__OPT1__ composite settings"
+
+# Меню
+# Настройки композитные Nginx для сайтов
+SM0114="Nginx composite settings"
+# Хотите ли Вы включить опцию proxy_ignore_client_abort для сайта ИМЯ?
+SM0115="Do you want to enable proxy_ignore_client_abort on the site __OPT1__? (y|N): "
+# Включение опции proxy_ignore_client_abort для сайта
+SM0116="Enable proxy_ignore_client_abort on the site"
+# Хотите ли Вы отключить опцию proxy_ignore_client_abort на сайте ИМЯ?
+SM0117="Do you want to disable proxy_ignore_client_abort on the site __OPT1__? (Y|n): "
+# Отключение опции proxy_ignore_client_abort на сайте
+SM0118="Disable proxy_ignore_client_abort on the site"
+
+# Меню
+# Настройка опций сайта
+SM0119="Configure site options"
+# Настройка опции proxy_ignore_client_abort
+SM0120="1. Configure proxy_ignore_client_abort for the site"
+
+# Главное меню
+SM1001="Create a site"
+SM1002="Delete a site"
+SM1003="Change a site's cron settings"
+SM1004="Change a site's email settings"
+SM1005="Change a site's https settings"
+SM1006="Change a site's backup settings"
+SM1007="Configure NTLM auth for sites"
+SM1008="Configure optional services (xmppd|smtpd) for a site"
+SM1009="Configure nginx to use composite cache"
+SM1010="Configure additional site's options"
+SM1011="Show sites with errors"
+
+SM0121="1.  $SM1001"
+SM0122="2.  $SM1002"
+SM0123="3.  $SM1003"
+SM0124="4.  $SM1004"
+SM0125="5.  $SM1005"
+SM0126="6.  $SM1006"
+SM0127="7.  $SM1007"
+SM0128="8.  $SM1008"
+SM0129="9.  $SM1009"
+SM0130="10. $SM1010"
+SM0131="11. $SM1011"
+SM0132="Manage sites in the pool"
+
+# Меню CRM
+SM0133="1. $SM1003"
+SM0134="2. $SM1004"
+SM0135="3. $SM1005"
+SM0136="4. $SM1006"
+SM0137="5. $SM1010"
+SM0138="6. $SM1011"
+
+# Команда завершилась ошибкой
+SM0019="Command returned error"
+# Сайт с именем ИМЯ не найден в списке сайтов
+SM0034="The site __OPT1__ was not found in the site list"
+# exit message
+CS0100="Press ENTER and try again"
+CS0101="Press ENTER to exit"
+SM0201="0. Previous screen or exit"
+SM0202="Enter 0 to exit:"
+SM0203="Enter 1 to start process or 0 to exit:"
+SM0204="Enter hostname or 0 to exit: "
+SM0205="Enter your choice: "
+# Введите путь к каталогу сайта или 0 для выхода
+SM0206="Enter site directory (ex. /home/bitrix/www) or 0 to exit: "
+# Введите имя сайта
+SM0207="Enter site name (default) or 0 to exit: "
+SM0208="Enter site name (default): "

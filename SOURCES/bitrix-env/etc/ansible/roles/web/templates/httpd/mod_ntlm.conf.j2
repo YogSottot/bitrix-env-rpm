@@ -1,0 +1,37 @@
+# {{ ansible_managed }}
+# create virtual hosts for NTLM 
+{%- set is_require = 0 %}
+{%- if ansible_distribution == 'CentOS' and ansible_distribution_major_version == '7' %}
+{%- set is_require = 1 %}
+{% endif %}
+
+<IfModule !auth_ntlm_winbind_module.c>
+	LoadModule auth_ntlm_winbind_module modules/mod_auth_ntlm_winbind.so
+</IfModule>
+
+Listen {{ ntlm_http_port }}
+Listen {{ ntlm_https_port }}
+
+<IfModule !ssl_module.c>
+	LoadModule ssl_module modules/mod_ssl.so
+    {% if is_require > 0 %}
+    # httpd 2.4
+    LoadModule socache_shmcb_module modules/mod_socache_shmcb.so
+	SSLSessionCache			shmcb:/var/cache/httpd/ssl/scache(512000)
+
+    {% else %}
+    # httpd 2.2
+    SSLMutex                default
+	SSLSessionCache			shmcb:/var/cache/mod_ssl/scache(512000)
+
+    {% endif %}
+
+	SSLPassPhraseDialog		builtin
+	SSLSessionCacheTimeout	300
+	SSLRandomSeed startup file:/dev/urandom  256
+	SSLRandomSeed connect builtin
+	SSLCryptoDevice builtin
+    SSLCipherSuite HIGH:MEDIUM:!aNULL:!MD5
+    SSLProtocol All -SSLv2 -SSLv3
+</IfModule>
+

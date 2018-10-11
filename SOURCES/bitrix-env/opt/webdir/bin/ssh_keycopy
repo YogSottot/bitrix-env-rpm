@@ -1,0 +1,121 @@
+#!/usr/bin/expect -f
+#
+# performs copy ssh key to the server via ssh-copy-id
+# ksh770, 04/02/14
+
+set timeout 15
+# ip address or hostname
+set server [lindex $argv 0]
+# port on the server
+set port [lindex $argv 1]
+# user login or root like default
+set user [lindex $argv 2]
+# ssh key
+set sshkey [lindex $argv 3]
+# ssh passwd
+set sshpass [lindex $argv 4]
+# ssh key secure
+#set sshsec [lindex $argv 5]
+
+# prompt string
+set prompt "\[>%\\$#\] "
+#catch {set prompt $env(EXPECT_PROMPT)}
+
+# log output to user or not
+# 1 - see all login process
+# 0 - no outputs
+log_user 0
+
+# print help message
+if {[llength $argv] == 0} {
+  send_user "Usage: ssh_keycopy server port user sshkey sshpasswd\n"
+  exit 1
+}
+
+# output into log file
+set logfile "/opt/webdir/logs/ssh_keycopy.log"
+set statusfile "/opt/webdir/logs/ssh_keycopy.status"
+
+# log process to file
+set LOG [open $logfile a+]
+
+# date
+set DATE [exec date +%m-%d-%y_%H:%M:%S]
+ 
+if { $port == "" }  { set port "22" }
+if { $user == "" }  { set user "root" }
+
+# get info from file
+puts $LOG "$DATE: SSH_INIT - get key text from file"
+set SSH [open $sshkey]
+set sshdata [read -nonewline $SSH]
+close $SSH
+
+# test ssh connection
+#spawn ssh -p $port -l $user -i $sshsec $server
+# expect password - then install new key
+# shell -  key installed - return error
+
+puts $LOG "$DATE: SSH_INIT - $user connect to $server:$port"
+# run the ssh util
+spawn ssh -p $port -l $user $server "mkdir -m 700 ./.ssh/ 2>/dev/null; echo \"$sshdata\" >> ./.ssh/authorized_keys && echo \"KEY_INSTALLED\""
+ 
+# expect - get data from spawn process and run some actions
+# password is expered, we have to changed it after login
+# Your password has expired
+expect {
+  timeout {
+    puts $LOG "$DATE: SSH_CONNECT - SSH failure for $server:$port"
+    exit 100
+  }
+  "assword has expired" {
+    puts $LOG "$DATE: SSH_CONNECT - password has expired $server:$port for $user"
+    exit 101
+  }
+  "No route to host" {
+    puts $LOG "$DATE: SSH_CONNECT - No route to host $server:$port"
+    exit 105
+  }
+  "not resolve hostname" {
+    puts $LOG "$DATE: SSH_CONNECT - Could not resolve hostname $server:$port"
+    exit 106
+  }
+  "KEY_INSTALLED" {
+    puts $LOG "$DATE: SSH_CONNECT - key installed $sshkey, it seems that it is dublicated"
+    exit 0
+  }
+  eof {
+    puts $LOG "$DATE: SSH_CONNECT - SSH eof failure for $server:$port"
+    exit 102
+  }
+  # add host key to ~/.ssh/known_hosts
+  # Are you sure you want to continue connecting (yes/no)? yes
+  "(yes/no)? " { 
+    send "yes\n"
+    puts $LOG "$DATE: SSH_CONNECT - adding host key to known_hosts file"
+    exp_continue
+  }
+  # user password detect
+  # tuser@vm2's password: 
+  "assword:" { 
+    puts $LOG "$DATE: SSH_CONNECT -  password prompt detected - input it"
+    send "$sshpass\n" 
+    expect {
+      # entering the old password for confirmation
+      " UNIX password:" {
+        puts $LOG "$DATE: SSH_PASSWORD -  $user must change password - exit. Other script change password and it need additional options"
+        exit 103
+      }
+      -re "$prompt" { puts $LOG "$DATE: SSH_PASSWORD -  detected shell command prompt. Key is installed" }
+      -re "Enter selection:" { puts $LOG "$DATE: SSH_PASSWORD - detected bitrix menu command prompt. Key is installed" }
+      "KEY_INSTALLED" { puts $LOG "$DATE: SSH_PASSWORD - key $sshkey installed" }
+      "assword has expired" { puts $LOG "$DATE: SSH_PASSWORD - password has expired $server:$port for $user"; exit 101 }
+      "Permission denied" { puts $LOG "$DATE: SSH_PASSWORD - the server $server:$port doesn't accept user $user"; exit 104 }
+    }
+  }
+  -re "$prompt" { puts $LOG "$DATE: SSH_CONNECT - detected shell command prompt. Key is installed" }
+  -re "Enter selection:" { puts $LOG "$DATE: SSH_CONNECT - detected bitrix menu command prompt. Key is installed" }
+
+}
+
+exit 0

@@ -1,0 +1,18 @@
+---
+# use cluster_login and password for site
+- include: sites-cache_directory-execute.yml
+  vars:
+    php_script: mysql_dbconn.php
+    php_server: "{{ cluster_web_server }}"
+
+- include: sites-cache_directory-execute.yml
+  vars:
+    php_script: mysql_settings.php
+    php_server: "{{ cluster_web_server }}"
+
+- name: delete after_connect on sites
+  file: path="{{ item.DocumentRoot  }}/bitrix/php_interface/after_connect.php"
+    state=absent
+  with_items: "{{ bx_sites_info }}"
+
+

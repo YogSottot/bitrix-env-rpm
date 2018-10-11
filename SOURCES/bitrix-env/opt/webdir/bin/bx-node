@@ -1,0 +1,103 @@
+#!/usr/bin/perl
+# localhost info and options
+use strict;
+use warnings;
+
+use lib "/opt/webdir/lib";
+use bxNetworkNode;
+use Output;
+use Data::Dumper;
+use Getopt::Long;
+use File::Basename qw( dirname basename );
+use Sys::Hostname;
+
+
+# program options
+my $prog_name = basename $0;
+my $prog_dir  = dirname $0;
+
+my $o_action  = "list";            # type of action that script must do.
+                                    # list    - list of all network interfaces
+                                    # status  - status of one network interface
+my $o_format  = 'plain';            # format of stdout message
+my $o_int     = 'any';              # network interface
+my $o_host    = hostname;
+my $o_verbose = 0;
+my $o_help    = undef;
+my $o_ip      = undef;
+
+# get command line options
+Getopt::Long::Configure ("bundling");
+my $result_option = GetOptions(
+  'v'     => \$o_verbose,   'verbose'   => \$o_verbose,
+  'h'     => \$o_help,      'help'      => \$o_help,
+  "a:s"   => \$o_action,    'action:s'  => \$o_action,
+  "o:s"   => \$o_format,    'output'    => \$o_format,
+  "i:s"   => \$o_int,       'interface' => \$o_int,
+  "H:s"   => \$o_host,      'hostname'  => \$o_host,
+  "I:s"   => \$o_ip,        'ip'        => \$o_ip,
+) or unknown_arg();
+
+# help message
+if ( $o_help ) { print_help($prog_name, 0) };
+# formt output
+if ( $o_format !~ /^(json|plain|te?xt)$/ ) { print_help($prog_name, 1)}
+if ( $o_format =~ /^te?xt$/ ) { $o_format = "plain" };
+
+# process request
+my $bx = bxNetworkNode->new(
+  manager_interface => $o_int,
+  manager_hostname  => $o_host,
+  debug => $o_verbose,
+);
+my $interfaces = undef;
+if ($o_action =~ /^(list|status)$/i){
+  $interfaces = $bx->list_interfaces();
+}elsif($o_action =~ /^(create_settings)$/i){
+  $interfaces = $bx->create_network_options();
+}elsif($o_action =~ /^(interface)$/){
+  $interfaces = $bx->ip_to_interface($o_ip);
+}elsif($o_action =~ /^(ip)$/){
+  $interfaces = $bx->interface_to_ip($o_int);
+}else{
+  $interfaces = Output->new( 
+    error => 1, 
+    message => "Unknown action option. PLease use -h for help message." 
+  );
+}
+#print Dumper($interfaces);
+$interfaces->print($o_format);
+
+# print usage
+sub print_usage {
+  my $prog = shift;
+  print "Usage: $prog [-vh] [-a list|status] [-i interface] \n";
+}
+
+# help message
+sub print_help {
+  my $prog = shift;
+  my $exit = shift;
+  print_usage( $prog );
+  print <<EOT;
+Options:
+  -h|--help       - show this message
+  -v|--verbose    - enable verbose mode.
+  -a|--action     - task management actions: list|status
+  -i|--interface  - task id , used in status action
+  -I|--ip         - ip address
+ Ex.
+  * get list of tasks
+ $prog -o json
+  * get status of eth0 (ip address and network name)
+ $prog -a status -i eth0
+  * test master settings on localhost
+ $prog -a create_settings -i eth0 -H server1
+  * get interface name for ip address 1.2.3.4
+ $prog -a interface -I 1.2.3.4
+
+EOT
+;
+  exit;
+}
+

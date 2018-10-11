@@ -1,0 +1,22 @@
+---
+# This playbook Enable or disable monitoring for hosts
+# manage_sphinx
+#   create - create sphinx on the server
+#   delete - delete sphinx on the server
+#   add_site - create index for site
+#   delete_site - delete index from site
+# manage_node: node when sphinx created or deleted
+# manage_site: site
+- hosts: bitrix-hosts
+  vars:
+   ansible_playbook_file: NOT_DEFINED
+   ansible_playbook_debug: NOT_DEFINED
+  roles:
+  - sphinx
+
+- hosts: bitrix-hosts
+  vars:
+    cache_directory: /opt/webdir/tmp
+
+  roles:
+    - cleaner

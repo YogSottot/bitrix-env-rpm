@@ -1,0 +1,590 @@
+#!/bin/bash
+# Get host information:
+#   interfaces, connection speed and ip adrresses
+#   system type by installed RAM on board
+#   users's info - last password changes and availability
+#   software versions: php, mysql, bitrix-env
+export LANG=en_EN.UTF-8
+export NOLOCALE=yes
+export PATH=/sbin:/bin:/usr/sbin:/usr/bin
+
+[[ -z $DEBUG ]] && DEBUG=0
+MYSQL_CNF=/root/.my.cnf
+TMP_DIR=/opt/webdir/tmp
+[[ ! -d $TMP_DIR ]] && mkdir -m 700 $TMP_DIR
+LOG_FILE=$TMP_DIR/bx_vat_$$.log
+debug(){
+    mess=$1
+
+    [[ $DEBUG -gt 0 ]] && echo "$(date +%s) $mess" >> $LOG_FILE
+}
+
+
+
+get_memory() {
+
+    is_vps=1
+    memory=$(free | awk '/Mem/{print $2}')
+
+    # openvz installation
+    if [[ -f /proc/user_beancounters ]]; then
+        # > 500MB
+        # problem with: Unable to fork: Cannot allocate memory
+        if [[ -z "$memory" ]]; then
+            # Memory allocation guarantee.
+            mem4kblock=$(cat /proc/user_beancounters  | awk '/vmguarpages/{print $4}')
+
+            # The current amount of allocated memory space is accounted into privvmpages parameter
+            mem4kblock2=$(cat /proc/user_beancounters | awk '/privvmpages/{print $4}')
+
+            memory=$(echo "${mem4kblock2} * 4"|bc)
+            [[ $mem4kblock2 -gt $mem4kblock ]] && memory=$(echo "${mem4kblock} * 4"|bc)
+
+        fi
+    else
+        is_vps=0
+    fi
+
+    echo $memory
+}
+
+get_os_version() {
+    # one-time call
+    [[ -n $OS_VERSION ]] && return 0
+
+    release_file=/etc/redhat-release
+    if [[ ! -f $release_file ]]; then
+        if [[ -f /etc/centos-release ]]; then
+            release_file=/etc/centos-release
+        else
+            echo "{\"changed\":false,\"failed\":true,\"msg\":\"not found rpm based OS\"}"
+            exit 1
+        fi
+    fi
+    # os version
+    OS_VERSION=$(cat /etc/redhat-release | \
+        sed -e "s/CentOS Linux release//;s/CentOS release // " | \
+        cut -d'.' -f1 | sed -e "s/\s\+//g")
+}
+
+get_bx_version() {
+    get_os_version
+
+    PACKAGE_NAME=
+    for pkg in bitrix-env bitrix-env-crm bitrix-env4; do
+        package_data=$TMP_DIR/${pkg}_$(date +%s)_$$.pkginfo
+        rpm -qi "$pkg" >$package_data 2>&1
+
+        if [[ $? -eq 0 ]]; then
+            PACKAGE_NAME=$pkg
+            break
+        fi
+    done
+
+    if [[ -z $PACKAGE_NAME ]]; then
+        PACKAGE=0
+        debug "rpm -qi $PACKAGE_NAME return error"
+    elif [[ $PACKAGE == "bitrix-env4" ]]; then
+        bitrix_env_version=$(egrep -o '^Version\s*:\s*[0-9\.]+' $package_data | \
+            awk -F':' '{print $2}' | sed -e 's/\s\+//g')
+
+        # test version value
+        if [[ -z "$bitrix_env_version" ]]; then
+            echo "{\"changed\":false,\"failed\":true,\"msg\":\"not found version for package=$PACKAGE_NAME\"}"
+            debug "not found version for $PACKAGE_NAME"
+
+            rm -f $package_data
+            exit 1
+        fi
+        # create package info
+        debug "found pakache info: bitrix_env_version=$bitrix_env_version bitrix_env_release=$bitrix_env_release"
+        PACKAGE="4."$bitrix_env_version
+
+    else
+        bitrix_env_version=$(egrep -o '^Version\s*:\s*[0-9\.]+' $package_data | \
+            awk -F':' '{print $2}' | sed -e 's/\s\+//g')
+        bitrix_env_release=$(egrep -o '^Release\s*:\s*[0-9]+' $package_data | \
+            awk -F':' '{print $2}' | sed -e 's/\s\+//g')
+
+        # test version value
+        if [[ -z "$bitrix_env_version" ]]; then
+            echo "{\"changed\":false,\"failed\":true,\"msg\":\"not found version for package=$PACKAGE_NAME\"}"
+            debug "not found version for $PACKAGE_NAME"
+
+            rm -f $package_data
+            exit 1
+        fi
+        # test release value
+        if [[ -z "$bitrix_env_release" ]]; then
+            echo "{\"changed\":false,\"failed\":true,\"msg\":\"not found release for package=$PACKAGE_NAME\"}"
+            debug "not found release for $PACKAGE_NAME"    
+
+            rm -f $package_data
+            exit 1
+        fi
+        # create package info
+        debug "found pakache info: bitrix_env_version=$bitrix_env_version bitrix_env_release=$bitrix_env_release"
+        PACKAGE=$bitrix_env_version"-"$bitrix_env_release
+ 
+    fi
+
+    rm -f $TMP_DIR/*.pkginfo
+}
+
+get_bx_user_password(){
+    bx_user=bitrix
+
+    chage_data=$TMP_DIR/${bx_user}_$(date +%s)_$$.change
+    # test if user exists
+    user_found=$(grep -c "^$bx_user:" /etc/passwd)
+    user_id=$(grep "^$bx_user:" /etc/passwd | awk -F':' '{print $3}')
+    if [[ $user_found -gt 0 ]]; then
+        debug "Found user $bx_user in the system"
+
+        chage -l $bx_user > $chage_data 2>&1
+
+        if [[ $? -gt 0 ]]; then
+            echo "{\"changed\":false,\"failed\":true,\"msg\":\"cmd return error\"}"
+            debug "\"chage -l $bx_user return error\""
+            rm -f $chage_data
+            exit 1
+        fi
+
+        Last_password_change=$( awk -F':' '/Last password change/{print $2}' $chage_data| sed 's/^\s\+//;s/\s\+$//;')
+        Password_expires=$(     awk -F':' '/Password expires/{print $2}'     $chage_data| sed 's/^\s\+//;s/\s\+$//;')
+        Password_inactive=$(    awk -F':' '/Password inactive/{print $2}'    $chage_data| sed 's/^\s\+//;s/\s\+$//;')
+    else
+        Last_password_change=0
+        Password_expires=0
+        Password_inactive=0
+    fi
+
+    rm -f $chage_data
+}
+get_bx_root_password(){
+    root_bx_user=root
+
+    chage_data=$TMP_DIR/${root_bx_user}_$(date +%s)_$$.change
+    # test if user exists
+    root_user_found=$(grep -c "^$root_bx_user:" /etc/passwd)
+    root_user_id=$(grep "^$root_bx_user:" /etc/passwd | awk -F':' '{print $3}')
+    if [[ $root_user_found -gt 0 ]]; then
+        debug "Found user $root_bx_user in the system"
+
+        chage -l $root_bx_user > $chage_data 2>&1
+
+        if [[ $? -gt 0 ]]; then
+            echo "{\"changed\":false,\"failed\":true,\"msg\":\"cmd return error\"}"
+            debug "\"chage -l $root_bx_user return error\""
+            rm -f $chage_data
+            exit 1
+        fi
+
+        root_Last_password_change=$( awk -F':' '/Last password change/{print $2}' $chage_data| sed 's/^\s\+//;s/\s\+$//;')
+        root_Password_expires=$(     awk -F':' '/Password expires/{print $2}'     $chage_data| sed 's/^\s\+//;s/\s\+$//;')
+        root_Password_inactive=$(    awk -F':' '/Password inactive/{print $2}'    $chage_data| sed 's/^\s\+//;s/\s\+$//;')
+    else
+        root_Last_password_change=0
+        root_Password_expires=0
+        root_Password_inactive=0
+    fi
+
+    rm -f $chage_data
+}
+
+
+get_bx_network(){
+    ip_link_list=$(ip link show | egrep -o '^[0-9]+:\s+\S+' | \
+        awk '{print $2}' | sed -e 's/://g;s/\s\+//g;' | grep -v '^lo$')
+
+    INT_INFO=''
+    # current throughput
+    for int in $ip_link_list; do
+        ethtool_info=$(ethtool $int | egrep -o '(Speed|Link detected):\s+\S+')
+        speed=$(echo "$ethtool_info" | awk -F':' '/Speed/{print $2}' | sed -e 's/://g;s/\s\+//g;')
+        link=$( echo "$ethtool_info" | awk -F':' '/Link/{print $2}'  | sed -e 's/://g;s/\s\+//g;')
+
+        if [[ $(echo "$link" | grep -wc 'yes') -gt 0 ]]; then
+            INT_INFO=$INT_INFO"\"link_$int\":\"yes\",\"speed_$int\":\"$speed\","
+            inet_addr=$(ip addr show $int | egrep -o "inet\s+\S+" | \
+                sed -e 's/^inet\s\+//;s:/[0-9]\+$::;')
+            INT_INFO=$INT_INFO"\"addr_$int\":\"$inet_addr\","
+        else
+            INT_INFO=$INT_INFO"\"link_$int\":\"no\",\"speed_$int\":\"0\",\"addr_$int\":\"none\","
+        fi
+    done
+
+}
+# return  number
+# outdated
+get_bx_systemtype(){
+    system_type=1
+    system_memory=$(get_memory) # KB
+
+    [[ ( $system_memory -gt   500000 )  && ( $system_memory -lt 1000000 ) ]] && system_type=2
+    [[ ( $system_memory -gt  1000000 ) && ( $system_memory -lt  1500000 ) ]] && system_type=3
+    [[ ( $system_memory -gt  1500000 ) && ( $system_memory -lt  2000000 ) ]] && system_type=4
+    [[ ( $system_memory -gt  2000000 ) && ( $system_memory -lt  3000000 ) ]] && system_type=5
+    [[ ( $system_memory -gt  3000000 ) && ( $system_memory -lt  4000000 ) ]] && system_type=6
+    [[ ( $system_memory -gt  4000000 ) && ( $system_memory -lt  5000000 ) ]] && system_type=7
+    [[ ( $system_memory -gt  5000000 ) && ( $system_memory -lt  6000000 ) ]] && system_type=8
+    [[ ( $system_memory -gt  6000000 ) && ( $system_memory -lt  8000000 ) ]] && system_type=9
+    [[ ( $system_memory -gt  8000000 ) && ( $system_memory -lt 16000000 ) ]] && system_type=10
+    [[ ( $system_memory -gt 16000000 ) && ( $system_memory -lt 24000000 ) ]] && system_type=11
+    [[ ( $system_memory -gt 24000000 ) && ( $system_memory -lt 32000000 ) ]] && system_type=12
+    [[ ( $system_memory -gt 32000000 ) && ( $system_memory -lt 64000000 ) ]] && system_type=13
+    [[ $system_memory -gt 64000000 ]] && system_type=14
+
+}
+
+# Centos7:
+# mysql-community-server => mysql-community
+# Percona-Server-server  => percona
+# MariaDB-server         => MariaDB
+# mariadb-server         => mariadb
+# Centos6:
+# mysql-server           => mysql
+get_mysql_package(){
+    [[ -n $MYSQL_PACKAGE ]] && return 0
+
+    PACKAGES_LIST=$(rpm -qa)
+    MYSQL_PACKAGE=not_installed
+    MYSQL_SERVICE=not_installed
+    MYSQL_VERSION=not_installed
+    if [[ $(echo "$PACKAGES_LIST" | grep -c '^mysql-community-server') -gt 0 ]]; then
+        MYSQL_PACKAGE=mysql-community-server
+        MYSQL_SERVICE=mysqld
+    elif [[ $(echo "$PACKAGES_LIST" | grep -c '^Percona-Server-server') -gt 0 ]]; then
+        MYSQL_PACKAGE=Percona-Server-server
+        MYSQL_SERVICE=mysqld
+    elif [[ $(echo "$PACKAGES_LIST" | grep -c '^MariaDB-server') -gt 0 ]]; then
+        MYSQL_PACKAGE=MariaDB-server
+        MYSQL_SERVICE=mariadb
+    elif [[ $(echo "$PACKAGES_LIST" | grep -c '^mariadb-server') -gt 0 ]]; then
+        MYSQL_PACKAGE=mariadb-server
+        MYSQL_SERVICE=mariadb
+    elif [[ $(echo "$PACKAGES_LIST" | grep -c '^mysql-server') -gt 0 ]]; then
+        MYSQL_PACKAGE=mysql-server
+        MYSQL_SERVICE=mysqld
+    else
+        return 1
+    fi
+    MYSQL_VERSION=$(rpm -qa --queryformat '%{version}' ${MYSQL_PACKAGE}* | head -1 )
+    MYSQL_MID_VERSION=$(echo "$MYSQL_VERSION" | awk -F'.' '{print $2}')
+
+}
+
+get_sw_versions(){
+    NGINX_VERSION=$(rpm -qa --queryformat '%{version}' bx-nginx 2>/dev/null | head -1 )
+    NGINX_VERSION_UP=0
+    NGINX_VERSION_MID=0
+    NGINX_VERSION_END=0
+
+    if [[ -n $NGINX_VERSION ]]; then
+        NGINX_VERSION_UP=$(echo $NGINX_VERSION | awk -F'.' '{print $1}')
+        NGINX_VERSION_MID=$(echo $NGINX_VERSION | awk -F'.' '{print $2}')
+        NGINX_VERSION_END=$(echo $NGINX_VERSION | awk -F'.' '{print $3}')
+    else
+        NGINX_VERSION=not_installed
+    fi
+    NGINX_SSL=ssl
+    [[ ( $NGINX_VERSION_UP -ge 1 ) && \
+        ( $NGINX_VERSION_MID -ge 10 ) && \
+        ( $NGINX_VERSION_END -ge 2 )  ]] && NGINX_SSL=http2
+
+    [[ ( $NGINX_VERSION_UP -ge 1 ) && \
+        ( $NGINX_VERSION_MID -ge 12 ) ]] && NGINX_SSL=http2
+
+
+    SPHINX_VERSION=$(rpm -qa --queryformat '%{version}' sphinx 2>/dev/null | head -1 )
+    SPHINX_VERSION_UP=0
+    SPHINX_VERSION_MID=0
+    SPHINX_VERSION_END=0
+
+    if [[ -n $SPHINX_VERSION ]]; then
+        SPHINX_VERSION_UP=$(echo $SPHINX_VERSION | awk -F'.' '{print $1}')
+        SPHINX_VERSION_MID=$(echo $SPHINX_VERSION | awk -F'.' '{print $2}')
+        SPHINX_VERSION_END=$(echo $SPHINX_VERSION | awk -F'.' '{print $3}')
+    else
+        SPHINX_VERSION=not_installed
+    fi
+
+    SPHINX_TYPE=21
+    if [[ ( $SPHINX_VERSION_UP -ge 2 ) && ( $SPHINX_VERSION_MID -ge 2 ) ]]; then
+        SPHINX_TYPE=22
+    fi
+}
+
+get_push_server_info(){
+    PUSH_CONFIG=/etc/sysconfig/push-server-multi
+    PUSH_NGINX_CONFIG=/etc/nginx/bx/conf/im_subscrider.conf
+
+    PUSH_SECURITY_KEY=
+    PUSH_STATUS=not_installed
+    PUSH_NGINX_TYPE=empty
+    PUSH_HOST=
+    PUSH_PUB='/bitrix/pub/'
+    PUSH_SUB='/bitrix/sub/'
+    PUSH_SUBWS='/bitrix/subws/'
+    PUSH_REST='/bitrix/rest/'
+    PUSH_PORT=
+
+    # get PushStreamModule status 
+    is_push_installed=$(nginx -V 2>&1 | grep nginx-push-stream-module -c)
+    PUSH_STREAM_MODULE="not_installed"
+    if [[ $is_push_installed -gt 0 ]]; then
+        PUSH_STREAM_MODULE=installed
+    fi
+
+    if [[ -f $PUSH_NGINX_CONFIG ]]; then
+        is_rtc_server=$(grep -v '^$\|^#' $PUSH_NGINX_CONFIG | \
+            grep -wc nodejs_sub)
+        if [[ $is_rtc_server -gt 0 ]]; then
+            PUSH_NGINX_TYPE="nodejs-push-server"
+        fi
+
+        is_nginx_module=$(grep -v '^$\|^#' $PUSH_NGINX_CONFIG | \
+            grep -wc push_stream_subscriber)
+        if [[ $is_nginx_module -gt 0 ]]; then
+            PUSH_NGINX_TYPE="nginx-push-stream-module"
+        fi
+    fi
+
+    if [[ -f $PUSH_CONFIG ]]; then
+        . $PUSH_CONFIG
+        PUSH_SECURITY_KEY=${SECURITY_KEY}
+        PUSH_HOST=${WS_HOST}
+        [[ -n $PUBPATH ]] && PUSH_PUB=${PUBPATH}
+        [[ -n $SUBPATH ]] && PUSH_SUB=${SUBPATH}
+        [[ -n $SUBWSPATH ]] && PUSH_SUBWS=${SUBWSPATH}
+        [[ -n $RESTPATH ]] && PUSH_REST=$RESTPATH
+        PUSH_PORT=${WS_PORT}
+        if [[ -n $PUSH_SECURITY_KEY ]]; then
+            PUSH_STATUS=installed
+        fi
+    fi
+
+}
+
+
+# 0 - active
+# 1 - not running
+get_mysql_service_status(){
+    
+    # get version for OS
+    get_os_version
+
+    # get MySQL name
+    get_mysql_package
+
+    if [[ $OS_VERSION -eq 7 ]]; then
+        systemctl is-active $MYSQL_SERVICE >/dev/null 2>&1
+        return $?
+    else
+        /etc/init.d/mysqld status | grep -wc running >/dev/null 2>&1
+        return $?
+    fi
+}
+
+
+## test mysql root password
+## mysql_root_password - set | not_set
+## mysql_root_config   - /path/to/file | no
+test_mysql_root_password(){
+    mysql_root_config=not_found
+    mysql_root_password=not_set
+    mysql_service_status=not_active
+
+    # get mysql status
+    get_mysql_service_status
+    [[ $? -gt 0 ]] && return 0
+    mysql_service_status=active
+
+    # test connection to mysql service with empty root password
+    TEMP_MYCNF=$(mktemp $TMP_DIR/.my.cnf.XXXXXXXX)
+    echo -e "[client]\nuser=root\npassword=\nsocket=/var/lib/mysqld/mysqld.sock" > $TEMP_MYCNF
+    mysql --defaults-file=$TEMP_MYCNF -e "status;" >/dev/null 2>&1
+    mysql_rtn=$?
+    rm -f $TEMP_MYCNF
+
+    # connection is accepted
+    [[ $mysql_rtn -gt 0 ]] && \
+        mysql_root_password=set
+
+    # try get 
+    if [[ -f $MYSQL_CNF ]]; then
+        mysql_config_user=
+
+        # find out connection user
+        # we don't consider situation with several group block in config
+        TEMP_LOG=$(mktemp $TMP_DIR/.my.XXXXXXXX)
+        mysql --defaults-file=$MYSQL_CNF  -e "status" | \
+            awk '/^Current user:/{print $3}' | awk -F'@' '{print $1}' > $TEMP_LOG 2>&1
+        mysql_rtn=$?
+
+        if [[ $mysql_rtn -eq 0 ]]; then
+            mysql_config_user=$(cat $TEMP_LOG)
+            [[ $mysql_config_user == "root" ]] && mysql_root_config=$MYSQL_CNF
+        fi
+
+        rm -f $TEMP_LOG
+    fi
+}
+
+## rpm packages info
+get_bx_packages(){
+    rpm_bin=$(which rpm 2>/dev/null)
+
+    [[ -z "$rpm_bin" ]] && return 1
+
+    if [[ -n $rpm_bin ]]; then
+        # get mysql package info
+        get_mysql_package
+        mysql_package=$MYSQL_PACKAGE
+        mysql_service=$MYSQL_SERVICE
+        mysql_version=$MYSQL_VERSION
+        mysql_mid_version=$MYSQL_MID_VERSION
+
+        php_version=$($rpm_bin -qa --queryformat '%{name} %{version} \n' php | awk '{print $2}')
+    fi
+
+    [[ -z $php_version ]] && php_version='not_installed'
+    [[ -z $rpm_bin ]] && rpm_bin='not_installed'
+    php_version_up=0
+    php_version_mid=0
+    is_older_version_php=0
+
+    if [[ $php_version != "not_installed" ]]; then
+        php_version_up=$(echo "$php_version" | awk -F'.' '{printf "%d", $1}')
+        php_version_mid=$(echo "$php_version" | awk -F'.' '{printf "%d", $2}')
+        [[ ( $php_version_up -ge 5 && $php_version_mid -ge 6 ) || $php_version_up -ge 7 ]] && \
+            is_older_version_php=1
+
+        php_mysql_ext=$(php -m 2>/dev/null | egrep -o '^mysql.?$' | head -1)
+        [[ -z $php_mysql_ext ]] && php_mysql_ext="not_installed"
+
+    fi
+
+
+    # nodejs version
+    nodejs_version=$(rpm -qa --queryformat '%{name} %{version} \n' nodejs | awk '{print $2}')
+    if [[ -n $nodejs_version ]]; then
+        nodejs_major_version=$(echo "$nodejs_version" | awk -F'.' '{print $1}')
+    else
+        nodejs_version=not_installed
+        nodejs_major_version=not_installed
+    fi
+
+    # push-server
+    push_server_version=$(rpm -qa --queryformat '%{name} %{version} \n' push-server | \
+        awk '{print $2}')
+    [[ -z $push_server_version ]] && \
+        push_server_version=$(rpm -qa --queryformat '%{name} %{version} \n' bx-push-server | \
+            awk '{print $2}')
+
+    if [[ -n $push_server_version ]]; then
+        push_server_major_version=$(echo "$push_server_version" | awk -F'.' '{print $1}')
+    else
+        push_server_version=not_installed
+        push_server_major_version=not_installed
+    fi
+
+}
+# return max memory of this type
+# new
+get_bx_systemtype_mem(){
+    memory_limits="256:512:1024:1536:2048:3072:4096:5120:6144:7168:8192:9216:10240:11264:12288:13312:14336:15360:16384:65536"
+    min_mb=0
+
+    memory=$(get_memory)
+    memory_mb=$((${memory}/1024))
+    system_type_by_memory=256
+
+    os_arch=$(uname -p)
+    if [[ $(echo "$os_arch" | grep -c '\(i686\|i386\)') -gt 0 ]]; then
+        [[ $memory_mb -gt 4096 ]] && memory_mb=4096
+    fi
+
+    for max_mb in $(echo $memory_limits| sed -e 's/:/ /g;' ); do
+        if [[ $memory_mb -gt $min_mb && $memory_mb -le $max_mb ]]; then
+            system_type_by_memory=$max_mb
+        fi
+        min_mb=$max_mb
+    done
+}
+
+debug "start get_bx_version"
+get_bx_version
+
+debug "start get_bx_user_password"
+get_bx_user_password
+
+debug "start get_bx_root_password"
+get_bx_root_password
+
+debug "start get_bx_network"
+get_bx_network
+
+debug "start get_bx_systemtype"
+get_bx_systemtype
+
+debug "start get_bx_systemtype_mem"
+get_bx_systemtype_mem
+
+debug "start get_bx_packages"
+get_bx_packages
+
+debug "start test_mysql_root_password"
+test_mysql_root_password
+
+debug "get software versions"
+get_sw_versions
+
+debug "get push server info"
+get_push_server_info
+
+ANSIBLE_OUTPUT='{"ansible_facts":{'
+ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"bx_system_type":"'$system_type'",'
+ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"os_version":"'$OS_VERSION'",'
+ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"bx_memsystem_type":"'$system_type_by_memory'",'
+ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"bx_memory":"'$memory'",'
+ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"bx_version":"'$PACKAGE'",'
+ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"bx_base_version":"'$(echo "$PACKAGE" | awk -F'.' '{print $1}')'",'
+ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"bx_package_name":"'$PACKAGE_NAME'",'
+ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT$INT_INFO
+ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"bx_bitrix_uid":"'$user_id'",'
+ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"rpm_bin":"'$rpm_bin'",'
+ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"nginx_version":"'$NGINX_VERSION'",'
+ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"nginx_ssl":"'$NGINX_SSL'",'
+ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"push_type":"'$PUSH_NGINX_TYPE'",'
+ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"push_status":"'$PUSH_STATUS'",'
+ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"push_security_key":"'$PUSH_SECURITY_KEY'",'
+ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"push_host":"'$PUSH_HOST'",'
+ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"push_port":"'$PUSH_PORT'",'
+ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"push_pub":"'$PUSH_PUB'",'
+ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"push_sub":"'$PUSH_SUB'",'
+ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"push_subws":"'$PUSH_SUBWS'",'
+ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"push_rest":"'$PUSH_REST'",'
+ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"nodejs_version":"'$nodejs_version'",'
+ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"nodejs_major_version":"'$nodejs_major_version'",'
+ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"push_server_version":"'$push_server_version'",'
+ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"push_server_major_version":"'$push_server_major_version'",'
+ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"nginx_push_module":"'$PUSH_STREAM_MODULE'",'
+ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"sphinx_version":"'$SPHINX_VERSION'",'
+ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"sphinx_type":"'$SPHINX_TYPE'",'
+ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"mysql_version":"'$mysql_version'",'
+ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"mysql_mid_version":"'$mysql_mid_version'",'
+ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"mysql_package":"'$mysql_package'",'
+ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"mysql_service":"'$mysql_service'",'
+ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"mysql_root_config":"'$mysql_root_config'",'
+ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"mysql_root_password":"'$mysql_root_password'",'
+ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"mysql_service_status":"'$mysql_service_status'",'
+ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"php_version":"'$php_version'",'
+ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"php_older_version":'$is_older_version_php','
+ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"php_mysql_ext":"'$php_mysql_ext'",'
+ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"bx_root_last_password_change":"'$root_Last_password_change'",'
+ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"bx_last_password_change":"'$Last_password_change'"'
+ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'}}'
+
+echo -n $ANSIBLE_OUTPUT
+exit 0

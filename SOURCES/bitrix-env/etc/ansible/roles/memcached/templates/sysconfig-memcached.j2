@@ -1,0 +1,7 @@
+# {{ ansible_managed }}
+# memcached settings
+PORT="{{ memcached_port|default('11211') }}"
+USER="memcached"
+MAXCONN="1024"
+CACHESIZE="{{ memcached_size|default('64') }}"
+OPTIONS=""

@@ -1,0 +1,130 @@
+---
+#
+# temporarily disable access to sites; create special web-page
+# start this task for bitrix-web group
+#
+
+############## create nginx config and php files for good-looking page for not-working site
+#####
+- name: create directories for disabled sites - nginx configs and document root
+  tags: web
+  file: path={{ item }} 
+    state=directory mode=0755
+    owner={{ nginx_user }} group={{ nginx_group }}
+  with_items:
+    - "{{ nginx_disable_www }}"
+    - "{{ nginx_disable_cfg }}"
+
+- name: create global csync2 lock file
+  tags: web
+  file: path=/etc/csync2.lock
+    state=touch
+    owner={{ nginx_user }} group={{ nginx_group }}
+    mode=0644
+  when: "site_stopped == 'Y' and cluster_web_configure == 'enable'"
+
+- name: create document root for disabled site
+  with_items: "{{ bx_sites_info }}"
+  tags: web
+  file: path="{{ nginx_disable_www }}/{{ item.ServerName }}" 
+    state=directory mode=0755 
+    owner={{ nginx_user }} group={{ nginx_group }}
+  when: site_stopped == 'Y'
+
+- name: php-script that create index page 
+  with_items: "{{ bx_sites_info }}"
+  tags: web
+  template: src=nginx_create_disable_index.php.j2 
+    dest="{{ nginx_disable_www }}/{{ item.ServerName }}/nginx_create_disable_index.php" 
+    owner={{ nginx_user }} group={{ nginx_group }} mode=0640
+  when: site_stopped == 'Y'
+
+- name: create index.html page for disabled site
+  with_items: "{{ bx_sites_info }}"
+  tags: web
+  shell: php -f "{{ nginx_disable_www }}/{{ item.ServerName }}/nginx_create_disable_index.php" > "{{ nginx_disable_www }}/{{ item.ServerName }}/index.html"
+  become: yes
+  become_user: "{{ nginx_user }}"
+  when: site_stopped == 'Y'
+
+- name: create nginx config for disabled site - access via http
+  with_items: "{{ bx_sites_info }}"
+  tags: web
+  template: src=nginx_disable_http.conf.j2 
+    dest="{{ nginx_disable_cfg }}/{{ item.NginxHTTPConfig }}"
+    owner={{ nginx_user }} group={{ nginx_group }} 
+    mode=0640
+  when: site_stopped == 'Y'
+
+- name: create nginx config for disabled site - access via https
+  with_items: "{{ bx_sites_info }}"
+  tags: web
+  template: src=nginx_disable_https.conf.j2 
+    dest="{{ nginx_disable_cfg }}/{{ item.NginxHTTPSConfig }}"
+    owner={{ nginx_user }} group={{ nginx_group }} 
+    mode=0640
+  when: "site_stopped == 'Y' and cluster_web_configure == 'disable'"
+
+- name: replace symbolic link enabled sites - access via http
+  with_items: "{{ bx_sites_info }}"
+  tags: web
+  file: src="{{ nginx_disable_cfg }}/{{ item.NginxHTTPConfig }}"
+    dest="{{ nginx_enabled_cfg }}/{{ item.NginxHTTPConfig }}"
+    state=link force=yes
+  when: site_stopped == 'Y'
+
+- name: replace symbolic link enabled sites http - access via https
+  with_items: "{{ bx_sites_info }}"
+  tags: web
+  file: src="{{ nginx_disable_cfg }}/{{ item.NginxHTTPSConfig }}"
+    dest="{{ nginx_enabled_cfg }}/{{ item.NginxHTTPSConfig }}"
+    state=link force=yes
+  when: "site_stopped == 'Y' and cluster_web_configure == 'disable'"
+
+#####
+############## /create nginx config and php files for good-looking page for not-working site
+
+############## disable or enable public part of site, agents and events, depends on site_stopped
+#####
+- include: sites-cache_directory-execute.yml
+  vars:
+    php_script: public.php
+    php_server: "{{ cluster_web_server }}"
+
+#####
+############## /disable or enable public part of site, agents and events, depends on site_stopped
+
+############## delete nginx config and php files for working site
+#####
+- name: return old nginx config files - http access
+  with_items: "{{ bx_sites_info }}"
+  tags: web
+  file: src="{{ nginx_availab_cfg }}/{{ item.NginxHTTPConfig }}"
+    dest="{{ nginx_enabled_cfg }}/{{ item.NginxHTTPConfig }}"
+    state=link force=yes
+  when: site_stopped == 'N'
+
+- name: return old nginx config files - https access
+  with_items: "{{ bx_sites_info }}"
+  tags: web
+  file: src="{{ nginx_availab_cfg }}/{{ item.NginxHTTPSConfig }}"
+    dest="{{ nginx_enabled_cfg }}/{{ item.NginxHTTPSConfig }}"
+    state=link force=yes
+  when: "site_stopped == 'N' and cluster_web_configure == 'disable'"
+#####
+############## /delete nginx config and php files for working site
+
+############## accept changes and delete temporary directories
+#####
+- name: service nginx restart
+  service: name=nginx state=restarted
+  tags: web
+
+- name: delete global csync2 lock file
+  tags: web
+  file: 
+    path: /etc/csync2.lock
+    state: absent
+  when: "site_stopped == 'N' and cluster_web_configure == 'enable'"
+#####
+############## accept changes and delete temporary directories

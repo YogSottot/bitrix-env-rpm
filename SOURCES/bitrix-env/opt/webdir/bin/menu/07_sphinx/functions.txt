@@ -1,0 +1,49 @@
+# Найдено КОЛИЕЧСТВО Sphinx серверов
+SPH0001="Found __OPT1__ Sphinx servers: "
+# Заголовки в меню
+SPH0002=Hostname
+SPH0003=IP
+SPH0004="Sphinx Version"
+# Введите имя БД для которой нужно настроить использование sphinx
+SPH0005="Enter the name of the database that will use sphinx: "
+# Не найдена БД с именем ИМЯ в пуле.
+SPH0006="Database named __OPT1__ was not found in the pool."
+# Необходимо ли  выполнить индексацию сайта по завершению настройки?
+SPH0007="Re-index the site after creating a sphinx instance? (N|y)"
+# Настройка Sphinx на ИМЯ_СЕРВЕРА ( оповещение в запущенной задаче )
+SPH0008="configure Sphinx on __OPT1__"
+# Пункт меню
+SPH0009="Configure Sphinx instance"
+
+# Обновление Sphinx на ИМЯ_СЕРВЕРА ( оповещение в запущенной задаче )
+SPH0010="Update Sphinx on __OPT1__"
+# Пункт меню
+SPH0011="Update Sphinx instance"
+
+# Введите имя БД, которая использует данный Sphinx сервис:
+SPH0012="Enter the name of the database that is using this sphinx service: "
+# Удаление Sphinx на ИМЯ_СЕРВЕРА ( оповещение в запущенной задаче )
+SPH0013="Remove Sphinx on __OPT1__"
+# Пункт меню
+SPH0014="Remove Sphinx instance"
+
+# Основное меню
+SPH0015="1. Create sphinx instance on the server"
+SPH0016="2. Update sphinx instance on the server (add index)"
+SPH0017="3. Remove sphinx instance on the server"
+SPH0018="Manage sphinx configuration in the pool"
+
+SPH0200="Press ENTER to exit."
+SPH0201="0. Previous screen or exit"
+SPH0202="Enter 0 to exit:"
+SPH0203="Enter 1 to start process or 0 to exit:"
+SPH0204="Enter hostname or 0 to exit: "
+SPH0205="Enter your choice: "
+# Не найден сервер с именем=ИМЯ в пуле.
+SPH0206="Cannot find server __OPT1__ in the pool."
+SPH0207="Cannot find Sphinx/searchd server __OPT1__ in the pool."
+# В пуле нет настроенных Sphinx серверов
+SPH0208="Cannot find configured Sphinx/searchd services in the pool"
+# Не найдено подходящих серверов для настройки Sphinx службы
+SPH0209="No suitable servers were found to configure the Sphinx service"
+

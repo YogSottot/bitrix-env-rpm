@@ -1,0 +1,26 @@
+---
+# test options
+- set_fact:
+    proccess_sites: True
+
+- name: gathering facts about installed sites
+  bx_facts: name=list password=0 status=finished
+  delegate_to: "{{ cluster_web_server }}"
+  tags: gathering_facts
+  ignore_errors: yes
+  register: sites_info
+
+- set_fact:
+    proccess_sites: "{{ sites_info['changed']  }}"
+
+- debug: msg="{{ proccess_sites }}"
+
+- name: create variable bx_sites_info
+  set_fact:
+    bx_sites_info: "{{ hostvars[inventory_hostname]['bx_sites'] }}"
+  tags: gathering_facts
+  when: proccess_sites
+
+- debug: msg="False"
+  when: proccess_sites
+

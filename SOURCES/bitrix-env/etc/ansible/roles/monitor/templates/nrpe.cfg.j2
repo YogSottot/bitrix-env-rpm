@@ -1,0 +1,65 @@
+# {{ ansible_managed }}
+{% set nagios_plugins_dir = "/usr/lib/nagios/plugins" %}
+{% if ansible_architecture == 'x86_64' -%}
+{% set nagios_plugins_dir = "/usr/lib64/nagios/plugins" %}
+{%- endif %}
+# This is a config file for nrpe agent
+# hostname: {{ inventory_hostname }}
+# arch:     {{ ansible_architecture }}
+
+# LOG FACILITY
+log_facility=daemon
+
+# PID FILE
+pid_file=/var/run/nrpe/nrpe.pid
+
+# PORT NUMBER
+server_port=5666
+
+# NRPE USER
+nrpe_user=nrpe
+
+# NRPE GROUP
+nrpe_group=nrpe
+
+# ALLOWED HOST ADDRESSES
+allowed_hosts={{ monitoring_server_netaddr }}
+
+
+# COMMAND ARGUMENT PROCESSING
+# Values: 0=do not allow arguments, 1=allow command arguments
+dont_blame_nrpe=1
+
+# BASH COMMAND SUBTITUTION
+# Values: 0=do not allow bash command substitutions, 
+#         1=allow bash command substitutions
+allow_bash_command_substitution=0
+
+# COMMAND PREFIX
+# command_prefix=/usr/bin/sudo 
+
+# DEBUGGING OPTION
+debug=0
+
+# COMMAND TIMEOUT
+command_timeout=60
+
+# CONNECTION TIMEOUT
+connection_timeout=300
+
+# COMMAND DEFINITIONS
+# user check 
+command[check_users]={{ nagios_plugins_dir }}/check_users -w 5 -c 10
+# test AVG load
+command[check_load]={{ nagios_plugins_dir }}/check_load -w 15,10,5 -c 30,25,20
+# test partitions size
+command[check_disks]={{ nagios_plugins_dir }}/check_disk -w 20% -c 10%
+# number of zombie process
+command[check_zombie_procs]={{ nagios_plugins_dir }}/check_procs -w 5 -c 10 -s Z
+# number of total process
+command[check_total_procs]={{ nagios_plugins_dir }}/check_procs -w 300 -c 500 
+# free space in swap
+command[check_swap]={{ nagios_plugins_dir }}/check_swap -w 20% -c 10%
+
+# include configs from directory
+include_dir={{ nrpe_server_include_dir }}

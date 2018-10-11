@@ -1,0 +1,41 @@
+---
+# memcached_server
+- name: memcached - install software
+  yum: pkg=memcached state=present
+  tags: package
+
+- name: memcached - sysconfig
+  template: src=sysconfig-memcached.j2 dest=/etc/sysconfig/memcached 
+   owner=root group=root mode=0644
+  tags: memcached_config
+
+- name: memcached - ensure service started in system
+  service: name=memcached state=started enabled=yes
+  tags: service
+
+- name: memcached - restart service
+  service: name=memcached state=restarted
+  tags: service
+
+- name: update monitoring - check memcached process
+  file: src=/usr/share/munin/plugins/{{ item }}
+    dest=/etc/munin/plugins/{{ item }}memcached
+    state=link
+  with_items:
+    - process_status_
+  tags: monitoring
+  notify: restart munin-node
+  when: monitoring_status == 'enable'
+
+- name: update monitoring - check instance status
+  file: src=/usr/share/munin/plugins/memcached_ 
+    dest=/etc/munin/plugins/memcached_{{ item }} 
+    state=link
+  with_items:
+   - bytes
+   - counters
+   - rates
+  tags: configure_monitor_agents
+  notify: restart munin-node
+  when: monitoring_status == 'enable'
+

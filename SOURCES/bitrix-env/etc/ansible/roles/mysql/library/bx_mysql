@@ -1,0 +1,106 @@
+#!/bin/bash
+# set|unset server to read-only mode
+# variables:
+# src = ip address or socket 
+# login|password or /root/.my.cnf
+# status=off|on
+set -e
+
+DEFAULT_CONF=/root/.my.cnf # can set login and password from file
+DEFAULT_CONF_USAGE=0
+
+LOGDIR=/opt/webdir/logs
+[[ ! -d $LOGDIR ]] && mkdir -m 750 $LOGDIR
+TMPDIR=/tmp
+[[ -d /dev/shm ]] && TMPDIR=/dev/shm
+TMPFILE=$TMPDIR/.$(date +%s)_bx_mysql_$$
+
+save_log(){
+  message=$1
+  log_file=$LOGDIR/readonly_mysql.log
+
+  printf "%-15s: %s\n" "$(date +%Y/%m/%d:%H:%M:%S)" "$message" >> $log_file
+}
+
+# print error message
+error_message_and_exit() {
+  e_message=$1
+  save_log "$e_message"
+  echo "{\"changed\":false,\"failed\":true,\"msg\":\"$e_message\"}"
+  [[ -f $TMPFILE ]] && rm -f $TMPFILE
+  exit 1
+}
+
+# print ok message
+ok_message_and_exit() {
+  o_message=$1
+  save_log "$o_message"
+  echo "{\"changed\":true,\"msg\":\"$o_message\"}"
+  [[ -f $TMPFILE ]] && rm -f $TMPFILE
+  exit 0
+}
+
+# test mandatory option and print error if not exists
+test_variables() {
+  for desc in "src=$src" "login=$login" "password=$password" "status=$status"; do
+    var=$(echo $desc | cut -d'=' -f1)
+    val=$(echo $desc | cut -d'=' -f2)
+
+    if [[ -z "$val" ]]; then
+      # test if login and password needed variables  
+      if [[ ( "$var" == "login" ) || ( "$var" == "password" ) ]]; then
+        if [[ ! -f "$DEFAULT_CONF" ]]; then
+          error_message_and_exit "option $var= is mandatory, you must define it or set in $DEFAULT_CONF file"
+        fi
+        DEFAULT_CONF_USAGE=1  
+      else
+        error_message_and_exit "option $var= is mandatory, you must define it"
+      fi
+    fi
+  done
+}
+
+set_mysql_mode(){
+  save_log "start set read-only mode to $status"
+
+  if [[ $DEFAULT_CONF_USAGE -eq 1 ]]; then
+    src_mysql_cmd="mysql --defaults-file=$DEFAULT_CONF"
+    save_log " usage default config $DEFAULT_CONF"
+  else
+    src_mysql_cmd="mysql --user=$login --password=$password"
+    save_log " usage login and password"
+  fi
+
+
+  if [[ $(echo $src | grep -c '^/') -gt 0 ]]; then
+    src_mysql_cmd=$src_mysql_cmd" --socket=$src"
+  else
+    src_mysql_cmd=$src_mysql_cmd" --host=$src"
+  fi
+
+  if [[ $(echo "$status" | grep -iwc 'ON') -gt 0 ]]; then
+    $src_mysql_cmd -e "FLUSH TABLES WITH READ LOCK; SET GLOBAL read_only = ON;" > $TMPFILE 2>&1
+    save_log "$src_mysql_cmd -e \"FLUSH TABLES WITH READ LOCK; SET GLOBAL read_only = ON;\""
+    if [[ $? -gt 0 ]]; then
+      error_message_and_exit "mysql cmd return error: $(head -1 $TMPFILE)"
+    fi
+  elif [[ $(echo "$status" | grep -iwc 'OFF') -gt 0 ]]; then
+    $src_mysql_cmd -e "SET GLOBAL read_only = OFF; UNLOCK TABLES;" > $TMPFILE 2>&1
+    if [[ $? -gt 0 ]]; then
+      error_message_and_exit "mysql cmd return error: $(head -1 $TMPFILE)"
+    fi
+  else
+    error_message_and_exit "option status can be ON or OFF"
+  fi
+
+  ok_message_and_exit "set mysql to status=$status"
+
+}
+
+# get options from file
+source ${1}
+
+test_variables
+
+set_mysql_mode
+

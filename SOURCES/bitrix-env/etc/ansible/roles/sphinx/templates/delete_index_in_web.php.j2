@@ -1,0 +1,22 @@
+<?php
+// {{ ansible_managed }}
+$_SERVER["DOCUMENT_ROOT"] = '{{ item.DocumentRoot }}';
+$DOCUMENT_ROOT = $_SERVER["DOCUMENT_ROOT"];
+define("NO_KEEP_STATISTIC", true);
+define("NOT_CHECK_PERMISSIONS",true);
+define('BX_NO_ACCELERATOR_RESET', true);
+require($_SERVER["DOCUMENT_ROOT"]."/bitrix/modules/main/include/prolog_before.php");
+
+if(!CModule::IncludeModule('search'))
+{
+  echo "Not found search module for {{ item.SiteName }}";
+  return 1;
+}
+
+
+// update options
+COption::SetOptionString('search', 'full_text_engine', 'bitrix');
+echo "Bitrix search disable on site";
+return 0;
+
+?>

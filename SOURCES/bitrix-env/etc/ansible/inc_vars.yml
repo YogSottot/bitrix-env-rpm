@@ -1,0 +1,10 @@
+---
+- name: include variables from mysql group
+  include_vars: /etc/ansible/group_vars/bitrix-mysql.yml
+
+- name: include variables from web group
+  include_vars: /etc/ansible/group_vars/bitrix-web.yml
+
+- name: include variables from temporary config
+  include_vars: "{{ ansible_playbook_file }}"
+  when: "ansible_playbook_file != 'NOT_DEFINED'"
