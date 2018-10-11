@@ -1,4 +1,4 @@
-#### Модификация bitrix-env + php-fpm
+#### Модификация bitrix-env + php-fpm [WIP]
 
 
 
@@ -22,7 +22,7 @@ rpm -Uvh  bitrix-env-7.3-11.src.rpm
 # распаковано в /root/rpmbuild
 ```
 
-Собираем модифицированный bitrix-env
+* **Собираем модифицированный bitrix-env**  
 
 ```bash
 dnf install mock dnf-utils -y
