@@ -3,8 +3,7 @@
   bx_vat:
 
 # remove settings from sites
-- include: sites-delete_push_server_settings.yml
-  static: no
+- include_tasks: sites-delete_push_server_settings.yml
 
 # remove apache settings
 - name: remove apache22 settings
@@ -108,6 +107,5 @@
     enabled: no 
 
 # ansible inventory
-- include: push-server-inventory-remove.yml
-  static: no
+- include_tasks: push-server-inventory-remove.yml
 

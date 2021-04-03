@@ -8,7 +8,6 @@ server {
   keepalive_timeout 70;
   keepalive_requests  150;
 
-  ssl on;
   ssl_certificate {{ pool_certificate }};
   ssl_certificate_key {{ pool_certificate }};
   ssl_session_cache shared:SSL:10m;

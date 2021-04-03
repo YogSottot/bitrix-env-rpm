@@ -69,3 +69,5 @@ service_chain: bx_users
 # centos 7
 public_zone: public
 trusted_zone: bx_trusted
+want_iptables: false
+configure_firewall: true

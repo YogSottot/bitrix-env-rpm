@@ -1,0 +1,36 @@
+TRANSF001="Configure Transformer Service on __OPT1__"
+TRANSF002="Please confirm you want to configure Transformer service (Y|n): "
+TRANSF003="Configure Transformer service"
+TRANSF004="Remove Transformer service"
+TRANSF005="The server __OPT1__ is not the current Transformer server in the pool"
+TRANSF006="Please confirm you want to remove Transformer from the server __OPT1__(N|y): "
+TRANSF007="Uninstall Transformer instance"
+TRANSF008="Manage Transformer configuration in the pool"
+TRANSF009="There are sites with installed transformer module:"
+TRANSF010="Failed to get web servers status. Press ENTER for exit:"
+TRANSF011="There are no configured transformer-services."
+TRANSF012="There is configured transformer-services:"
+TRANSF013="The site name cannot be empty."
+TRANSF014="Site __OPT1__ doesn't suitable for configuration of transformer service"
+TRANSF015="If you want to use another site to install the transformer service, 
+you must delete the previous one."
+TRANSF016="The site cannot be deleted, please disable the transformer service first."
+TRANSF017="This action will install the following software on the server:
+LibreOffice
+RabbitMQ Server
+FFmpeg
+Erlang"
+
+
+
+TRANSF200="Press ENTER to exit."
+TRANSF201="0. Previous screen or exit"
+TRANSF202="Enter 0 to exit:"
+TRANSF203="Enter 1 to start process or 0 to exit:"
+TRANSF204="Enter sitename or 0 to exit: "
+TRANSF205="Enter your choice: "
+# Не найден сервер с именем=ИМЯ в пуле.
+TRANSF206="Cannot find server __OPT1__ in the pool."
+# Не найдено подходящих серверов для настройки мониторинга
+TRANSF209="No suitable sites were found to configure the transformer service"
+TRANSF210="Press ENTER and try again"

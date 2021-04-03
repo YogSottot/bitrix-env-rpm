@@ -1,0 +1,32 @@
+---
+# create default site directory and files
+- name: Create default directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: bitrix
+    group: bitrix
+  with_items:
+    - /tmp/php_upload/www
+    - /tmp/php_sessions/www
+    - /home/bitrix/www
+
+- name: Check default site
+  stat:
+    path: /home/bitrix/www/index.php
+  register: index_stat
+
+- name: Copy archive
+  unarchive:
+    src: vm_kernel.tar.gz
+    dest: /home/bitrix/www
+  when: not index_stat.stat.exists
+
+- name: Change access rights
+  file:
+    path: /home/bitrix/www
+    owner: bitrix
+    group: bitrix
+    recurse: yes
+  when: not index_stat.stat.exists
+

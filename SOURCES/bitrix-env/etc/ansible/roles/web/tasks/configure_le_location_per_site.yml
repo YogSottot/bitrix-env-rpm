@@ -1,0 +1,33 @@
+---
+- name: delete include for http-config
+  lineinfile:
+    dest: "{{ item.NginxHTTPDir  }}/{{ item.NginxHTTPConfig }}"
+    regexp: "letsencrypt-challenge-tokens.conf;$"
+    state: absent
+  with_items: "{{ bx_sites_info }}"
+
+# fix for:
+# bx/conf/bitrix_general.conf and bx/conf/bitrix.conf
+- name: update site http-config 
+  lineinfile:
+    dest: "{{ item.NginxHTTPDir }}/{{ item.NginxHTTPConfig }}"
+    insertbefore: "bx/conf/bitrix"
+    line: "include bx/conf/letsencrypt-challenge-tokens.conf;"
+  with_items: "{{ bx_sites_info }}"
+
+- name: delete include for https-config
+  lineinfile:
+    dest: "{{ item.NginxHTTPDir  }}/{{ item.NginxHTTPSConfig }}"
+    regexp: "letsencrypt-challenge-tokens.conf;$"
+    state: absent
+  with_items: "{{ bx_sites_info }}"
+
+# fix for:
+# bx/conf/bitrix_general.conf and bx/conf/bitrix.conf
+- name: update site https-config 
+  lineinfile:
+    dest: "{{ item.NginxHTTPDir }}/{{ item.NginxHTTPSConfig }}"
+    insertbefore: "bx/conf/bitrix"
+    line: "include bx/conf/letsencrypt-challenge-tokens.conf;"
+  with_items: "{{ bx_sites_info }}"
+

@@ -1,0 +1,46 @@
+---
+- name: create main temporary directory
+  file:
+    path: "{{ cache_directory  }}"
+    state: directory
+    mode: 0750
+    owner: "{{ bx_ansible_owner  }}"
+    group: "{{ bx_ansible_group }}"
+  delegate_to: "{{ php_server }}"
+
+- name: generate unique id
+  shell: echo "`date +"%Y%m%d%H%M%S"`-$(cat /dev/urandom | tr -cd [:alpha:] | tr '[:upper:]' '[:lower:]' | head -c 4)"
+  register: bx_unique_id
+
+- name: create site directory
+  file:
+    path: "{{ cache_directory  }}/{{ web_site_name  }}-{{ bx_unique_id.stdout }}"
+    state: directory
+    mode: 0750
+    owner: "{{ bx_ansible_owner  }}"
+    group: "{{ bx_ansible_group }}"
+  delegate_to: "{{ php_server }}"
+
+- name: create php-script
+  template:
+    src: "{{ php_script }}.j2"
+    dest: "{{ cache_directory }}/{{ web_site_name }}-{{ bx_unique_id.stdout }}/{{ php_script }}"
+    owner: "{{ bx_ansible_owner }}"
+    group: "{{ bx_ansible_group }}"
+    mode: 0640
+  delegate_to: "{{ php_server }}"
+
+- name: run php-script
+  shell: php -f "{{ cache_directory }}/{{ web_site_name }}-{{ bx_unique_id.stdout }}/{{ php_script }}"
+  become: yes
+  become_user: "{{ bx_ansible_executer }}"
+  delegate_to: "{{ php_server }}"
+
+- debug:
+    msg: "{{ cache_directory }}/{{ web_site_name }}-{{ bx_unique_id.stdout }}"
+
+- name: delete temporary directory
+  file:
+    path: "{{ cache_directory }}/{{ web_site_name }}-{{ bx_unique_id.stdout }}"
+    state: absent
+  delegate_to: "{{ php_server }}"

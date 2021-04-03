@@ -10,6 +10,12 @@
     line: "WS_HOST={{ push_server_netaddr }}"
   register: push
 
+- name: update nginx settings
+  template:
+    src: nginx-rtc-im_settings.conf.j2
+    dest: /etc/nginx/bx/settings/rtc-im_settings.conf
+  register: push_nginx
+
 - name: reset configuration
   shell: /etc/init.d/push-server-multi reset
   when: push.changed
@@ -17,6 +23,7 @@
 - name: stop service
   shell: pgrep node -P 1 -u bitrix | xargs kill -9
   when: push.changed
+  ignore_errors: true
 
 - name: start service
   service:
@@ -34,3 +41,8 @@
     and ansible_distribution == "CentOS"
     and ansible_distribution_major_version == "6"
 
+- name: restart nginx
+  service:
+    name: nginx
+    state: restarted
+  when: push_nginx.changed

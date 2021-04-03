@@ -11,11 +11,9 @@
   when: "ansible_playbook_file != 'NOT_DEFINED'"
 
 ## package installation
-- include: install.yml
+- include_tasks: install.yml
   when: "'enable' in monitoring_status or 'update' in monitoring_status" 
-  static: no
 
-- include: uninstall.yml
+- include_tasks: uninstall.yml
   when: "'disable' in monitoring_status"
-  static: no
 

@@ -1,0 +1,71 @@
+---
+- include: sites-gathering_facts_site_names.yml
+
+- name: delete dehydrated domains.txt for site
+  file:
+    path: "/home/bitrix/dehydrated/domains/{{ item.SiteName }}.txt"
+    state: absent
+  with_items: "{{ bx_sites_info }}"
+  when: item.HTTPSCertType == 'letsencrypt'
+
+- name: delete certificate nginx directory
+  shell:  "rm -rf ./{{ item.SiteName }}"
+  args:
+    chdir: /etc/nginx/certs
+  with_items: "{{ bx_sites_info }}"
+  when: item.HTTPSCertType == 'own'
+
+- name: find files in /home/bitrix/dehydrated/domains
+  find:
+    path: /home/bitrix/dehydrated/domains
+    patterns: '*.txt'
+  register: domains_files
+
+- debug:
+    msg: "domains_files={{ domains_files }}"
+
+- name: update main dehydrated domains.txt
+  assemble:
+    src: /home/bitrix/dehydrated/domains
+    dest: /home/bitrix/dehydrated/domains.txt
+  when: domains_files.matched > 0
+
+- name: delete old settings from nginx config
+  lineinfile:
+    dest: "{{ item.NginxHTTPSFullPath }}"
+    regexp: "ssl.conf;\\s*$"
+    state: absent
+  with_items: "{{ bx_sites_info }}"
+
+- name: delete previously settings
+  bx_blockinfile: insertafter="CERTIFICATE ANSIBLE MANAGED BLOCK" state="delete"
+    dest="{{ item.NginxHTTPSFullPath }}"
+  with_items: "{{ bx_sites_info }}"
+
+- name: delete previously settings for apache
+  bx_blockinfile: insertafter="CERTIFICATE ANSIBLE MANAGED BLOCK" state="delete"
+    dest="{{ item.ApacheConfNTLM }}"
+  with_items: "{{ bx_sites_info }}"
+  when: item.ApacheConfNTLM != ""
+
+- name: add new settings to apache config
+  blockinfile:
+    dest: "{{ item.ApacheConfNTLM  }}"
+    insertafter: "SSLEngine"
+    marker: "# CERTIFICATE ANSIBLE MANAGED BLOCK"
+    content: |
+      SSLCertificateFile   /etc/nginx/ssl/cert.pem
+      SSLCertificateKeyFile  /etc/nginx/ssl/cert.pem
+  with_items: "{{ bx_sites_info  }}"
+  when: item.ApacheConfNTLM != ""
+
+- name: add new settings to nginx config 
+  blockinfile:
+    dest: "{{ item.NginxHTTPSFullPath }}"
+    insertbefore: "proxy_set_header"
+    marker: "# CERTIFICATE ANSIBLE MANAGED BLOCK"
+    content: |
+      include bx/conf/ssl.conf;
+  with_items: "{{ bx_sites_info }}"
+
+

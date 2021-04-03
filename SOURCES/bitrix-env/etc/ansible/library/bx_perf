@@ -6,8 +6,15 @@ export NOLOCALE=yes
 export PATH=/sbin:/bin:/usr/sbin:/usr/bin
 
 PERF=/etc/ansible/bvat_conf/perf.csv
-VARS="query_cache_size;query_cache_limit;table_open_cache;thread_cache_size;max_heap_table_size;tmp_table_size;key_buffer_size;join_buffer_size;sort_buffer_size;bulk_insert_buffer_size;myisam_sort_buffer_size;innodb_buffer_pool_size"
+PERF80=/etc/ansible/bvat_conf/perf_my80.csv
 
+VARS="query_cache_size;query_cache_limit;table_open_cache;thread_cache_size;max_heap_table_size;tmp_table_size;key_buffer_size;join_buffer_size;sort_buffer_size;bulk_insert_buffer_size;myisam_sort_buffer_size;innodb_buffer_pool_size"
+VARS80="table_open_cache;thread_cache_size;max_heap_table_size;tmp_table_size;key_buffer_size;join_buffer_size;sort_buffer_size;bulk_insert_buffer_size;myisam_sort_buffer_size;innodb_buffer_pool_size"
+
+MYSQL_CONFIG=/etc/mysql/conf.d/bvat.cnf
+MYSQL_CONFIG_TEMPLATE=/etc/ansible/templates/bx_perf-bvat.cnf.j2
+MYSQL_CONFIG_TEMPLATE80=/etc/ansible/templates/bx_perf-bvat_my80.cnf.j2
+ 
 OS_VERSION=$(cat /etc/redhat-release | \
     sed -e "s/CentOS Linux release//;s/CentOS release // " | cut -d'.' -f1)
 
@@ -30,6 +37,12 @@ get_column_number(){
 }
 
 get_os_type(){
+    OS_TYPE=$(cat /etc/redhat-release | grep CentOS -c)
+
+    OS_VERSION=$(cat /etc/redhat-release | \
+        sed -e "s/CentOS Linux release//;s/CentOS release // " | \
+        cut -d'.' -f1 |sed -e "s/\s\+//")
+
     # is OpenVZ installation
     IS_OPENVZ=$( [[ -f /proc/user_beancounters  ]] && echo 1 || echo 0  )
 
@@ -39,6 +52,71 @@ get_os_type(){
 
     # x86_64 or i386
     IS_X86_64=$(uname -a | grep -wc 'x86_64')
+
+}
+
+get_mysql_package(){
+    [[ -n $MYSQL_PACKAGE ]] && return 0
+
+    PACKAGES_LIST=$(rpm -qa)
+    MYSQL_PACKAGE=not_installed
+    MYSQL_SERVICE=not_installed
+    MYSQL_VERSION=not_installed
+    if [[ $(echo "$PACKAGES_LIST" | grep -c '^mysql-community-server') -gt 0 ]]; then
+        MYSQL_PACKAGE=mysql-community-server
+        MYSQL_SERVICE=mysqld
+
+    # Percona 5.6 && 5.7
+    elif [[ $(echo "$PACKAGES_LIST" | grep -c '^Percona-Server-server') -gt 0 ]]; then
+        MYSQL_PACKAGE=Percona-Server-server
+        MYSQL_SERVICE=mysqld
+
+    # Percona 8.0
+    elif [[ $(echo "$PACKAGES_LIST" | grep -c '^percona-server-server') -gt 0  ]]; then
+        MYSQL_PACKAGE=percona-server-server
+        MYSQL_SERVICE=mysqld
+
+    elif [[ $(echo "$PACKAGES_LIST" | grep -c '^MariaDB-server') -gt 0 ]]; then
+        MYSQL_PACKAGE=MariaDB-server
+        MYSQL_SERVICE=mariadb
+
+    elif [[ $(echo "$PACKAGES_LIST" | grep -c '^mariadb-server') -gt 0 ]]; then
+        MYSQL_PACKAGE=mariadb-server
+        MYSQL_SERVICE=mariadb
+    elif [[ $(echo "$PACKAGES_LIST" | grep -c '^mysql-server') -gt 0 ]]; then
+        MYSQL_PACKAGE=mysql-server
+        MYSQL_SERVICE=mysqld
+    else
+        return 1
+    fi
+    MYSQL_VERSION=$(rpm -qa --queryformat '%{version}' ${MYSQL_PACKAGE}* | \
+        head -1 | awk -F'.' '{printf "%d.%d", $1,$2}' )
+    MYSQL_MID_VERSION=$(echo "$MYSQL_VERSION" | awk -F'.' '{print $2}')
+    MYSQL_UNI_VERSION=$(echo "$MYSQL_VERSION" | awk -F'.' '{printf "%s%s", $1,$2}')
+
+    # mysql status
+    [[ -z $OS_VERSION ]] && get_os_type
+    MYSQL_STATUS=
+    if [[ $OS_VERSION -eq 7 ]]; then
+        systemctl is-active $MYSQL_SERVICE >/dev/null 2>&1
+        status_rtn=$?
+    else
+        MYSQL_INIT_SCRIPT=/etc/init.d/mysqld
+        MYSQL_SERVICE_NAME=mysqld
+
+        if [[ -f /etc/init.d/mysql ]]; then
+            MYSQL_INIT_SCRIPT=/etc/init.d/mysql
+            MYSQL_SERVICE_NAME=mysql
+        fi
+        $MYSQL_INIT_SCRIPT status | grep -wc running >/dev/null 2>&1
+        status_rtn=$?
+    fi
+    if [[ $status_rtn -gt 0 ]]; then
+        MYSQL_STATUS="stopped"
+    else
+        MYSQL_STATUS="running"
+    fi
+
 }
 
 # get available memory on board
@@ -158,11 +236,8 @@ update_config(){
 }
 
 update_configs_mysql(){
-
-    MYSQL_CONFIG=/etc/mysql/conf.d/bvat.cnf
     # update mysql config
     MYSQL_CONFIG_TMP=$MYSQL_CONFIG.tmp
-    MYSQL_CONFIG_TEMPLATE=/etc/ansible/templates/bx_perf-bvat.cnf.j2
     cp -f $MYSQL_CONFIG_TEMPLATE $MYSQL_CONFIG_TMP
     for v in $(echo $VARS | sed -e "s/;/ /g"); do
         get_column_number $v
@@ -226,8 +301,13 @@ fi
 [[ ! -f $PERF ]] && \
     error "Not found config file=$PERF"
 
-# get info about OS
-get_os_type
+# get mysql info
+get_mysql_package
+# MySQL 8.0
+if [[ $MYSQL_UNI_VERSION == "80" ]]; then
+    VARS="$VARS80"
+    MYSQL_CONFIG_TEMPLATE="$MYSQL_CONFIG_TEMPLATE80"
+fi
 
 # get installed memory size
 get_available_memory

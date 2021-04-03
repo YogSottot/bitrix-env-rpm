@@ -16,6 +16,7 @@ logo=$(get_logo)
 # SITE_CRON
 get_kernel_options() {
     local site_name=${1}
+    local site_type=${2:-link}
 
     # site charset
     SITE_CHARSET="utf-8"
@@ -27,7 +28,7 @@ get_kernel_options() {
         return 1
     fi
 
-    if [[ $PUSH_SERVERS_CNT -gt 0 ]]; then
+    if [[ $PUSH_SERVERS_CNT -gt 0 && $site_type != "link" ]]; then
         CONF_PUSH=y
         push_server=$(echo "$PUSH_SERVERS" | \
             grep NodeJS-PushServer | awk -F':' '{print $2}')
@@ -114,7 +115,7 @@ create_site_kernel() {
             exit
         fi
         create_site_try=$(($create_site_try+1))
-        get_kernel_options "$site_name"
+        get_kernel_options "$site_name" "kernel"
         [[ $? -gt 0 ]] && continue
 
         create_site_exe=$bx_sites_script" -a create -s $site_name"
@@ -154,7 +155,7 @@ external_kernel() {
             exit
         fi
         create_site_try=$(($create_site_try+1))
-        get_kernel_options "$site_name"
+        get_kernel_options "$site_name" "ext_kernel"
         [[ $? -gt 0 ]] && continue
 
         create_site_exe=$bx_sites_script" -a create -s $site_name"
@@ -166,6 +167,9 @@ external_kernel() {
             create_site_exe=$create_site_exe" -d $SITE_DB -u $SITE_USER"
             create_site_exe=$create_site_exe" --password_file $SITE_PASSWORD_FILE"
             create_site_exe=$create_site_exe" -r $SITE_ROOT"
+        fi
+        if [[ ( -n $CONF_PUSH ) && ( $CONF_PUSH == "y" ) ]]; then
+            create_site_exe=$create_site_exe" --nodejspush"
         fi
         create_site_mark=Y
     done
@@ -202,7 +206,7 @@ create_site_link() {
                     "" any_key
             else
                 test_subdirectory=""
-                for folder in "upload" "images" "bitrix"; do
+                for folder in "upload" "bitrix"; do
                     if [[ ! -d "$kernel_directory/$folder" ]]; then
                         test_subdirectory=$test_subdirectory"$folder, "
                     fi

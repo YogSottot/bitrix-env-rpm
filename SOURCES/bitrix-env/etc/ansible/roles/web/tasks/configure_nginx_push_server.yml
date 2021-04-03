@@ -1,0 +1,12 @@
+---
+- name: Create push ssl config
+  template:
+    src: ssl-push-custom.conf.j2
+    dest: /etc/nginx/bx/conf/ssl-push-custom.conf
+
+- name: Recreate symbolic link
+  file:
+    src: /etc/nginx/bx/conf/ssl-push-custom.conf
+    dest: /etc/nginx/bx/conf/ssl-push.conf
+    state: link
+    force: yes

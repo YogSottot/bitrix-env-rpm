@@ -1,11 +1,15 @@
 ---
 # handle for web-service nginx
 - name: restart nginx
-  service: state=restarted name=nginx
+  service:
+    state: reloaded
+    name: nginx
 
 # apache/httpd
 - name: restart httpd
-  service: state=restarted name=httpd
+  service:
+    state: restarted
+    name: httpd
 
 - name: restart httpd-scale
   shell: /opt/webdir/bin/restart_httpd-scale.sh

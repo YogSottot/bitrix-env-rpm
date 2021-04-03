@@ -17,10 +17,11 @@ create_sphinx_instance(){
     print_pool_sites "" "Y"
     print_message "$SPH0005" \
         "" "" sphinx_dbname
-    [[ $(echo "$POOL_SITES_KERNEL_LIST" | grep -c ":$sphinx_dbname:") -eq 0 ]] && \
-        print_message "$(get_text "$SPH0006" "$sphinx_dbname")"
-            "" "" any_key && \
-            return 2
+    if [[ $(echo "$POOL_SITES_KERNEL_LIST" | grep -c ":$sphinx_dbname:") -eq 0 ]]; then
+        print_message "$(get_text "$SPH0006" "$sphinx_dbname")" \
+            "" "" any_key 
+	return 2
+    fi
 
 
     print_message "$SPH0007" \

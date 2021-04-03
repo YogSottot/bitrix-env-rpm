@@ -62,8 +62,14 @@
     - "/home/bitrix/dehydrated/dehydrated"
     - "/home/bitrix/dehydrated/certs"
 
+- name: delete old line from crontab
+  lineinfile:
+    dest: /etc/crontab
+    regexp: '0 12 1 .+ root /opt/webdir/bin/bx-dehydrated'
+    state: absent
+
 - name: update crontab
   lineinfile:
     dest: /etc/crontab
-    line: "0 12 1 * * root /opt/webdir/bin/bx-dehydrated"
+    line: '0 2 * * 6 root /opt/webdir/bin/bx-dehydrated'
 

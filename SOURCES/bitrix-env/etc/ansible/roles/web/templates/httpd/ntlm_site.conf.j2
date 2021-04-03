@@ -23,8 +23,9 @@
 
     {% if item.SiteCharset == 'windows-1251' -%}
     # configure {{ item.SiteCharset }}
-    php_admin_value mbstring.internal_encoding latin
+    php_admin_value mbstring.internal_encoding cp1251
     php_admin_value mbstring.func_overload 0
+    php_admin_value default_charset cp1251
     {% endif %}
 
     <Directory />
@@ -53,7 +54,7 @@
     </DirectoryMatch>
 
 	<Directory {{ item.DocumentRoot }}/>
-		Options Indexes FollowSymLinks MultiViews
+		Options FollowSymLinks MultiViews
 		AllowOverride All
 		DirectoryIndex index.php index.html index.htm
 
@@ -96,14 +97,17 @@
 	SSLEngine on
 	SSLProtocol all -SSLv2
 	SSLCipherSuite ALL:!ADH:!EXPORT:!SSLv2:RC4+RSA:+HIGH:+MEDIUM:+LOW
+    # CERTIFICATE ANSIBLE MANAGED BLOCK
 	SSLCertificateFile {{ item.HTTPSCert }}
 	SSLCertificateKeyFile {{ item.HTTPSPriv }}
+    # CERTIFICATE ANSIBLE MANAGED BLOCK
 
     {% if item.SiteCharset == 'windows-1251' -%}
     # configure {{ item.SiteCharset }}
-    php_admin_value mbstring.internal_encoding latin
-    php_admin_value mbstring.func_overload 0
+    php_admin_value mbstring.internal_encoding cp1251
+    php_admin_value default_charset cp1251
     {% endif %}
+
 
     <Directory />
         Options FollowSymLinks
@@ -131,7 +135,7 @@
     </DirectoryMatch>
 
 	<Directory {{ item.DocumentRoot }}/>
-		Options Indexes FollowSymLinks MultiViews
+		Options FollowSymLinks MultiViews
 		AllowOverride All
 		DirectoryIndex index.php index.html index.htm
 

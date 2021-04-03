@@ -43,6 +43,9 @@ server {
   if (-f {{ web_site_root_dir }}/.htsecure) { rewrite ^(.*)$ https://$host$1 permanent; }
   {% endif %}
 
+  # custom options for sites; doesn't changes on update
+  include bx/site_settings/{{ web_site_name }}/*.conf;
+
   # Include parameters common to all websites
   include bx/conf/bitrix.conf;
 

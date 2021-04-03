@@ -8,6 +8,7 @@
 
 is_bx_public=$(iptables -L {{ public_chain }} -n >/dev/null 2>&1 && echo 1 || echo 0)
 is_bx_trusted=$(iptables -L {{ trusted_chain }} -n >/dev/null 2>&1 && echo 1 || echo 0)
+is_bx_sports=$(iptables -L {{ service_chain }} -n >/dev/null 2>&1 && echo 1 || echo 0)
 
 LOG_DIR=/opt/webdir/logs
 [[ ! -d $LOG_DIR ]] && mkdir -p -m 700 $LOG_DIR
@@ -35,16 +36,7 @@ lockFile(){
     return 0
 }
 
-lockFile
-if [[ $? -gt 0 ]]; then
-    log2file "Lock file=$LOCK_FILE found. Exit"
-    exit
-fi
-
-log2file "Start iptables configuration"
-
-## initial setup
-if [[ ( $is_bx_public -eq 0 ) || ( $is_bx_trusted -eq 0 ) ]]; then
+initialSetup(){
     # set  the  policy  for  the chain to the given target
     iptables -P INPUT ACCEPT
     iptables -P FORWARD ACCEPT
@@ -70,10 +62,28 @@ if [[ ( $is_bx_public -eq 0 ) || ( $is_bx_trusted -eq 0 ) ]]; then
     iptables -A INPUT -j REJECT --reject-with icmp-host-prohibited
     iptables -A FORWARD -j REJECT --reject-with icmp-host-prohibited
     log2file "Create empty {{ public_chain }} and {{ trusted_chain }} chains"
+}
+
+lockFile
+if [[ $? -gt 0 ]]; then
+    log2file "Lock file=$LOCK_FILE found. Exit"
+    exit
+fi
+
+log2file "Start iptables configuration"
+
+## initial setup
+if [[ ( $is_bx_public -eq 0 ) || ( $is_bx_trusted -eq 0 ) || ( is_bx_sports -gt 1 ) ]]; then
+    # not used in stateful configuration
+    if [[ $is_bx_sports -gt 0 ]]; then
+      iptables -X {{ service_chain }}
+    fi
+
+    initialSetup
 else
     # clear custom chains
-    iptables -F {{ public_chain  }}
-    iptables -F {{ trusted_chain  }}
+    iptables -F {{ public_chain }}
+    iptables -F {{ trusted_chain }}
     log2file "Truncate {{ public_chain  }} and {{ trusted_chain  }} chains"
 fi
 

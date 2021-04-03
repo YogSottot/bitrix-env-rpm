@@ -8,7 +8,7 @@
   when: is_rpm is undefined
 
 - name: configure nodejs repository
-  shell: "curl --silent --location https://rpm.nodesource.com/setup_8.x | bash - >/dev/null 2>&1"
+  shell: "curl --silent --location https://rpm.nodesource.com/setup_10.x | bash - >/dev/null 2>&1"
   when: is_rpm is undefined
 
 - name: delete old nodejs-packages
@@ -30,12 +30,13 @@
 
 - name: install packages
   yum: 
-    name: "{{ item }}" 
+    name: "{{ packages }}" 
     state: latest
     update_cache: yes
-  with_items:
-    - "openssl-libs"
-    - "openssl"
+  vars:
+    packages:
+      - "openssl-libs"
+      - "openssl"
   when: is_rpm is undefined
     and ansible_distribution == "CentOS"
     and ansible_distribution_major_version == "7"
@@ -51,13 +52,20 @@
 
 - name: install packages
   yum: 
-    name: "{{ item }}" 
+    name: "{{ packages }}" 
     state: latest
     update_cache: yes
-  with_items:
-    - "nodejs"
-    - "bx-push-server"
+  vars:
+    packages:
+      - "nodejs"
+      - "bx-push-server"
+      - "redis"
   when: is_rpm is undefined
+
+- bx_vat:
+
+- set_fact:
+    redis_version: "{{ redis_uni_version | int }}"
 
 - name: delete installed push-server modules
   file:
@@ -88,13 +96,23 @@
 - name: redis user
   user: name=redis group=bitrix state=present
 
-- name: configure redis
+- name: configure redis 6.0
   template: 
     src: redis.conf.j2
     dest: /etc/redis.conf
     mode: 0640
     owner: redis
     group: root
+  when: redis_version|int < 62
+
+- name: configure redis 6.2
+  template: 
+    src: redis.conf.j2
+    dest: /etc/redis/redis.conf
+    mode: 0640
+    owner: redis
+    group: root
+  when: redis_version|int >= 62
 
 - name: redis service directory 
   file:
@@ -242,14 +260,12 @@
     state: restarted
 
 # configure push settings for sites
-- include: sites-add_push_server_settings.yml
+- include_tasks: sites-add_push_server_settings.yml
   when: is_rpm is undefined
-  static: no
 
 # update ansible inventory file
-- include: push-server-inventory.yml
+- include_tasks: push-server-inventory.yml
   when: is_rpm is undefined
-  static: no
 
 # restart service
 - name: service nodejs start

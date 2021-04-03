@@ -60,8 +60,10 @@ sub set_bitrix_conf {
         base           => $bitrix_base,
         logs           => catfile( $bitrix_base, 'logs' ),
         aHostsTemplate => catfile( $bitrix_base, 'templates', 'ansible' ),
-        aHostsGroups =>
-          [ 'hosts', 'mgmt', 'web', 'sphinx', 'memcached', 'mysql', 'push' ],
+        aHostsGroups   => [
+            'hosts',     'mgmt',  'web',  'sphinx',
+            'memcached', 'mysql', 'push', 'transformer'
+        ],
         aHostsDefault => 'hosts',
         aHostsPrefix  => 'bitrix',
     };
@@ -167,16 +169,17 @@ sub get_ansible_inventory {
                   catfile( $ansible_conf->{'host_vars'}, $server );
                 my $get_host_vars = get_from_yaml($server_file);
                 if ( $get_host_vars->is_error ) {
+
                     #return $get_host_vars;
-                    $ansible_inventory{$server}->{host_vars} = {};
-                    $ansible_inventory{$server}->{hostname} = $server;
+                    $ansible_inventory{$server}->{host_vars}      = {};
+                    $ansible_inventory{$server}->{hostname}       = $server;
                     $ansible_inventory{$server}->{host_vars_file} = "";
                     next;
                 }
 
                 $server_cnt++;
                 my $host_vars = $get_host_vars->data->[1];
-                $ansible_inventory{$server}->{host_vars} = $host_vars;
+                $ansible_inventory{$server}->{host_vars}      = $host_vars;
                 $ansible_inventory{$server}->{host_vars_file} = $server_file;
                 $ansible_inventory{$server}->{hostname} =
                   ( $host_vars->{bx_host} ) ? $host_vars->{bx_host} : $server;
@@ -189,7 +192,9 @@ sub get_ansible_inventory {
                 }
 
             }
-            elsif ( $section_name =~ /^(mysql|memcached|sphinx|push|web|mgmt)$/ ) {
+            elsif ( $section_name =~
+                /^(mysql|memcached|sphinx|push|web|mgmt|transformer)$/ )
+            {
                 my $group = $1;
                 $ansible_inventory{$server}->{groups}->{$group} = 1;
             }
@@ -206,6 +211,8 @@ sub get_ansible_inventory {
 
     foreach my $server ( keys %ansible_inventory ) {
         next if ( $server eq "aliases" );
+
+        #print Dumper($ansible_inventory{$server}->{host_vars});
 
         #if (grep (/^mysql$/, @{$ansible_inventory->{$server}->{groups}} )){
         if ( exists $ansible_inventory{$server}->{groups}->{mysql} ) {
@@ -246,6 +253,8 @@ sub get_ansible_inventory {
               ? $ansible_inventory{$server}->{host_vars}->{memcached_size}
               : 64;
         }
+
+        # searchd
         if ( exists $ansible_inventory{$server}->{groups}->{sphinx} ) {
 
             $ansible_inventory{$server}->{roles}->{sphinx} = {
@@ -265,6 +274,7 @@ sub get_ansible_inventory {
                 : 9306,
             };
         }
+
         if ( exists $ansible_inventory{$server}->{groups}->{web} ) {
             $ansible_inventory{$server}->{roles}->{web} = {};
         }
@@ -273,6 +283,25 @@ sub get_ansible_inventory {
         }
         if ( exists $ansible_inventory{$server}->{groups}->{mgmt} ) {
             $ansible_inventory{$server}->{roles}->{mgmt} = {};
+        }
+        if ( exists $ansible_inventory{$server}->{groups}->{transformer} ) {
+
+
+            #$ansible_inventory{$server}->{roles}->{transformer} = {};
+            $ansible_inventory{$server}->{roles}->{transformer} = {
+                transformer_dir => (
+                    $ansible_inventory{$server}->{host_vars}->{transformer_dir}
+                  )
+                ? $ansible_inventory{$server}->{host_vars}->{transformer_dir}
+                : "",
+                transformer_site => (
+                    $ansible_inventory{$server}->{host_vars}->{transformer_site}
+                  )
+                ? $ansible_inventory{$server}->{host_vars}->{transformer_site}
+                : "",
+
+
+            };
         }
 
     }
@@ -329,7 +358,6 @@ sub get_inventory_hostname {
         );
     }
 
-
     # initilize data
     my $ansible_conf = $self->ansible_conf;
     my $bitrix_conf  = $self->bitrix_conf;
@@ -376,6 +404,7 @@ sub get_inventory_hostname_at_group {
             message => "Option group is mandatory option",
         );
     }
+
     # initilize data
     my $ansible_conf = $self->ansible_conf;
     my $bitrix_conf  = $self->bitrix_conf;
@@ -393,7 +422,7 @@ sub get_inventory_hostname_at_group {
     delete $ansible_pool_data->{aliases}
       if ( exists $ansible_pool_data->{aliases} );
     foreach my $s ( keys %$ansible_pool_data ) {
-        next if ( exists $ansible_pool_data->{$s}->{roles}->{$group});
+        next if ( exists $ansible_pool_data->{$s}->{roles}->{$group} );
         delete $ansible_pool_data->{$s};
     }
 
@@ -755,17 +784,17 @@ sub forget_host {
     $logOutput->log_data(
         "$message_p: delete server=$host_ident from the config files");
 
-    my $host_file = catfile( $self->ansible_conf->{'host_vars'}, $host_ident );
+    my $host_file  = catfile( $self->ansible_conf->{'host_vars'}, $host_ident );
     my $hosts_file = $self->{ansible_conf}->{'hosts'};
     my $parse_yaml = get_from_yaml($host_file);
     return $parse_yaml if ( $parse_yaml->is_error );
     my $f_opts = {
-        common_manage => 'forget',
+        common_manage      => 'forget',
         forget_bx_hostname => $parse_yaml->data->[1]->{bx_hostname},
-        forget_bx_netaddr => $parse_yaml->data->[1]->{bx_netaddr},
-        forget_bx_host => ($parse_yaml->data->[1]->{bx_host})
-            ? $parse_yaml->data->[1]->{bx_host}
-            : $parse_yaml->data->[1]->{bx_hostname},
+        forget_bx_netaddr  => $parse_yaml->data->[1]->{bx_netaddr},
+        forget_bx_host     => ( $parse_yaml->data->[1]->{bx_host} )
+        ? $parse_yaml->data->[1]->{bx_host}
+        : $parse_yaml->data->[1]->{bx_hostname},
     };
 
     my %w_objs;
@@ -812,7 +841,7 @@ sub forget_host {
 
     # run as daemon in background
     my $dh = bxDaemon->new( task_cmd => qq($cmd_play  $cmd_conf) );
-    my $created_process = $dh->startAnsibleProcess('common', $f_opts);
+    my $created_process = $dh->startAnsibleProcess( 'common', $f_opts );
 
     return Output->new(
         error   => 0,
@@ -1883,7 +1912,7 @@ sub TestHostNetwork {
 }
 
 sub beta_version {
-    my $self   = shift;
+    my $self = shift;
     my $type = shift;
 
     $type = "disable" if ( not defined $type );
@@ -1896,9 +1925,7 @@ sub beta_version {
 
     my $cmd_play = $ansData->{'playbook'};
     my $cmd_conf = catfile( $ansData->{'base'}, "beta_version.yml" );
-    my $cmd_opts = {
-        'beta_version' => $type
-    };
+    my $cmd_opts = { 'beta_version' => $type };
 
     my $dh = bxDaemon->new(
         debug    => $self->debug,
@@ -1908,6 +1935,5 @@ sub beta_version {
 
     return $created_process;
 }
-
 
 1;

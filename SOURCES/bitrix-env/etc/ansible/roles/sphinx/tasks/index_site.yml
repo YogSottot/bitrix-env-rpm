@@ -21,25 +21,23 @@
 
 ####### configure sphinx service
 ####
-- include: install.yml
+- include_tasks: install.yml
   when: "inventory_hostname == manage_node and manage_sphinx == 'add_site'"
-  static: no
 
 ####
 ######## /configure sphinx service
 
 ######## create index for sites
 ####
-- include: index.yml
+- include_tasks: index.yml
   when: "inventory_hostname == manage_node and manage_sphinx == 'add_site'"
-  static: no
 
 #####
 ######### /create index for sites
 
 ######### create or delete sphinx instance in the site
 #####
-- include: sites-cache_directory-execute.yml
+- include_tasks: sites-cache_directory-execute.yml
   vars:
     php_script: "{{ manage_sphinx }}_index_in_web.php"
     php_server: "{{ cluster_web_server }}"

@@ -1,0 +1,26 @@
+---
+- name: delete old settings from nginx config
+  lineinfile:
+    dest: "{{ item.NginxHTTPSFullPath }}"
+    regexp: "ssl.conf;\\s*$"
+    state: absent
+  with_items: "{{ bx_sites_info }}"
+
+- name: delete previously settings
+  bx_blockinfile: insertafter="CERTIFICATE ANSIBLE MANAGED BLOCK" state="delete"
+    dest="{{ item.NginxHTTPSFullPath }}"
+  with_items: "{{ bx_sites_info }}"
+
+- name: add new settings to nginx config 
+  blockinfile:
+    dest: "{{ item.NginxHTTPSFullPath }}"
+    insertbefore: "proxy_set_header"
+    marker: "# CERTIFICATE ANSIBLE MANAGED BLOCK"
+    content: |
+      include bx/conf/ssl_options.conf;
+      ssl_certificate   /home/bitrix/dehydrated/certs/{{ common_name.stdout }}/fullchain.pem;
+      ssl_certificate_key  /home/bitrix/dehydrated/certs/{{ common_name.stdout }}/privkey.pem;
+      ssl_trusted_certificate /home/bitrix/dehydrated/certs/{{ common_name.stdout }}/chain.pem;
+  with_items: "{{ bx_sites_info }}"
+
+- include: configure_le_certificates_per_ntlm_site.yml

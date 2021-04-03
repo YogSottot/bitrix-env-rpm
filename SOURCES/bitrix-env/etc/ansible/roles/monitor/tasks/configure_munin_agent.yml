@@ -1,0 +1,202 @@
+---
+# Munin node configuration
+#
+## create users
+- name: Configure munin user
+  user:
+    state: present
+    system: yes
+    name: "{{ munin_server_user }}"
+    group: "{{ munin_server_group }}"
+    comment: "{{ munin_server_user }} monitoring user"
+
+- name: Create munin directories
+  file:
+    state: directory
+    path: "{{ item }}"
+    owner: "{{ munin_server_user }}"
+    group: "{{ munin_server_group }}"
+    mode: 0775
+    recurse: yes
+  with_items:
+   - "{{ munin_server_logs_dir }}"
+   - "{{ munin_client_logs_dir }}"
+   - "{{ munin_server_data_dir }}"
+   - "{{ munin_server_data_dir }}/{{ munin_plugins_state_dir }}"
+   - "{{ munin_server_data_dir }}/{{ munin_graph_group }}"
+
+- name: "Munin agent - creation plugin's directory"
+  file:
+    path: "/etc/munin/{{ item }}"
+    state: directory
+    owner: "{{ munin_server_user }}"
+    group: "{{ munin_server_group }}"
+    mode: 0775
+  with_items:
+    - plugins
+    - plugin-conf.d
+
+- name: "Munin agent - install additional plugins"
+  copy:
+    src: "{{ item }}"
+    dest: /usr/share/munin/plugins/
+    owner: root
+    group: root
+    mode: 0755
+  with_items:
+   - process_status_
+   - df_size
+   - memcached_
+
+- name: "Munin agent - enable basic plugins"
+  file:
+    src: "/usr/share/munin/plugins/{{ item }}"
+    dest: "/etc/munin/plugins/{{ item }}"
+    state: link
+  with_items:
+   - iostat
+   - load
+   - memory
+   - netstat
+   - open_files
+   - processes
+   - swap
+   - threads
+   - df_size
+   - meminfo
+
+- name: "Munin agent - enable network interface plugin"
+  file:
+    src: /usr/share/munin/plugins/if_ 
+    dest: "/etc/munin/plugins/if_{{ iface }}"
+    state: link
+
+# MYSQL monitoring
+- name: "Munin agent - enable common Mysql plugins"
+  file:
+    src: "/usr/share/munin/plugins/{{ item }}"
+    dest: "/etc/munin/plugins/{{ item }}"
+    state: link
+  with_items:
+   - mysql_bytes
+   - mysql_queries
+   - mysql_slowqueries
+   - mysql_threads
+  when: "'bitrix-mysql' in group_names"
+
+- name: "Munin agent - enable bitrix Mysql pugins"
+  file:
+    src: "/usr/share/munin/plugins/{{ item }}"
+    dest: "/etc/munin/plugins/{{ item }}mysqld"
+    state: link
+  with_items:
+   - process_status_
+  when: "'bitrix-mysql' in group_names"
+
+# WEB monitoring
+- name: "Munin agent - enable common web-server plugins"
+  file:
+    src: "/usr/share/munin/plugins/{{ item }}"
+    dest: "/etc/munin/plugins/{{ item }}"
+    state: link
+  with_items:
+   - apache_accesses
+   - apache_processes
+   - apache_volume
+   - nginx_request
+   - nginx_status
+  when: "'bitrix-web' in group_names"
+
+- name: "Munin agent - enable bitrix web-server plugins"
+  file:
+    src: "/usr/share/munin/plugins/process_status_"
+    dest: "/etc/munin/plugins/process_status_{{ item }}"
+    state: link
+  with_items:
+   - nginx
+   - apache
+  when: "'bitrix-web' in group_names"
+
+# MEMCACHED monitoring
+- name: "Munin agent - enable common memcached plugins"
+  file:
+    src: "/usr/share/munin/plugins/memcached_"
+    dest: "/etc/munin/plugins/memcached_{{ item }}"
+    state: link
+  with_items:
+   - bytes
+   - counters
+   - rates
+  when: "'bitrix-memcached' in group_names"
+
+- name: "Munin agent - enable bitrix memcached plugins"
+  file:
+    src: "/usr/share/munin/plugins/process_status_"
+    dest: "/etc/munin/plugins/process_status_{{ item }}"
+    state: link
+  with_items:
+   - memcached
+  when: "'bitrix-memcached' in group_names"
+
+# SEARCHD monitoring
+- name: "Munin agent - enable bitrix searchd plugins"
+  file:
+    src: "/usr/share/munin/plugins/{{ item }}"
+    dest: "/etc/munin/plugins/{{ item }}searchd"
+    state: link
+  with_items:
+   - process_status_
+  when: "'bitrix-searchd' in group_names"
+
+# COMMON plugins configuration
+- name: "Munin agent - common plugin configuration"
+  template:
+    src: "plugin-conf.d/{{ item }}.j2"
+    dest: "/etc/munin/plugin-conf.d/{{ item }}"
+    owner: "{{ munin_server_user }}"
+    group: "{{ munin_server_group }}"
+    mode: 0664
+  with_items:
+    - bx
+
+- name: "Munin agent - additional plugin configuration"
+  copy:
+    src: "plugin-conf.d/{{ item }}"
+    dest: "/etc/munin/plugin-conf.d/{{ item }}"
+    owner: "{{ munin_server_user }}"
+    group: "{{ munin_server_group }}"
+    mode: 0664
+  with_items:
+   - df
+   - fw_
+   - hddtemp_smartctl
+   - munin-node
+   - postfix
+   - sendmail
+
+- name: "Munin client - disable data collector"
+  copy:
+    src: crond_munin_disable
+    dest: /etc/cron.d/munin
+  when: inventory_hostname != monitoring_server
+
+- name: "Munin agent - agent configuration"
+  template:
+    src: munin-node.conf.j2
+    dest: /etc/munin/munin-node.conf
+    owner: "{{ munin_server_user }}"
+    group: "{{ munin_server_group }}"
+    mode: 0664
+
+# MUNIN service restart and enable
+- name: "Munin agent - start and enable service"
+  service:
+    name: munin-node
+    state: started
+    enabled: yes
+
+- name: "Munin agent - forced restart"
+  service:
+    name: munin-node
+    state: restarted 
+

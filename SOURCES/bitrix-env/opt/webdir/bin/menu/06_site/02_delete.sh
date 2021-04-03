@@ -1,6 +1,6 @@
 #!/bin/bash
 # manage sites and site's options 
-#set -x
+# set -x
 PROGNAME=$(basename $0)
 PROGPATH=$(dirname $0)
 [[ -z $DEBUG ]] && DEBUG=0
@@ -12,6 +12,7 @@ delete_site() {
     site_dir=$1
   
     test_directory "$site_dir" || exit 1
+
 
     delete_site_mark=N
     delete_site_exe=
@@ -99,13 +100,26 @@ delete_site() {
 
     # site found in the list
     else
-        [[ $is_kernel_site -gt 0 ]] && site_name=$(echo "$POOL_SITES_KERNEL_LIST" | \
+        [[ $is_kernel_site -gt 0 ]] && \
+            site_name=$(echo "$POOL_SITES_KERNEL_LIST" | \
             grep ":$site_dir:" | awk -F':' '{print $1}')
-        [[ $is_link_site -gt 0 ]] && site_name=$(echo "$POOL_SITES_LINK_LIST" | \
+        [[ $is_link_site -gt 0 ]] && \
+            site_name=$(echo "$POOL_SITES_LINK_LIST" | \
             grep ":$site_dir:" | awk -F':' '{print $1}')
 
         delete_site_exe="$bx_sites_script -a delete -r $site_dir -s $site_name"
         delete_site_mark=Y
+    fi
+
+    # test transformer options
+    if [[ $is_kernel_site -gt 0 ]]; then
+        . $tr_menu_fnc || exit 1
+        cache_transfomer_status
+        if [[ -n "$TR_INFO" && $TR_DIR == "$site_dir" ]]; then
+            print_message "$TRANSF016" \
+                "$TRANSF012 $site_dir" "" any_key
+            exit
+        fi
     fi
 
     [[ $DEBUG -gt 0 ]] && echo "$delete_site_exe"

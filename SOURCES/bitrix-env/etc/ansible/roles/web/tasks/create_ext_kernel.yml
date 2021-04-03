@@ -15,12 +15,40 @@
 
 ######## create site directories on all web servers in the pool
 ####
+- name: test cp1251 locale
+  shell: "locale -a | grep ru_RU.cp1251 -ic"
+  register: locale_cmd
+  ignore_errors: true
+  when: "bitrix_site_charset == 'windows-1251'"
+
+- name: ensure locale exists
+  shell: localedef -c -i ru_RU -f CP1251 ru_RU.CP1251
+  when: bitrix_site_charset == 'windows-1251'
+    and locale_cmd.stdout == "0"
+
 - include: create_basic_dirs.yml
 
+- name: create folder for temporary files
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ site_bitrix }}"
+    group: "{{ site_bitrix }}"
+    mode: 0770
+  loop:
+    - "/home/bitrix/.bx_temp"
+    - "/home/bitrix/.bx_temp/{{ web_site_db }}"
+    - "/etc/nginx/bx/site_settings"
+    - "/etc/nginx/bx/site_settings/{{ web_site_name }}"
+  when: "'bitrix-web' in group_names"
+
 - name: create dbconn file for site
-  template: src=dbconn.php.j2
-    dest={{ web_site_root_dir }}/bitrix/php_interface/dbconn.php
-    owner={{ site_bitrix }} group={{ site_bitrix }} mode=0660
+  template:
+    src: dbconn.php.j2
+    dest: "{{ web_site_root_dir }}/bitrix/php_interface/dbconn.php"
+    owner: "{{ site_bitrix }}"
+    group: "{{ site_bitrix }}"
+    mode: 0660
   tags: create_site_files
   when: "'bitrix-web' in group_names"
 
@@ -30,6 +58,9 @@
     owner={{ site_bitrix }} group={{ site_bitrix }} mode=0660
   tags: create_site_files
   when: "'bitrix-web' in group_names"
+
+- include: create_push_settings.yml
+  when: NodeJSPush == 'enable' and inventory_hostname == cluster_web_server
 
 - name: create upload directory
   file: path={{ web_site_root_dir }}/upload

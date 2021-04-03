@@ -179,7 +179,6 @@ sub print {
         if ( $self->data ) {
             my $data = $self->data;
 
-            #print Dumper($data);
             my $data_type = $data->[0];
             my $data_info = $data->[1];
 
@@ -200,11 +199,18 @@ sub print {
                         $roles_out =~
                           s/\bmysql\b/mysql_${mysql_type}_${mysql_id}/;
                     }
+
+                    my $tr_options = "";
+                    if ( $roles_out =~ /transformer/ ) {
+                        my $tr_dir = $roles->{transformer}->{transformer_dir};
+                        my $tr_site = $roles->{transformer}->{transformer_site};
+                        $tr_options = "$tr_site;$tr_dir"
+                    }
                     my $hostname =
                         ( $data_info->{$h}->{hostname} )
                         ? $data_info->{$h}->{hostname}
                         : $h;
-                    print "host:$h:$ip:$roles_out:$host_id:$hostname\n";
+                    print "host:$h:$ip:$roles_out:$host_id:$hostname:$tr_options\n";
 
                 }
 
@@ -340,10 +346,23 @@ sub print {
                         $t->{'module_scale'}
                       ? $t->{'module_scale'}
                       : "not_installed";
+
+                    my $module_transformer = 
+                        $t->{module_transformer}
+                      ? $t->{module_transformer}
+                      : "not_installed";
+
+                    my $module_transformercontroller = 
+                        $t->{module_transformercontroller}
+                        ? $t->{module_transformercontroller}
+                        : "not_installed";
+
                     my $module_main_version = 
                     $t->{module_main_version}
                     ? $t->{module_main_version}
                     : "";
+
+                    my $upload_dir = ($t->{upload_dir})? $t->{upload_dir}: "";
 
                     # composite output
                     my $c_status =
@@ -380,6 +399,11 @@ sub print {
                       ( $module_scale =~ /^installed$/ ) ? 'Y' : 'N';
                     $module_cluster =
                       ( $module_cluster =~ /^installed$/ ) ? 'Y' : 'N';
+                    $module_transformer =
+                      ( $module_transformer =~ /^installed$/ ) ? 'Y' : 'N';
+
+                    $module_transformercontroller =
+                        ( $module_transformercontroller =~ /^installed$/ ) ? 'Y' : 'N';
 
                     my $ntlm1 =
                         $t->{'NTLM_bitrixvm_auth_support'}
@@ -395,8 +419,17 @@ sub print {
                         $email_pass = $db_pass;
                     }
 
+                    my $option_string = "";
+                    foreach my $os (
+                        "nginx_custom_settings", "nginx_bx_temp_files",
+                        "dbconn_BX_TEMPORARY_FILES_DIRECTORY",
+                    ){
+                        $option_string .= ":";
+                        $option_string .=( $t->{$os} )? $t->{$os} : "";
+                    }
+
                     print
-"$data_type:general:$site_name:$db_name:$type:$status:$server_name:$server_root:$site_charset:$module_scale:$module_cluster:$c_status:$c_nginx_status:$c_storage:$module_main_version\n";
+"$data_type:general:$site_name:$db_name:$type:$status:$server_name:$server_root:$site_charset:$module_scale:$module_cluster:$c_status:$c_nginx_status:$c_storage:$module_main_version:$module_transformer;$module_transformercontroller\n";
                     print 
 "$data_type:db:$site_name:$db_name:$db_type:$db_host:$db_user:$db_pass:$db_pass_file:$db_mycnf\n";
                     print
@@ -416,6 +449,8 @@ sub print {
                     print "$data_type:modules:$module_cluster:$module_scale:$module_main_version\n";
                     print
 "$data_type:composite:$site_name:$c_status:$c_storage:$c_nginx_status:$c_nginx_id:$c_nginx_map\n";
+                    print 
+"$data_type:directory:$site_name:$db_name:$server_root:$upload_dir\n";
 
                     if ( $c_error !~ /^$/ ) {
                         print
@@ -430,6 +465,7 @@ sub print {
                     print
 "$data_type:cron_services:$site_name:$db_name:$cron_status:$cron_services\n";
                     print "$data_type:configs:$site_name" . "$config_string\n";
+                    print "$data_type:custom_options:$site_name" . "$option_string\n";
 
                     #print Dumper($data_info);
                 }
@@ -446,6 +482,20 @@ sub print {
                 print
 "$data_type:backup:$b_status:$b_version:$b_folder:$b_min:$b_hour:$b_day:$b_month:$b_weekday\n";
 
+            }
+            elsif ( $data_type =~ /^site_certs$/ ){
+                my $cnt = $data_info->{cnt};
+                my $certs = $data_info->{certs};
+                if ( $cnt == 0 ){
+                    print "site_certs_count:0\n";
+                }else{
+                    print "site_certs_count:$cnt\n";
+                    foreach my $cert_path ( keys %{$certs} ){
+                        print "site_certs:$cert_path:".
+                        join(',', @{$certs->{$cert_path}} ).
+                        "\n";
+                    }
+                }
             }
             elsif ( $data_type =~ /^testClusterConfig$/ ) {
                 my $kernels_sites    = "";

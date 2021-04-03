@@ -130,7 +130,7 @@ expect {
 puts $LOG "$DATE: SSH_INIT - start changing password via prompt"
 send "\n"
 expect {
-  "Bitrix virtual appliance" {
+  "Enter selection:" {
     puts $LOG "$DATE: SHEL_INIT - detect bitrix menu prompt";
     send \003
   }

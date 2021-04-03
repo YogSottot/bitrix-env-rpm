@@ -9,7 +9,7 @@ TYPE="${1:-update}"
 
 update_localhost() {
 
-    yum -y yum-utils > /dev/null 2>&1
+    yum -y install yum-utils > /dev/null 2>&1
 
     if [[ $(grep -v '^$\|^#' /etc/yum.conf | \
         grep -c "installonly_limit" ) -eq 0 ]]; then
@@ -21,7 +21,12 @@ update_localhost() {
         fi
     fi
 
-    package-cleanup --oldkernels --count=3
+    package-cleanup --oldkernels --count=3 -y
+
+    # percona
+    if [[ $(yum list installed | grep -c "Percona") -gt 0 ]]; then
+        yum -y --nogpg update percona-release 
+    fi
 
     yum update --merge-conf -y
 

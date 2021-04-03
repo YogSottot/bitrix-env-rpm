@@ -1,0 +1,87 @@
+---
+- include: execute_php_script.yml
+  vars:
+    php_script: transformers_install.php
+    php_server: "{{ cluster_web_server }}"
+
+- name: Create runing scripts
+  template:
+    src: init.d-transformer-workerd.j2
+    dest: /usr/local/sbin/transformer-workerd
+    mode: 0755
+
+- name: Create service
+  template:
+    src: transformer.service.j2
+    dest: /etc/systemd/system/transformer.service
+
+# /var/run/transformer
+- name: Create directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: bitrix
+    group: bitrix
+  loop:
+    - "/var/run/transformer"
+    - "/var/log/transformer"
+
+- name: Create tmpfiles.d config
+  copy:
+    src: transformer.conf
+    dest: /etc/tmpfiles.d/transformer.conf
+
+- name: Re-run systemd-tmpfiles
+  shell: systemd-tmpfiles --create /etc/tmpfiles.d/transformer.conf
+
+- name: Reload systemctl-daemon
+  shell: systemctl daemon-reload
+
+- name: Start service
+  service:
+    name: transformer.service
+    state: started
+    enabled: yes
+
+- name: Create crontab file
+  file:
+    path: "/etc/cron.d/bx_{{ site_db }}"
+    state: touch
+
+- name: Configure Cleaner
+  lineinfile:
+    path: "/etc/cron.d/bx_{{ site_db }}"
+    line: "10 * * * * bitrix /opt/webdir/bin/bx_cleanup.sh {{ web_site_name }}"
+
+- name: create transformer group
+  delegate_to: "{{ cluster_web_server }}"
+  lineinfile:
+    path: /etc/ansible/hosts
+    line: '[bitrix-transformer]'
+
+- name: add server to transformer group
+  delegate_to: "{{ cluster_web_server }}"
+  bx_conf:
+    hostname: "{{ inventory_hostname  }}"
+    state: update
+    group: transformer
+
+# group vars
+- name: update bitrix-hosts group
+  delegate_to: "{{ cluster_web_server }}"
+  bx_conf:
+    group: hosts
+    state: update
+    transformer_address: "{{ bx_netaddr }}"
+    transformer_host: "{{ inventory_hostname }}"
+    transformer_site: "{{ web_site_name }}"
+    transformer_dir: "{{ web_site_dir }}"
+
+- name: update host_vars config
+  delegate_to: "{{ cluster_web_server }}"
+  bx_conf:
+    hostname: "{{ inventory_hostname }}"
+    transformer_site: "{{ web_site_name }}"
+    transformer_dir: "{{ web_site_dir }}"
+    redis_password: "{{ redis_password }}"
+    redis_root_password: "{{ redis_root_password }}"

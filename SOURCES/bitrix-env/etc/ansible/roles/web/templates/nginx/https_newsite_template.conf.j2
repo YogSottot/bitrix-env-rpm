@@ -42,6 +42,9 @@ server {
   index index.php;
   root "{{ web_site_root_dir }}";
   proxy_ignore_client_abort {{ proxy_ignore_client_abort|default('off') }};
+  
+  # custom options for sites; doesn't changes on update
+  include bx/site_settings/{{ web_site_name }}/*.conf;
 
   # Include parameters common to all websites
   include bx/conf/bitrix.conf;

@@ -1,0 +1,22 @@
+---
+- bx_vat:
+
+- name: debug
+  debug: 
+    msg: "iptables_status={{ iptables_status }}"
+
+- name: delete unused option
+  delegate_to: "{{ monitoring_server }}"
+  lineinfile: 
+    dest: "/etc/ansible/host_vars/{{ inventory_hostname }}"
+    regexp: "iptables_sate:"
+    state: absent
+  tags: iptables
+
+- name: update host file
+  delegate_to: "{{ monitoring_server }}"
+  lineinfile: 
+    dest: "/etc/ansible/host_vars/{{ inventory_hostname }}"
+    regexp: '^iptables_state:'
+    line: 'iptables_state: "{{ iptables_status }}"'
+  tags: iptables

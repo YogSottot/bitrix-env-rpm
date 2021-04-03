@@ -1,0 +1,49 @@
+---
+- name: create directories
+  file:
+    path: "/etc/nginx/certs/push-server"
+    state: directory
+    owner: root
+    group: bitrix
+    force: yes
+    recurse: yes
+    mode: 0750
+
+- name: copy only certificate
+  copy:
+    src: "{{ certificate }}"
+    dest: "/etc/nginx/certs/push-server/{{ certificate | basename }}"
+    mode: 0640
+    owner: root
+    group: bitrix
+  when: certificate_chain is undefined
+
+- name: copy certificate and chain
+  copy:
+    content: |
+        {{ lookup('file', certificate) }}
+        {{ lookup('file', certificate_chain) }}
+    dest: "/etc/nginx/certs/push-server/{{ certificate | basename }}"
+    mode: 0640
+    owner: root
+    group: bitrix
+  when: certificate_chain is defined
+
+- name: copy private_key
+  copy:
+    src: "{{ private_key }}"
+    dest: "/etc/nginx/certs/push-server/{{ private_key | basename }}"
+    mode: 0640
+    owner: root
+    group: bitrix
+
+- name: copy certificate_chain
+  copy:
+    src: "{{ certificate_chain }}"
+    dest: "/etc/nginx/certs/push-server/{{ certificate_chain | basename }}"
+    mode: 0640
+    owner: root
+    group: bitrix
+  when: certificate_chain is defined
+
+- include: configure_nginx_push_server.yml

@@ -6,9 +6,12 @@
 ######## 4. upload basic files to document root
 ####
 - name: create common site directories
-  file: path={{ item }}
-    owner={{ site_bitrix }} group={{ site_bitrix }}
-    mode=0775 state=directory
+  file:
+    path: "{{ item }}"
+    owner: "{{ site_bitrix }}"
+    group: "{{ site_bitrix }}"
+    mode: 0775
+    state: directory
   with_items:
     - "{{ site_extentend_base }}"
     - "{{ site_extentend_log }}"
@@ -16,9 +19,12 @@
   when: "'bitrix-web' in group_names"
 
 - name: create tmp site directories
-  file: path={{ item }}
-    owner={{ site_bitrix }} group={{ site_bitrix }}
-    mode=0770 state=directory
+  file:
+    path: "{{ item }}"
+    owner: "{{ site_bitrix }}"
+    group: "{{ site_bitrix }}"
+    mode: 0770
+    state: directory
   with_items:
     - "{{ site_extentend_php_sess }}"
     - "{{ site_extentend_upload }}"
@@ -26,9 +32,12 @@
   when: "'bitrix-web' in group_names"
 
 - name: create site directories
-  file: path={{ item }}
-    owner={{ site_bitrix }} group={{ site_bitrix }}
-    mode=0770 state=directory
+  file:
+    path: "{{ item }}" 
+    owner: "{{ site_bitrix }}"
+    group: "{{ site_bitrix }}"
+    mode: 0770
+    state: directory
   with_items:
     - "{{ web_site_root_dir }}"
     - "{{ web_site_sess_dir }}"
@@ -37,9 +46,10 @@
   when: "'bitrix-web' in group_names"
 
 - name: update systemd-tmpfiles bvat config
-  lineinfile: dest=/etc/tmpfiles.d/bvat.conf
-    line="d {{ item }} 0770 {{ site_bitrix }} {{ site_bitrix }} -"
-    create=yes
+  lineinfile:
+    dest: /etc/tmpfiles.d/bvat.conf
+    line: "d {{ item }} 0770 {{ site_bitrix }} {{ site_bitrix }} -"
+    create: yes
   with_items:
     - "{{ site_extentend_php_sess  }}"
     - "{{ site_extentend_upload  }}"
@@ -47,9 +57,10 @@
   when: "'bitrix-web' in group_names and ansible_distribution == 'CentOS' and ansible_distribution_major_version == '7'"
 
 - name: update systemd-tmpfiles site config
-  lineinfile: dest=/etc/tmpfiles.d/{{ web_site_name }}.conf
-    line="d {{ item }} 0770 {{ site_bitrix }} {{ site_bitrix }} -"
-    create=yes
+  lineinfile:
+    dest: "/etc/tmpfiles.d/{{ web_site_name }}.conf"
+    line: "d {{ item }} 0770 {{ site_bitrix }} {{ site_bitrix }} -"
+    create: yes
   with_items:
     - "{{ web_site_sess_dir }}"
     - "{{ web_site_upld_dir }}"
@@ -57,13 +68,18 @@
   when: "'bitrix-web' in group_names and ansible_distribution == 'CentOS' and ansible_distribution_major_version == '7'"
 
 - name: unpacking Bitrix environment
-  unarchive: src="{{ site_archive_name }}_{{ web_site_type }}.tar.gz" dest="{{ web_site_root_dir }}"
+  unarchive:
+    src: "{{ site_archive_name }}_{{ web_site_type }}.tar.gz"
+    dest: "{{ web_site_root_dir }}"
   tags: create_site_files
   when: "'bitrix-web' in group_names"
 
 - name: set rights to site dircetory
-  file: path={{ web_site_root_dir }}
-    owner={{ site_bitrix }} group={{ site_bitrix }} recurse=yes
+  file:
+    path: "{{ web_site_root_dir }}"
+    owner: "{{ site_bitrix }}"
+    group: "{{ site_bitrix }}"
+    recurse: yes
   tags: create_site_files
   when: "'bitrix-web' in group_names"
 

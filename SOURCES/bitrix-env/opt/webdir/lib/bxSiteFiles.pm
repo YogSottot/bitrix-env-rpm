@@ -47,17 +47,18 @@ sub bx_install_options {
     my $site_conf = $self->site_conf;
 
     my $bx_options = {
-        error         => 0,
-        message       => '',
-        SiteInstall   => '',
-        SiteStatus    => '',
-        DBName        => '',
-        DBType        => '',
-        DBLogin       => '',
-        DBPassword    => '',
-        DBHost        => '',
-        DBConn        => '',
-        SiteKernelDir => '',
+        error                               => 0,
+        message                             => '',
+        SiteInstall                         => '',
+        SiteStatus                          => '',
+        DBName                              => '',
+        DBType                              => '',
+        DBLogin                             => '',
+        DBPassword                          => '',
+        DBHost                              => '',
+        DBConn                              => '',
+        SiteKernelDir                       => '',
+        dbconn_BX_TEMPORARY_FILES_DIRECTORY => '',
     };
 
     $logOutput->log_data(
@@ -127,6 +128,7 @@ sub bx_install_options {
 
             # Get DB options from dbconn and test it
             my $desired_options = 'DBName|DBType|DBLogin|DBPassword|DBHost';
+            my $defined_options = 'BX_TEMPORARY_FILES_DIRECTORY';
             open( my $dh, '<', $dbconn_config )
               or die "$message_p: Cannot open $dbconn_config: $!";
             while ( my $line = <$dh> ) {
@@ -153,6 +155,17 @@ sub bx_install_options {
                     $php_value =~ s/\\([^\d\w\s])/$1/g;
 
                     $bx_options->{$php_key} = $php_value;
+                }
+
+     # define("BX_TEMPORARY_FILES_DIRECTORY", "/home/bitrix/.bx_temp/dbksh770/")
+                if ( $line =~ /define\(\"($defined_options)\",\s*\"([^\"]+)\"/ )
+                {
+                    my $dbconn_key   = $1;
+                    my $dbconn_value = $2;
+
+                    #print "$dbconn_key, $dbconn_value\n";
+
+                    $bx_options->{ 'dbconn_' . $dbconn_key } = $dbconn_value;
                 }
             }
             close $dh;
@@ -277,12 +290,15 @@ sub bx_modules_options {
     );
 
     my $modules_options = {
-        'error'          => 0,
-        'message'        => '',
-        'module_cluster' => 'not_installed',
-        'module_scale'   => 'not_installed',
-        'module_main_version'   => '',
-        'module_message' => '',
+        'error'                        => 0,
+        'message'                      => '',
+        'module_cluster'               => 'not_installed',
+        'module_scale'                 => 'not_installed',
+        'module_transformer'           => 'not_installed',
+        'module_transformercontroller' => 'not_installed',
+        'module_main_version'          => '',
+        'module_message'               => '',
+        'upload_dir'                   => '',
     };
     $logOutput->log_data(
         "$message_p: try defined modules options in $site_root");
@@ -304,9 +320,14 @@ sub bx_modules_options {
               "$message_p: Cannot find version for main module";
         }
     }
+    # upload directory
+    my $upload_dir_select = qq(select VALUE from b_option 
+    where MODULE_ID="main" and NAME="upload_dir");
+
 
     # test if b_options exists on site
-    my @test_modules = ( 'scale', 'cluster' );
+    my @test_modules =
+      ( 'scale', 'cluster', 'transformer', 'transformercontroller' );
     my $select_modules = qq|select ID from b_module where ID IN ( |;
     for my $m (@test_modules) {
         $select_modules .= qq('$m',);
@@ -333,8 +354,28 @@ sub bx_modules_options {
     $logOutput->log_data(
         "$message_p: Successfully connected to database $db_name");
 
-    # get defined modules by select
+    # get upload directory
+    my $sth_u = $dbh->prepare("$upload_dir_select");
+    if ( ! $sth_u ){
+        $modules_options->{'error'} = 5;
+        $modules_options->{'message'} =
+          "$message_p: query $upload_dir_select return error " . $dbh->errstr;
+        $logOutput->log_data(
+            "$message_p: query $upload_dir_select return error " . $dbh->errstr );
+        return $modules_options;
+    }
+    if ( $sth_u->execute ){
+        my $row = $sth_u->rows;
+        if ( $row> 0 ){
+            while ( my $data = $sth_u->fetchrow_hashref ) {
+                my $upload_dir = $data->{'VALUE'};
+                $modules_options->{ 'upload_dir' } =
+                    $upload_dir;
+            }
+        }
+    }
 
+    # get defined modules by select
     my $sth_t = $dbh->prepare("$select_modules");
 
     if ( !$sth_t ) {
@@ -352,12 +393,10 @@ sub bx_modules_options {
         if ( $row > 0 ) {
 
             # test all modules one by one
-            foreach my $m (@test_modules) {
-                while ( my $data = $sth_t->fetchrow_hashref ) {
-                    my $module_name = $data->{'ID'};
-                    $modules_options->{ 'module_' . $module_name } =
-                      'installed';
-                }
+            while ( my $data = $sth_t->fetchrow_hashref ) {
+                my $module_name = $data->{'ID'};
+                $modules_options->{ 'module_' . $module_name } =
+                    'installed';
             }
         }
         else {
@@ -423,7 +462,7 @@ sub bx_ntlm_options {
         'message'                    => '',
         'NTLM_bitrixvm_auth_support' => 'N',
         'NTLM_use_ntlm'              => 'N',
-        'NTLM_module'                => 'N'
+        'NTLM_module'                => 'N',
     };
     $logOutput->log_data("$message_p: try defined NTLM options for $site_root");
 
@@ -819,11 +858,12 @@ sub bx_composite_options {
     if ( defined $composite_hash->{'DOMAINS'} ) {
         if ( ref( $composite_hash->{'DOMAINS'} ) eq 'HASH' ) {
             @{ $composite_info->{'CompositeDomains'} } =
-                map { $composite_hash->{'DOMAINS'}->{$_} }
-                keys %{ $composite_hash->{'DOMAINS'} };
-        } else {
-            $composite_info->{CompositeError} = 
-                qq|Empty DOMAINS list in the composite configuration|;
+              map { $composite_hash->{'DOMAINS'}->{$_} }
+              keys %{ $composite_hash->{'DOMAINS'} };
+        }
+        else {
+            $composite_info->{CompositeError} =
+              qq|Empty DOMAINS list in the composite configuration|;
             $composite_info->{'CompositeStatus'} = 'disable';
             return $composite_info;
         }
@@ -956,44 +996,46 @@ sub get_site_files_options {
     );
 
     my $site_options = {
-        error                      => 0,
-        message                    => '',
-        DBHost                     => '',
-        DBLogin                    => '',
-        DBName                     => '',
-        DBPassword                 => '',
-        DBType                     => '',
-        DBConn                     => '',
-        DocumentRoot               => $site_dir,
-        SiteInstall                => '',
-        SiteStatus                 => '',
-        SphinxConnection           => '',
-        SphinxIndexName            => '',
-        module_cluster             => 'not_installed',
-        module_scale               => 'not_installed',
-        NTLM_use_ntlm              => 'N',
-        NTLM_bitrixvm_auth_support => 'N',
-        SiteKernelDir              => '',
-        SiteKernelDB               => '',
-        BackupCronFile             => '',
-        BackupMinute               => '',
-        BackupHour                 => '',
-        BackupDay                  => '',
-        BackupMonth                => '',
-        BackupWeekDay              => '',
-        BackupVersion              => '',
-        BackupFolder               => '',
-        CronTask                   => 'disable',
-        CronFile                   => '',
-        CronService                => {},
-        CompositeStatus            => 'disable',
-        CompositeStorage           => '',
-        CompositeDomains           => [],
-        CompositeExcludeUri        => [],
-        CompositeIncludeUri        => [],
-        CompositeExcludeParams     => [],
-        CompositeMemcachedHost     => '',
-        CompositeMemcachedPort     => '',
+        error                        => 0,
+        message                      => '',
+        DBHost                       => '',
+        DBLogin                      => '',
+        DBName                       => '',
+        DBPassword                   => '',
+        DBType                       => '',
+        DBConn                       => '',
+        DocumentRoot                 => $site_dir,
+        SiteInstall                  => '',
+        SiteStatus                   => '',
+        SphinxConnection             => '',
+        SphinxIndexName              => '',
+        module_cluster               => 'not_installed',
+        module_scale                 => 'not_installed',
+        module_transformer           => 'not_installed',
+        module_transformercontroller => 'not_installed',
+        NTLM_use_ntlm                => 'N',
+        NTLM_bitrixvm_auth_support   => 'N',
+        SiteKernelDir                => '',
+        SiteKernelDB                 => '',
+        BackupCronFile               => '',
+        BackupMinute                 => '',
+        BackupHour                   => '',
+        BackupDay                    => '',
+        BackupMonth                  => '',
+        BackupWeekDay                => '',
+        BackupVersion                => '',
+        BackupFolder                 => '',
+        CronTask                     => 'disable',
+        CronFile                     => '',
+        CronService                  => {},
+        CompositeStatus              => 'disable',
+        CompositeStorage             => '',
+        CompositeDomains             => [],
+        CompositeExcludeUri          => [],
+        CompositeIncludeUri          => [],
+        CompositeExcludeParams       => [],
+        CompositeMemcachedHost       => '',
+        CompositeMemcachedPort       => '',
     };
 
     ### folder and config options
@@ -1001,7 +1043,6 @@ sub get_site_files_options {
     foreach my $install_k ( keys %$bx_install_options ) {
         $site_options->{$install_k} = $bx_install_options->{$install_k};
     }
-
     if ( $bx_install_options->{'error'} ) {
         $site_options->{'SiteStatus'} = 'error';
         return $site_options;

@@ -1,0 +1,12 @@
+---
+# configure erlang repository and install package
+- name: Configure erlang repository
+  template:
+    src: rabbitmq_erlang.repo.j2
+    dest: /etc/yum.repos.d/rabbitmq_erlang.repo
+
+- name: Install erlang
+  yum:
+    name: erlang
+    state: latest
+

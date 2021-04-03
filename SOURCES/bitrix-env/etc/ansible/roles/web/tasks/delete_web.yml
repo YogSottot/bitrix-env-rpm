@@ -32,3 +32,5 @@
 - include: remove_sites_inventory.yml
   when: "inventory_hostname == deleted_web_server"
 
+- include: create_default_web.yml
+  when: "inventory_hostname == deleted_web_server"

@@ -1,0 +1,22 @@
+[Unit]
+Description=Transformer worker daemon
+After=network.target
+After=rabbitmq-server.service mysqld.service
+
+[Service]
+Type=forking
+RuntimeDirectory=transformer
+RuntimeDirectoryMode=0775
+ExecStart=/bin/bash /usr/local/sbin/transformer-workerd start
+ExecStop=/bin/bash /usr/local/sbin/transformer-workerd stop
+WorkingDirectory={{ site_dir }}
+PrivateTmp=false
+User=bitrix
+Group=bitrix
+KillSignal=SIGUSR1
+TimeoutStopSec=60
+KillMode=control-group
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

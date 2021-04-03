@@ -1,0 +1,54 @@
+---
+# test site information
+- include_tasks: gather_site_info.yml
+
+# rabbitmq
+- name: Delete user bitrix
+  rabbitmq_user:
+    user: "{{ redis_user }}"
+    state: absent
+
+- name: Disable rabbitmq-server
+  service:
+    name: rabbitmq-server
+    state: stopped
+    enabled: no
+
+# transformer service
+- name: Disable service
+  service:
+    name: transformer.service
+    state: stopped
+    enabled: no
+
+- include: execute_php_script.yml
+  vars:
+    php_script: transformers_cleanup.php
+    php_server: "{{ cluster_web_server }}"
+
+- name: delete server to transformer group
+  delegate_to: "{{ cluster_web_server }}"
+  bx_conf:
+    hostname: "{{ inventory_hostname  }}"
+    state: absent
+    group: transformer
+
+# update bitrix-hosts
+- name: update bitrix-hosts group
+  delegate_to: "{{ cluster_web_server }}"
+  bx_conf:
+    group: hosts
+    state: update
+    transformer_address: ABSENT
+    transformer_host: ABSENT
+    transformer_site: ABSENT
+    transformer_dir: ABSENT
+
+- name: update host_vars config
+  delegate_to: "{{ cluster_web_server }}"
+  bx_conf:
+    hostname: "{{ inventory_hostname }}"
+    transformer_site: ABSENT
+    transformer_dir: ABSENT
+    redis_password: ABSENT
+    redis_root_password: ABSENT

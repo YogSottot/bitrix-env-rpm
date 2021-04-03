@@ -1,0 +1,57 @@
+---
+- name: Install additional packages
+  yum:
+    name:
+      - unzip
+    state: latest
+
+- name: Create source directory
+  file:
+    path: "{{ item }}"
+    state: directory
+  loop:
+    - /usr/local/src
+
+- name: Get LibreOffice archive
+  get_url:
+    url: "{{ libreoffice_url }}"
+    dest: "/usr/local/src/{{ libreoffice_file }}"
+
+- name: Unpack LibreOffice archive
+  unarchive:
+    src: "/usr/local/src/{{ libreoffice_file  }}"
+    dest: "/usr/local/src"
+    remote_src: yes
+
+# find /usr/local/src/ -maxdepth 1 -name "LibreOffice_6.4.4*" -type d
+- name: Find basic directory
+  find:
+    paths: /usr/local/src
+    patterns: "LibreOffice_{{ libreoffice_version }}*"
+    depth: 1
+    file_type: directory
+  register: loo_find
+
+- debug:
+    msg: "{{ loo_find.files.0.path }}"
+
+- name: Find all rpm-files
+  find:
+    paths: "{{ loo_find.files.0.path }}/RPMS"
+    patterns: "*.rpm"
+  register: libreoffice_rpms
+
+
+- name: Create rpm list
+  set_fact:
+    libreoffice_list: "{{ libreoffice_rpms.files | map(attribute='path') | list }}"
+    libre_path: "/bin/libreoffice{{ libreoffice_version.split('.')[0] }}.{{ libreoffice_version.split('.')[1] }}"
+
+- debug:
+    msg: "{{ libre_path }}"
+
+- name: Install Rpm-packages
+  yum:
+    name: "{{ libreoffice_list }}"
+    state: present
+

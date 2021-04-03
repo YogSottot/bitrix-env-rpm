@@ -27,6 +27,9 @@
     web_site_csync2:    "{{ bx_site_info.SiteCsync2 }}"
     web_site_cron:      "{{ bx_site_info.CronTask }}"
     web_site_email:     "{{ bx_site_info.EmailAddress }}"
+    web_site_bx_temp_directory: "{{ bx_site_info.dbconn_BX_TEMPORARY_FILES_DIRECTORY }}"
+    web_site_nginx_bx_temp_config: ""
+    web_site_costom_directory: ""
   tags: configure_site
 
 - name: set additional variables
@@ -39,6 +42,8 @@
     web_site_ngx_https_conf: "{{ bx_site_info.NginxHTTPDir }}/{{ bx_site_info.NginxHTTPSConfig }}"
     web_site_apache_conf:    "{{ bx_site_info.ApacheConf }}"
     web_site_apache_scale_conf: "{{ bx_site_info.ApacheConfScale }}"
+    web_site_nginx_bx_temp_config: "{{ bx_site_info.nginx_bx_temp_config }}"
+    web_site_costom_directory: "{{ bx_site_info.nginx_custom_settings_directory }}"
   tags: configure_site
   when: "web_site_type == 'kernel' or web_site_type == 'link'"
 
@@ -72,12 +77,16 @@
 ####
 ######## delete files data
 - name: delete site document root
-  file: path={{ web_site_root_dir }} state=absent
+  file:
+    path: "{{ web_site_root_dir }}"
+    state: absent
   tags: dir_site
   when: "'bitrix-web' in group_names"
 
 - name: delete site php-directories
-  file: path={{ item }} state=absent
+  file:
+    path: "{{ item }}"
+    state: absent
   with_items:
     - "{{ web_site_sess_dir }}"
     - "{{ web_site_upld_dir }}"
@@ -85,9 +94,31 @@
   when: "web_site_type != 'ext_kernel' and 'bitrix-web' in group_names"
 
 - name: delete systemd-tmpfiles site config
-  file: path=/etc/tmpfiles.d/{{ web_site_name }}.conf state=absent
+  file:
+    path: "/etc/tmpfiles.d/{{ web_site_name }}.conf"
+    state: absent
   when: "'bitrix-web' in group_names and ansible_distribution == 'CentOS' and ansible_distribution_major_version == '7'"
 
+- name: delete bx_temp directory
+  file:
+    path: "{{ web_site_bx_temp_directory }}"
+    state: absent
+  when: web_site_bx_temp_directory != '' 
+    and web_site_type != 'link' and 'bitrix-web' in group_names
+
+- name: delete bx_temp nginx config
+  file:
+    path: "{{ web_site_nginx_bx_temp_config }}"
+    state: absent
+  when: web_site_nginx_bx_temp_config != '' 
+    and web_site_type != 'ext_kernel' and 'bitrix-web' in group_names
+
+- name: delete custom settings nginx
+  file:
+    path: "{{ web_site_costom_directory }}"
+    state: absent
+  when: web_site_costom_directory != '' 
+    and web_site_type != 'ext_kernel' and 'bitrix-web' in group_names
 
 ####
 ######## /delete files data
@@ -165,6 +196,12 @@
   when: "web_site_type == 'kernel' or web_site_type == 'ext_kernel'"
 ####
 ######## /delete database from mysql server
+
+- name: delete crontab settings
+  file:
+    path: "/etc/cron.d/bx_{{ web_site_db }}"
+    state: absent
+  when: "web_site_type == 'kernel' or web_site_type == 'ext_kernel'"
 
 ######## delete csync configuration
 ####

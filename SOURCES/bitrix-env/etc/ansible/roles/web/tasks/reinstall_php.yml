@@ -1,0 +1,103 @@
+---
+# remove old version php
+# install new one
+# php-pecl-mcrypt --> php-mcrypt (php 7.2 => 7.1)
+- set_fact:
+    exclude_packages: "NOTHING"
+
+- set_fact:
+    exclude_packages: 'php-pecl-mcrypt\|php-pecl-xdebug3'
+  when: is_php71
+
+- set_fact:
+    exclude_packages: 'php-pecl-apcu-bc\|php-pdo-dblib\|php-pecl-libsodium2'
+  when: is_php56
+
+- name: save list php-packages
+  shell: "rpm -qa --queryformat '%{name}\n' | grep '^php' | grep -v '{{ exclude_packages }}'"
+  args:
+    executable: /bin/bash
+  register: php_packages
+
+- name: remove package without deps
+  shell: rpm -qi {{ item }} && rpm -e --nodeps {{ item }} || true
+  with_items:
+    - "{{ php_packages.stdout_lines }}"
+
+- name: remove additional packages
+  shell: rpm -qi {{ item  }} && rpm -e --nodeps {{ item  }} || true
+  with_items:
+    - php-pecl-mcrypt
+    - php-pecl-xdebug3
+  when: is_php71
+
+- name: remove additional packages
+  shell: rpm -qi {{ item  }} && rpm -e --nodeps {{ item  }} || true
+  with_items:
+    - php-pecl-apcu-bc
+    - php-pdo-dblib
+    - php-pecl-libsodium2
+  when: is_php56
+
+- name: reinstall php 
+  yum:
+    name: "{{ php_packages.stdout_lines }}"
+    state: installed
+
+- name: reinstall additional packages
+  yum:
+    name: "{{ packages }}"
+    state: installed
+  vars:
+    packages:
+      - php-mcrypt
+      - php-pecl-xdebug
+  when: is_php71
+
+- name: reinstall json module
+  yum:
+    name: php-json
+    state: installed
+  when: is_json_module
+
+- name: reinstall additional packages
+  yum:
+    name: "{{ packages }}"
+    state: installed
+  vars:
+    packages:
+      - php-mssql
+      - php-pecl-xhprof
+  when: is_php56
+
+- name: restore php.d settings
+  shell: rsync -a --delete /opt/webdir/tmp/php.d/ /etc/php.d/
+  when: not is_php56
+
+- name: enable json module
+  lineinfile:
+    path: /etc/php.d/20-json.ini
+    line: extension=json.so
+    create: yes
+  when: is_json_module
+
+- name: get rpmsave file list
+  find:
+    paths: "/etc/php.d"
+    patterns: "*.rpmsave,*.rpmnew"
+    file_type: file
+  register: rpmsave
+
+- name: delete rpmsave files
+  file:
+    path: "{{ item.path }}"
+    state: absent
+  with_items: "{{ rpmsave.files }}"
+
+- name: delete php.d
+  file:
+    path: /opt/webdir/tmp/php.d
+    state: absent
+  when: not is_php56
+
+

@@ -5,11 +5,14 @@
   shell: rpm -e --nodeps Percona-Server-client-56 Percona-Server-server-56 Percona-Server-shared-56
 
 - name: install Percona packages
-  yum: name="{{ item }}"
-  with_items:
-    - Percona-Server-client-57
-    - Percona-Server-server-57
-    - Percona-Server-shared-57
+  yum:
+    name: "{{ packages }}"
+    update_cache: yes
+  vars:
+    packages:
+      - Percona-Server-client-57
+      - Percona-Server-server-57
+      - Percona-Server-shared-57
   tags: yum
 
 - name: create mysqld service

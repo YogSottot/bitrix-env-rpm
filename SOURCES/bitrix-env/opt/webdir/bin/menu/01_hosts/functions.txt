@@ -178,7 +178,7 @@ HM0074="Delete pool configuration"
 # -- удаление xhprof расширения
 # -- включение MySQLi расширения и настройка его для сайтов
 # -- обновление rpm-пакетов - установка php 7.0 версии
-HM0075="Update may take a while.
+HM0075="PHP version update may take a while.
 It will: "
 HM0076=" -- remove xhprof extension
  -- enable MySQLi extension and configure it on the sites
@@ -187,7 +187,7 @@ HM0076=" -- remove xhprof extension
 # Включает в себя следующие шаги
 # -- откат rpm-пакетов - установка php версии 7.0
 # -- восстановление работы MySQL расширения
-HM0077="Rollback may take a while.
+HM0077="PHP version downgrade may take a while.
 It will:"
 HM0078=" -- rollback rpm packages: PHP to version 5.6
  -- enable MySQL extension"
@@ -234,14 +234,22 @@ HM0086="Update PHP to version 5.4 and MySQL to version 5.5"
 # Обновление php до версии 5.6
 HM0087="Update PHP to version 5.6"
 # Обновление php до версии 7
-HM0088="Update PHP to version 7.0"
+HM0088="Upgrade PHP"
+HM00880="Update PHP to version 7.0"
 HM00881="Update PHP to version 7.1"
 HM00882="Update PHP to version 7.2"
+HM00883="Update PHP to version 7.3"
+HM00884="Update PHP to version 7.4"
+HM00885="Update PHP to version 8.0"
 
 # Откат php до версии 5.6
-HM0089="Rollback PHP to version 5.6"
-HM00891="Rollback PHP to version 7.0"
-HM00892="Rollback PHP to version 7.1"
+HM0089="Downgrade PHP"
+HM00890="Downgrade PHP to version 5.6"
+HM00891="Downgrade PHP to version 7.0"
+HM00892="Downgrade PHP to version 7.1"
+HM00893="Downgrade PHP to version 7.2"
+HM00894="Downgrade PHP to version 7.3"
+HM00895="Downgrade PHP to version 7.4"
 
 # Обновление MySQLd до версии 5.7
 HM0090="Update MySQL to version 5.7"
@@ -264,23 +272,29 @@ HM0097="The hostname you provided matches the current one. No action taken."
 # Изменить имя сервера
 HM0098="9. Change hostname"
 
-HM0099=" -- update rpm packages and install PHP 7.1"
-HM0100=" -- rollback rpm packages: PHP to version 7.0"
-HM0101=" -- update rpm packages and install PHP 7.2"
-HM0102=" -- rollback rpm packages: PHP to version 7.1"
+HM0099=" -- update rpm packages and install PHP __OPT1__"
+HM0100=" -- downgrade rpm packages: PHP to version __OPT1__"
+HM0101="PHP Version is __OPT1__"
+HM0102="MySQL Version is __OPT1__"
 
-# Изменение 
-HM0103="Enable beta version of bitrix-env"
-HM0104="Disable beta version of bitrix-env"
+# 
+HM010201="Upgrade MySQL version"
+HM010202="Upgrade MySQL to version 5.7"
+HM010203="Upgrade MySQL to version 5.5"
+HM010204="update MySQL to version __OPT1__"
+HM010205="Upgrade MySQL to version 8.0"
+
+# Изменение
+HM0103="Enable bitrix-env beta versions"
+HM0104="Disable bitrix-env beta versions"
+
 # Изменить версию продукта: стабильная или бета
-HM0105="10. Enable or disable beta version of bitrix-env"
-HM0106="Do you want enable Beta-version for Bitrix Environment? (N|y)"
-HM0107="You need manually run update opration from menu"
-HM0108="Enable beta version"
-HM0109="Do you want disable Beta-version for Bitrix Environment? (Y|n)"
-HM0110="Disable beta version"
-
-
+HM0105="10. Enable or disable bitrix-env beta versions"
+HM0106="Do you want to enable Bitrix Environment beta versions? (N|y)"
+HM0107="You will have to install updates manually using the menu"
+HM0108="Enable beta versions"
+HM0109="Do you want to disable Bitrix Environment beta versions? (Y|n)"
+HM0110="Disable beta versions"
 
 # Не найден сервер=ИМЯ_СЕРВЕРА в пуле
 HM0012="Cannot find server __OPT1__ in the pool."
@@ -292,9 +306,16 @@ HM0043="Enter server address (IP address or domain name) or 0 for exit:"
 # Имя сервера не может быть пустым
 HM0044="Hostname cannot be empty."
 
+HM10001="   Update or rallback software on the server"
+# all - обновляет версию php для всех web серверов
+HM10002="
+all - will update php version on all hosts with WEB role;
+hostname - will update ONLY selected server."
+
 HM0200="Press ENTER to exit: "
 HM0201="Press any key: "
 HM0202="Enter 0 to exit: "
 HM0203="Do you want to try again? (y|N): "
 HM0204="Enter your choice: "
+HM0205="Enter hostname or 0 to exit: "
 

@@ -1,0 +1,72 @@
+---
+# install rabbitmq
+- name: Configure rabbitmq repository
+  shell: " curl -s https://packagecloud.io/install/repositories/rabbitmq/rabbitmq-server/script.rpm.sh | sudo bash"
+  args:
+    chdir: /tmp
+    creates: /etc/yum.repos.d/rabbitmq_rabbitmq-server.repo
+
+- name: Install rabbitmq-server
+  yum:
+    name: rabbitmq-server
+    state: latest
+
+- name: Configure rabbitmq service
+  template:
+    src: rabbitmq.conf.j2
+    dest: /etc/rabbitmq/rabbitmq.conf
+
+- name: Configure rabbitmq environment
+  template:
+    src: rabbitmq-env.conf.j2
+    dest: /etc/rabbitmq/rabbitmq-env.conf
+
+- name: Enabled rabbitmq-server
+  service:
+    name: rabbitmq-server
+    state: started
+    enabled: yes
+
+- name: Restart rabbitmq-server
+  service:
+    name: rabbitmq-server
+    state: restarted
+
+- name: Enable rabbitmq_management plugin
+  rabbitmq_plugin:
+    names: rabbitmq_management
+    state: enabled
+
+- name: Create user root
+  rabbitmq_user:
+    user: root
+    password: "{{ redis_root_password }}"
+    vhost: /
+    configure_priv: .*
+    read_priv: .*
+    write_priv: .*
+
+- name: Create user bitrix
+  rabbitmq_user:
+    user: "{{ redis_user }}"
+    password: "{{ redis_password }}"
+    vhost: /
+    configure_priv: .*
+    read_priv: .*
+    write_priv: .*
+    tags: administrator
+
+- name: Delete guest
+  rabbitmq_user:
+    user: guest
+    state: absent
+
+- name: Install php package
+  yum:
+    name: php-pecl-amqp
+    state: present
+
+- name: Restart httpd service
+  service:
+    name: httpd
+    state: restarted

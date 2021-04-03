@@ -38,12 +38,34 @@
   register: hosts_pool_file
   tags: hosts
 
+- name: create hosts file
+  file:
+    path: /etc/hosts
+    state: touch
+
+- name: test localhost records
+  shell: sed -n '/ANSIBLE MANAGED BLOCK/,+1!p' /etc/hosts | grep -v '^#\|^$' | grep -c 'localhost' 
+  ignore_errors: true
+  tags: hosts
+  register: localhost_test
+
+- name: add localhost record to hosts
+  lineinfile:
+    dest: /etc/hosts
+    line: "{{ item }}"
+  with_items:
+    - '127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4'
+    - '::1         localhost localhost.localdomain localhost6 localhost6.localdomain6'
+  when: localhost_test.rc > 0
+
 - name: get existen records from hosts file
-  shell: sed -n '/ANSIBLE MANAGED BLOCK/,+1!p' /etc/hosts | grep -v '^#' > {{ hosts_current_file.stdout }}
+  shell: sed -n '/ANSIBLE MANAGED BLOCK/,+1!p' /etc/hosts | grep -v '^#\|^$' > {{ hosts_current_file.stdout }}
   tags: hosts
 
 - name: create records for pool hosts
-  template: src=hosts.j2 dest={{ hosts_pool_file.stdout }}
+  template: 
+    src: hosts.j2
+    dest: "{{ hosts_pool_file.stdout }}"
   tags: hosts
 
 - name: assemble records for hosts file

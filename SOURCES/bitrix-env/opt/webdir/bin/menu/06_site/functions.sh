@@ -15,6 +15,9 @@ push_menu_dir=$BIN_DIR/menu/10_push
 push_menu_fnc=$push_menu_dir/functions.sh
 . $push_menu_fnc || exit 1
 
+tr_menu_dir=$BIN_DIR/menu/11_transformer
+tr_menu_fnc=$tr_menu_dir/functions.sh
+
 # get_text variables
 [[ -f $sites_menu/functions.txt   ]] && \
     . $sites_menu/functions.txt
@@ -426,49 +429,102 @@ print_site_list_point_composite(){
 print_site_list_point_https(){
     get_all_sites_list
 
-  if [[ $POOL_SITES_COUNT -gt 0 ]]; then
-    print_color_text "Found $POOL_SITES_COUNT sites:" blue
-    echo $MENU_SPACER
-    printf "%-15s | %-15s | %10s | %1s | %-20s | %s\n" \
-     "SiteName" "dbName" "Type" "S" "Certificate" "Key" 
-    echo $MENU_SPACER
+    if [[ $POOL_SITES_COUNT -gt 0 ]]; then
+        print_color_text "There are $POOL_SITES_COUNT sites:" blue
+        echo $MENU_SPACER
+            printf "%-15s | %-15s | %10s | %1s | %-20s | %s\n" \
+                "SiteName" "dbName" "Type" "S" "Certificate" "Key" 
+        echo $MENU_SPACER
 
-    IFS_BAK=$IFS
-    IFS=$'\n'
-    for line in $POOL_SITES_LIST; do
-      # default:sitemanager0:kernel:finished:shop.ksh.bx:/home/bitrix/www:utf-8
-      _site_id=$(echo "$line" | awk -F':' '{print $1}')   # short name for site
-      _site_db=$(echo "$line" | awk -F':' '{print $2}')   # dbname
-      _site_type=$(echo "$line" | awk -F':' '{print $3}') # type: kernel, ext_kernel 
-      _site_st=$(echo "$line" | awk -F':' '{print $4}')   # status site installation
-      _site_root=$(echo "$line" | awk -F':' '{print $6}')  # document root
+        IFS_BAK=$IFS
+        IFS=$'\n'
+        for line in $POOL_SITES_LIST; do
+            # default:sitemanager0:kernel:finished:shop.ksh.bx:/home/bitrix/www:utf-8
+            _site_id=$(echo "$line" | awk -F':' '{print $1}')   # short name for site
+            _site_db=$(echo "$line" | awk -F':' '{print $2}')   # dbname
+            _site_type=$(echo "$line" | awk -F':' '{print $3}') # type: kernel, ext_kernel 
+            _site_st=$(echo "$line" | awk -F':' '{print $4}')   # status site installation
+            _site_root=$(echo "$line" | awk -F':' '{print $6}')  # document root
 
-      _site_info=$($bx_sites_script -a status --site $_site_id -r $_site_root | \
-       grep ':https:' | sed -e 's/^bxSite:https://')
-      # default:sitemanager0:disable:/etc/nginx/ssl/cert.pem:/etc/nginx/ssl/cert.pem:/etc/nginx/bx/conf/ssl.conf
-      https_cert=$(echo "$_site_info" | awk -F':' '{print $4}' | \
-          sed -e "s:/etc/nginx/::")
-      https_key=$(echo "$_site_info" | awk -F':' '{print $5}' | \
-          sed -e "s:/etc/nginx/::")
+            _site_info=$($bx_sites_script -a status --site $_site_id -r $_site_root | \
+                grep ':https:' | sed -e 's/^bxSite:https://')
+            # default:sitemanager0:disable:/etc/nginx/ssl/cert.pem:/etc/nginx/ssl/cert.pem:/etc/nginx/bx/conf/ssl.conf
+            https_cert=$(echo "$_site_info" | awk -F':' '{print $4}' | \
+                sed -e "s:/etc/nginx/::")
+            https_key=$(echo "$_site_info" | awk -F':' '{print $5}' | \
+                sed -e "s:/etc/nginx/::")
  
-      _https_enable=$(echo "$_site_info" | \
-        awk -F':' '{print $3}' | sed -e 's/enable/Y/;s/disable/N/;' )
+            _https_enable=$(echo "$_site_info" | \
+                awk -F':' '{print $3}' | sed -e 's/enable/Y/;s/disable/N/;' )
       
-      printf "%-15s | %-15s | %10s | %1s | %-20s | %s\n" \
-       "$_site_id" "$_site_db" "$_site_type" "$_https_enable" \
-       "$https_cert" "$https_key" 
+            printf "%-15s | %-15s | %10s | %1s | %-20s | %s\n" \
+                "$_site_id" "$_site_db" "$_site_type" "$_https_enable" \
+                "$https_cert" "$https_key" 
  
-    done
-    IFS_BAK=$IFS
-    IFS=$'\n'
-    echo $MENU_SPACER
-    print_color_text "Note:" blue
-    echo "S - Only HTTPS access to the server (N = turned off, Y = turned on)"
-    echo
+        done
+        IFS=$IFS_BAK
+        IFS_BAK=
+        echo $MENU_SPACER
+        print_color_text "Note:" blue
+        echo "S - Only HTTPS access to the server (N = turned off, Y = turned on)"
+        echo
 
-  else
-    print_color_text "Not sites on the server" blue
-  fi
+    else
+        print_color_text "Not sites on the server" blue
+    fi
+
+    # push server need certificate
+    cache_push_servers_status
+    if [[ $PUSH_SERVERS_CNT -eq 0 ]]; then
+        PUSH_STREAM_SERVER=$(echo "$PUSH_SERVERS" | \
+            awk -F':' '/Nginx-PushStreamModule/{print $2}')
+        PUSH_SSL_CONFIG=/etc/nginx/bx/conf/ssl-push.conf
+
+        if [[ -n $PUSH_STREAM_SERVER ]]; then
+            PUSH_SSL=Unknown
+            PUSH_KEY=Unknown
+            PUSH_TYPE=Unknown
+            PUSH_SSL_FILE=$PUSH_SSL_CONFIG
+ 
+            if [[ ( -f $PUSH_SSL_CONFIG ) &&  \
+                ( $(file $PUSH_SSL_CONFIG | grep -c "symbolic link to") -gt 0 ) ]]; then
+                PUSH_SSL_FILE=$(file $PUSH_SSL_CONFIG | grep  "symbolic link to" | \
+                   awk '{print $NF}' | sed -e "s/[\`']//g")
+                DIR_PUSH_SSL_FILE=$(dirname $PUSH_SSL_FILE)
+                BN_PUSH_SSL_FILE=$(basename $PUSH_SSL_FILE)
+
+                [[ $DIR_PUSH_SSL_FILE == "." ]] && DIR_PUSH_SSL_FILE=/etc/nginx/bx/conf
+                PUSH_SSL_FILE="${DIR_PUSH_SSL_FILE}/${BN_PUSH_SSL_FILE}"
+            fi
+
+
+            if [[ ${PUSH_SSL_FILE} == '/etc/nginx/bx/conf/ssl.conf' ]]; then
+                PUSH_SSL=/etc/nginx/ssl/cert.pem
+                PUSH_KEY=/etc/nginx/ssl/cert.pem
+                PUSH_TYPE=Default
+            else
+                PUSH_SSL=$(grep -v '^$\|^#' $PUSH_SSL_FILE | \
+                    grep 'ssl_certificate\s\+' | \
+                    awk '{print $2}' | sed -e 's/;$//')
+                PUSH_KEY=$(grep -v '^$\|^#' $PUSH_SSL_FILE | \
+                    grep 'ssl_certificate_key\s\+' | \
+                    awk '{print $2}' | sed -e 's/;$//')
+                PUSH_TYPE=Custom
+            fi
+
+            print_color_text "Found push-configuration:" blue
+            echo $MENU_SPACER
+                printf "%-15s | %-30s | %s\n" \
+                    "SiteName" "Certificate" "Key" 
+
+            echo $MENU_SPACER
+                printf "%-15s | %-30s | %s\n" \
+                    "push-server" "$PUSH_SSL" "$PUSH_KEY" 
+ 
+            echo $MENU_SPACER
+        fi
+    fi
+ 
 
 }
 
@@ -701,39 +757,62 @@ print_site_list_point_ntlm(){
 print_site_list_point_options(){
     get_all_sites_list
 
-  if [[ $POOL_SITES_COUNT -gt 0 ]]; then
-    print_color_text "Found $POOL_SITES_COUNT sites:" blue
-    echo $MENU_SPACER
-    printf "%-15s | %-15s | %10s | %20s\n" \
-     "SiteName" "dbName" "Type" "ignore_client_abort"
-    echo $MENU_SPACER
+    if [[ $POOL_SITES_COUNT -gt 0 ]]; then
+        print_color_text "Found $POOL_SITES_COUNT sites:" blue
+        echo $MENU_SPACER
+        printf "%-15s | %10s | %4s | %4s | %4s | %15s | %s\n" \
+            "dbName" "Type" "IGA" "NCSS" "NCTF" "DCTF" "SiteName"
 
-    IFS_BAK=$IFS
-    IFS=$'\n'
-    for line in $POOL_SITES_LIST; do
-      # default:sitemanager0:kernel:finished:shop.ksh.bx:/home/bitrix/www:utf-8
-      _site_id=$(echo "$line" | awk -F':' '{print $1}')   # short name for site
-      _site_db=$(echo "$line" | awk -F':' '{print $2}')   # dbname
-      _site_type=$(echo "$line" | awk -F':' '{print $3}') # type: kernel, ext_kernel 
-      _site_st=$(echo "$line" | awk -F':' '{print $4}')   # status site installation
-      _site_root=$(echo "$line" | awk -F':' '{print $6}')  # document root
+        # ignore_client_abort - IGA
+        # nginx_custom_site_settings - NCSS
+        # nginx_custom_temp_files - NCTF
+        # dbconn_temp_files - DCTF
+        echo $MENU_SPACER
 
-      _site_info=$($bx_sites_script -a status --site $_site_id -r $_site_root | \
-       grep 'bxSite:configs:' | sed -e 's/^bxSite:configs://')
-      #default:s1.conf:ssl.s1.conf:/etc/nginx/bx/site_avaliable:/etc/nginx/bx/site_enabled:/etc/httpd/bx/conf/default.conf:/home/bitrix/www:/tmp/php_sessions/www:/tmp/php_upload/www:off
-      _proxy_ignore_client_abort=$(echo "$_site_info" | awk -F':' '{print $10}')
-      
-      printf "%-15s | %-15s | %10s | %20s\n" \
-       "$_site_id" "$_site_db" "$_site_type" "$_proxy_ignore_client_abort"
+        IFS_BAK=$IFS
+        IFS=$'\n'
+        for line in $POOL_SITES_LIST; do
+            # default:sitemanager0:kernel:finished:shop.ksh.bx:/home/bitrix/www:utf-8
+            _site_id=$(echo "$line" | awk -F':' '{print $1}')   # short name for site
+            _site_db=$(echo "$line" | awk -F':' '{print $2}')   # dbname
+            _site_type=$(echo "$line" | awk -F':' '{print $3}') # type: kernel, ext_kernel 
+            _site_st=$(echo "$line" | awk -F':' '{print $4}')   # status site installation
+            _site_root=$(echo "$line" | awk -F':' '{print $6}')  # document root
+
+            _site_all_info=$($bx_sites_script -a status --site $_site_id -r $_site_root)
+            _site_configs=$(echo "$_site_all_info" | \
+                grep 'bxSite:configs:' | sed -e 's/^bxSite:configs://')
+            _site_custom=$(echo "$_site_all_info" | \
+                grep 'bxSite:custom_options:' | sed -e 's/^bxSite:custom_options://')
  
-    done
-    IFS_BAK=$IFS
-    IFS=$'\n'
-    echo $MENU_SPACER
+            #default:s1.conf:ssl.s1.conf:/etc/nginx/bx/site_avaliable:/etc/nginx/bx/site_enabled:/etc/httpd/bx/conf/default.conf:/home/bitrix/www:/tmp/php_sessions/www:/tmp/php_upload/www:off
+            # bxSite:custom_options:ksh770.office.bitrix.ru:on:on:/home/bitrix/.bx_temp/dbksh770
+            _proxy_ignore_client_abort=$(echo "$_site_configs" | awk -F':' '{print $10}')
+            _nginx_custom_settings=$(echo "$_site_custom" | awk -F':' '{print $2}')
+            _nginx_bx_temp_files_dir_conf=$(echo "$_site_custom" | awk -F':' '{print $3}')
+            _dbconn_bx_temp_files_dir=$(echo "$_site_custom" | awk -F':' '{print $4}' | \
+                sed -e "s:/home/bitrix/.bx_temp/::")
 
-  else
-    print_color_text "Not sites on the server" blue
-  fi
+     
+            printf "%-15s | %10s | %4s | %4s | %4s | %15s | %s\n" \
+                "$_site_db" "$_site_type" "$_proxy_ignore_client_abort" \
+                "$_nginx_custom_settings" "$_nginx_bx_temp_files_dir_conf" \
+                "$_dbconn_bx_temp_files_dir" "$_site_id: $_site_root"
+ 
+        done
+        IFS_BAK=$IFS
+        IFS=$'\n'
+        echo $MENU_SPACER
+        echo $SM0143
+        echo "$SM0144"
+        echo "$SM0145"
+        echo "$SM0146"
+        echo "$SM0147"
+        echo $MENU_SPACER
+
+    else
+        print_color_text "Not sites on the server" blue
+    fi
 
 }
 

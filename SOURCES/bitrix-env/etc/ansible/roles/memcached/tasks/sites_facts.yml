@@ -6,7 +6,10 @@
   tags: gathering_facts
 
 - name: web - gathering facts
-  bx_facts: name=list password=0 status=finished
+  bx_facts:
+    name: list
+    password: 0
+    status: finished
   delegate_to: "{{ cluster_web_server }}"
   tags: gathering_facts
   ignore_errors: true
@@ -14,7 +17,7 @@
 
 - set_fact:
     run_register: "disabled"
-  when: bx_sites_found|failed
+  when: bx_sites_found is failed
 
 - name: web - configure facts
   set_fact:

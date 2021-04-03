@@ -37,20 +37,15 @@
 ##### install packages (if add old machine)
 ##
 - name: install packages
-  yum: pkg={{ item }} state=latest update_cache=yes
-  tags: packages
-  with_items:
-    - etckeeper
-    - bzip2
-    - psmisc
-
-- name: install packages
-  yum: pkg={{ item }} state=latest update_cache=yes
-  tags: packages
-  with_items:
-    - firewalld
-  when: ansible_distribution == "CentOS" 
-    and ansible_distribution_major_version == "7"
+  yum:
+    pkg: "{{ packages }}"
+    state: latest
+    update_cache: yes
+  vars:
+    packages:
+      - etckeeper
+      - bzip2
+      - psmisc
 
 ##
 ##### / install packages (if add old machine)
@@ -61,19 +56,8 @@
 
 ##### iptables/firewalld settings
 ##
-- include: iptables-centos6.yml
-  when: ansible_distribution == "CentOS" 
-    and ansible_distribution_major_version == "6"
-    and virtualization_type != "openvz"
-
-- include: iptables-centos6-openvz.yml
-  when: ansible_distribution == "CentOS" 
-    and ansible_distribution_major_version == "6"
-    and virtualization_type == "openvz"
-
-- include: iptables-centos7.yml
-  when: ansible_distribution == "CentOS" 
-    and ansible_distribution_major_version == "7"
+- include: configure_firewall_service.yml
+  when: configure_firewall
 
 ##
 ##### iptables/firewalld settings
@@ -196,30 +180,4 @@
 ##### /nginx configuration for master server
 
 ##### etckeeper configuration
-##
-- name: deploy etckeeper config
-  template: src=etckeeper.conf.j2 dest=/etc/etckeeper/etckeeper.conf
-  tags: etckeeper
-
-- name: init etckeeper
-  shell: /usr/bin/etckeeper init creates=/etc/.hg/hgrc
-  tags: etckeeper
-
-- name: check if the directory contains uncommitted changes
-  shell: /usr/bin/etckeeper unclean && echo "True" || echo "False"
-  register: hgstatus
-  ignore_errors: True
-  tags: etckeeper
-
-- name: count commit date
-  shell: date +"%Y-%m-%d %H:%M:%S"
-  register: commitdate
-  tags: etckeeper
-  when: "'True' in hgstatus.stdout"
-
-- name: commit changes by etckeeper
-  shell: /usr/bin/etckeeper commit "commit from ansible task at {{ commitdate.stdout }}"
-  tags: etckeeper
-  when: "'True' in hgstatus.stdout"
-##
-##### /etckeeper configuration
+- include_tasks: etckeeper.yml

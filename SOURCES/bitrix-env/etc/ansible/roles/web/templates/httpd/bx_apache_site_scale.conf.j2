@@ -26,7 +26,6 @@
 		RewriteRule .* - [E=HTTPS:on,L]
 	</IfModule>
 
-    {{ bitrix_site_php_overload }}
     {{ bitrix_site_php_internal }}
 
 	<Directory />
@@ -47,7 +46,7 @@
 	</DirectoryMatch>
 
 	<Directory {{ web_site_root_dir }}>
-		Options Indexes FollowSymLinks MultiViews
+		Options FollowSymLinks MultiViews
 		AllowOverride All
 		DirectoryIndex index.php index.html index.htm
 

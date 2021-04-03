@@ -4,8 +4,6 @@
 # certificate: - path to certificate
 # certificate_chain: - path to certificate chain
 # private_key: - path to private key
-- include: sites-gathering_facts_site_names.yml
-
 - name: test certificate and private key
   bx_cert: cert="{{ certificate }}" priv="{{ private_key }}"
   when: certificate_chain is undefined
@@ -26,102 +24,24 @@
   with_items:
     - /etc/nginx/certs
 
-- name: create directories
-  file:
-    path: "/etc/nginx/certs/{{ item }}"
-    state: directory
-    owner: root
-    group: bitrix
-    force: yes
-    recurse: yes
-    mode: 0750
-  with_items: "{{ site_names }}"
-
-- name: copy certificate
-  copy:
-    src: "{{ certificate }}"
-    dest: "/etc/nginx/certs/{{ item }}/{{ certificate | basename }}"
-    mode: 0640
-    owner: root
-    group: bitrix
-  with_items: "{{ site_names }}"
-  when: certificate_chain is undefined
-
-- name: copy certificate
-  copy:
-    content: |
-        {{ lookup('file', certificate) }}
-        {{ lookup('file', certificate_chain) }}
-    dest: "/etc/nginx/certs/{{ item }}/{{ certificate | basename }}"
-    mode: 0640
-    owner: root
-    group: bitrix
-  with_items: "{{ site_names }}"
-  when: certificate_chain is defined
-
-- name: copy private_key
-  copy:
-    src: "{{ private_key }}"
-    dest: "/etc/nginx/certs/{{ item }}/{{ private_key | basename }}"
-    mode: 0640
-    owner: root
-    group: bitrix
-  with_items: "{{ site_names }}"
-
-- name: copy certificate_chain
-  copy:
-    src: "{{ certificate_chain }}"
-    dest: "/etc/nginx/certs/{{ item }}/{{ certificate_chain | basename }}"
-    mode: 0640
-    owner: root
-    group: bitrix
-  when: certificate_chain is defined
-  with_items: "{{ site_names }}"
-
 - name: update ssl_options
   template:
     src: nginx/ssl_options.conf.j2
     dest: /etc/nginx/bx/conf/ssl_options.conf
 
-- name: delete old settings from nginx config
-  lineinfile:
-    dest: "{{ item.NginxHTTPSFullPath }}"
-    regexp: "ssl.conf;\\s*$"
-    state: absent
-  with_items: "{{ bx_sites_info }}"
+- include: configure_cert_per_sites.yml
+  when: sites_cnt > 0
 
-- name: delete previously settings
-  bx_blockinfile: insertafter="CERTIFICATE ANSIBLE MANAGED BLOCK" state="delete"
-    dest="{{ item.NginxHTTPSFullPath }}"
-  with_items: "{{ bx_sites_info }}"
+- include: configure_cert_push_server.yml
+  when: push_server is defined and push_server > 0
 
-- name: add new settings to nginx config 
-  blockinfile:
-    dest: "{{ item.NginxHTTPSFullPath }}"
-    insertbefore: "proxy_set_header"
-    marker: "# CERTIFICATE ANSIBLE MANAGED BLOCK"
-    content: |
-      include bx/conf/ssl_options.conf;
-      ssl_certificate   /etc/nginx/certs/{{ item.SiteName }}/{{ certificate| basename }};
-      ssl_certificate_key  /etc/nginx/certs/{{ item.SiteName }}/{{ private_key| basename }};
-      ssl_trusted_certificate /etc/nginx/certs/{{ item.SiteName }}/{{ certificate_chain| basename }};
-  with_items: "{{ bx_sites_info }}"
-  when: certificate_chain is defined
-
-- name: add new settings to nginx config 
-  blockinfile:
-    dest: "{{ item.NginxHTTPSFullPath }}"
-    insertbefore: "proxy_set_header"
-    marker: "# CERTIFICATE ANSIBLE MANAGED BLOCK"
-    content: |
-      include bx/conf/ssl_options.conf;
-      ssl_certificate   /etc/nginx/certs/{{ item.SiteName }}/{{ certificate| basename }};
-      ssl_certificate_key  /etc/nginx/certs/{{ item.SiteName }}/{{ private_key| basename }};
-  with_items: "{{ bx_sites_info }}"
-  when: certificate_chain is undefined
-
-- name: restart nginx
+- name: reload nginx
   service: 
     name: nginx
-    state: restarted
+    state: reloaded
+
+- name: reload httpd
+  service: 
+    name: httpd
+    state: reloaded
 

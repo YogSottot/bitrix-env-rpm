@@ -34,6 +34,10 @@ define("VM_INSTALL", true);
 
 {% if charset != 'windows-1251' -%}
 define("BX_UTF", true);
+{% else %}
+setlocale(LC_ALL, 'ru_RU.CP1251' );
+setlocale(LC_NUMERIC, 'C' );
+mb_internal_encoding('windows-1251');
 {%- endif %}
 
 {% if cron == 'enable' -%}
@@ -50,4 +54,7 @@ define("BX_USE_MYSQLI", true);
 define('BX_SECURITY_SESSION_MEMCACHE_HOST', 'unix:///tmp/memcached.sock');
 define('BX_SECURITY_SESSION_MEMCACHE_PORT', 0)
 {% endif %}
+
+define("BX_TEMPORARY_FILES_DIRECTORY", "/home/bitrix/.bx_temp/{{ web_site_db }}/");
+
 ?>

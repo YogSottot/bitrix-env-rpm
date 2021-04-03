@@ -58,8 +58,6 @@ BU0028=" -- numbers (0-9);
  -- hyphens (-);
  -- periods (.)."
 ## print_menu
-# Доступные декствия: (меню)
-BU0029="Available actions: "
 ## my_additional_security; 
 # Завершили удаление анонимных пользователей в mysql сервисе
 BU0030="Anonymous users removed from MySQL service"
@@ -140,10 +138,6 @@ BU0062="HTTP and HTTPS ports are open in the iptables INPUT chain."
 # Надены следующие фоновые задания типа 'НАЗВАНИЕ_ТИПА':
 BU0063="Found running __OPT1__ background jobs:"
 
-# exits
-BU1001="Press ENTER to exit: "
-BU1002="Please enter any key"
-
 # errors
 # Неправильный выбор. Пожалуйста, попробуйте снова.
 BU2001="Incorrect input. Please, try again."
@@ -223,3 +217,103 @@ BU2033="Cannot enable firewalld. Skipping firewalld configuration."
 BU2034="Iptables returned an error. Please open ports 80 and 443 manually."
 # Не получилось добавить порты 80 и 443 в iptables. Пожалуйста, настройте порты 80 и 443 вручную.
 BU2035="Cannot open ports 80 and 443. Please open ports 80 and 443 manually."
+# Iptables module is disabled in the system.
+BU2036="Iptables module is disabled in the system. 
+If you think this is a mistake, please, contact your system administrator."
+BU2037="Cannot use firewalld service in this system. 
+There are errors in command OUTPUT 'systemctl status firewalld'.
+If you think this is a mistake, please, contact your system administrator."
+
+# exits
+BU1001="Press ENTER to exit: "
+BU1002="Please enter any key"
+# Доступные декствия: (меню)
+BU0029="Available actions: "
+MM0037="Enter your choice: "
+
+#Вы не можете создать пул на этом сервере, так как он входит в состав другой группы
+MM0001="You cannot create a new pool on the server because it belongs to another group."
+# Информация по управляющему серверу:
+MM0002="Master server info:"
+# Hotsname; IP address; IP address client
+MM0003="Master Hostname:"
+MM0004="Master IPv4:"
+MM0005="Client Hostname:"
+MM0006="Client IPv4:"
+# Выход
+MM0007="Exit"
+# Не найден файл __СКРИПТ__ в системе.
+MM0008="File __OPT1__ was not found in the system."
+
+####################### ПУНКТЫ МЕНЮ:
+# Создание пула управления на сервере
+MM0010="Create management pool on the server"
+# Управление серверами в пуле
+MM0011="Manage servers in the pool"
+# Управление локальным хостом
+MM0012="Configure localhost settings"
+# Настройка MySQL службы в пуле
+MM0013="Configure MySQL service for the pool"
+# Настройка Memcached службы
+MM0014="Configure Memcached service for the pool"
+# Фоновые задания в пуле серверов
+MM0015="Background pool tasks"
+# Настройка сайтов в пуле
+MM0016="Configure pool sites"
+# Настройка Sphinx-службы 
+MM0017="Configure Sphinx service for the pool"
+# Управление web-серверами в пуле
+MM0018="Manage pool web servers"
+# Настройка мониторинга для пула
+MM0019="Configure pool monitoring"
+# Настройка Push/RTC службы в пуле
+MM0020="Configure Push/RTC service for the pool"
+
+MM00201="Configure Transformer service"
+####################### /ПУНКТЫ МЕНЮ:
+
+# Создание начальной конфигурации для пула и управляющего сервера
+MM0021="Create initial config file for pool and master server"
+# Найдены следующие сетевые интерфейсы на сервере:
+MM0022="Found network interface(s) on the server:"
+# Пожалуйста введите имя интерфейса:
+MM0023="Please enter interface name:"
+# Этот интерфейс будет использован для управления серверами в пуле:
+# -- для его IP адреса будет разрешен весь трафик на подчиненных серверах
+# -- данный адрес будет использоваться в конфигурационных файлах
+MM0024="This interface will be used to manage pooled servers:
+ -- IPv4 address will be used in configuration files
+ -- IPv4 address will be whitelisted in the firewall rules"
+# Хотите попробовать снова?
+MM0025="Do you want to try again? (Y|n) "
+# Не найден интерфейс с именем __OPT1__
+MM0026="Cannot find interface=__OPT1__ on the server"
+# Не найден рабочий сетевой интерфейс в системе (link detected).
+MM0027="Cannot find active network interface (link detected)."
+# Введите имя сервера для сервера управления в пуле.
+# Вы можете использовать FQDN в качестве имени; Имя должно быть уникально в рамках пула.
+MM0028="Please enter master server name (default: __OPT1__):"
+MM0029="This name must be unique within the pool. 
+You can use FQDN as name."
+# Имя хоста не может быть пустым
+MM0030="Host name cannot be empty."
+
+# Создание пула завершилось ошибкой
+# Создание пула завершено успешно
+MM0031="Error creating pool."
+MM0032="Pool has been created successfully."
+
+# Заголовок главного меню управления пулом
+# Управление пулом серверов
+MM0033="Manage Server Pool"
+
+# Данный сервер уже находится в пуле
+MM0034="This server is already pooled."
+# Не найден пул управления, к которому относится данный сервер.
+# Возможно, Вы захотите создать новый.
+MM0035="Cannot find management pool for this server.
+You might want to create a new one."
+# Если Вы захотите добавить данный сервер в существующий пул, 
+# используйте один из адрес указанных ниже на мастер сервере.
+MM0036="If you want to add this server to an existing pool,
+use one of these IPv4 addresses on the master server."

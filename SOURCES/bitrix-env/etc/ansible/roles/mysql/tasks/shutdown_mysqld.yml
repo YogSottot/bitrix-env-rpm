@@ -3,13 +3,44 @@
   shell: mysql --execute="SET GLOBAL innodb_fast_shutdown=0"
   tags: mysql
 
-- name: shutdown mysql
+- name: shutdown mysql on CentOS6
   shell: mysqladmin shutdown
   tags: mysql
+  when: ansible_distribution == "CentOS"
+    and ansible_distribution_major_version == "6"
+
+- name: shutdown mysql on CentOS7
+  service:
+    name: mysql
+    state: stopped
+  tags: mysql
+  when: ansible_distribution == "CentOS"
+    and ansible_distribution_major_version == "7"
+
 
 - name: wait mysql shutdown
   wait_for: path=/var/lib/mysqld/mysqld.sock
     state=absent
     delay=10
   tags: mysql
+  register: command_result
+  ignore_errors: True
+
+# mysql stop varianst for very old versiob wich migrated from initd script to systemd unit
+- name: Check if initd script exists
+  stat:
+    path: /etc/init.d/mysql
+  register: stat_initd
+  when: command_result.failed
+
+- name: Failed when initd file is not exists
+  fail:
+    msg: "There is no /etc/init.d/mysql script but playbook cannot stop MySQL service via systemd unit"
+  when: command_result.failed and not stat_initd.stat.exists
+
+- name: try stop it another way if the previous command did not succeed
+  shell: /etc/init.d/mysql stop
+  args:
+    removes: /var/lib/mysqld/mysqld.sock
+  when: command_result.failed and stat_initd.stat.exists
 

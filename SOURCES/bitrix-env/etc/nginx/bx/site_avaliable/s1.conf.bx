@@ -5,6 +5,9 @@
 		server_name _;
 		server_name_in_redirect off;
 
+        access_log /var/log/nginx/access.log main;
+        error_log /var/log/nginx/error.log warn;
+
 		proxy_set_header	X-Real-IP        $remote_addr;
 		proxy_set_header	X-Forwarded-For  $proxy_add_x_forwarded_for;
 		proxy_set_header	Host $host:80;
@@ -17,6 +20,9 @@
 
 		# Redirect to ssl if need
 		if (-f /home/bitrix/www/.htsecure) { rewrite ^(.*)$ https://$host$1 permanent; }
+        
+        # custom options for sites; doesn't changes on update
+        include bx/site_settings/default/*.conf;
 
 		# Include parameters common to all websites
 		include bx/conf/bitrix.conf;

@@ -1,42 +1,50 @@
 ---
 # This role contains common plays that will run on all nodes in bitrix-hosts
+#- fail:
+
 - name: include variables from temporary config
   include_vars: "{{ ansible_playbook_file }}"
   when: "ansible_playbook_file != 'NOT_DEFINED'"
 
-- include: remove.yml
-  when: "common_manage == 'remove' and common_server == inventory_hostname"
-  static: no
+- include_tasks: remove.yml
+  when: common_manage == 'remove'
+    and common_server == inventory_hostname
 
-- include: forget.yml
-  when: "common_manage == 'forget' and inventory_hostname == cluster_web_server"
-  static: no
+- include_tasks: forget.yml
+  when: common_manage == 'forget'
+    and inventory_hostname == cluster_web_server
 
-- include: update.yml
-  when: "common_manage == 'update' or common_manage == 'forget'"
-  static: no
+- include_tasks: update.yml
+  when: common_manage == 'update'
+    or common_manage == 'forget'
 
-- include: push.yml
-  when: "common_manage == 'update' and push_server is defined and inventory_hostname == push_server"
-  static: no
+- include_tasks: push.yml
+  when: common_manage == 'update'
+    and push_server is defined
+    and inventory_hostname == push_server
 
-- include: version.yml
-  when: "common_manage == 'version'"
-  static: no
+- include_tasks: push.yml
+  when: common_manage == 'update_push_server'
+    and push_server is defined
+    and inventory_hostname == push_server
 
-- include: update_packages.yml
-  when: "common_manage == 'update_packages'"
-  static: no
+- include_tasks: version.yml
+  when: common_manage == 'version'
 
-- include: time.yml
-  when: "common_manage == 'time'"
-  static: no
+- include_tasks: update_packages.yml
+  when: common_manage == 'update_packages'
 
-- include: reboot.yml
-  when: "common_manage == 'reboot' and common_server == inventory_hostname"
-  static: no
+- include_tasks: time.yml
+  when: common_manage == 'time'
 
-- include: password.yml
-  when: "common_manage == 'password' and common_server == inventory_hostname"
-  static: no
+- include_tasks: reboot.yml
+  when: common_manage == 'reboot'
+    and common_server == inventory_hostname
+
+- include_tasks: password.yml
+  when: common_manage == 'password'
+    and common_server == inventory_hostname
+
+- include_tasks: configure_firewall_service.yml
+  when: common_manage == 'firewall'
 

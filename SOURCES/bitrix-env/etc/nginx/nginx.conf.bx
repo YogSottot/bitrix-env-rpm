@@ -31,12 +31,15 @@ http {
 
 	log_format debug '$upstream_response_time,"$time_local","$remote_addr","$request",$status,$body_bytes_sent';
 
+    proxy_redirect ~^http://([^:]+):443(/.+)$ https://$1$2;
 
-  # upload default maps
-  include bx/maps/*.conf;
+    # upload default maps
+    include bx/maps/*.conf;
 
-  # settings files
-  include bx/settings/*.conf;
+    # settings files
+    include bx/settings/*.conf;
+
+    server_tokens off;
 
 	# Disable request logging in nginx by default
 	#access_log /var/log/nginx/access.log  common;

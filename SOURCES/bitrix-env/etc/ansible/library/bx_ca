@@ -228,9 +228,9 @@ init_ca() {
     
     # config
     cp /etc/pki/tls/openssl.cnf $SSL
-    replace ./demoCA $SSL -- $SSL/openssl.cnf >> $LOG_FILE 2>&1
-    replace /etc/pki/CA $SSL -- $SSL/openssl.cnf >> $LOG_FILE 2>&1
-    replace cacert.pem ca.pem -- $SSL/openssl.cnf >> $LOG_FILE 2>&1
+    sed -i "s:./demoCA:$SSL:" $SSL/openssl.cnf >> $LOG_FILE 2>&1
+    sed -i "s:/etc/pki/CA:$SSL:" $SSL/openssl.cnf >> $LOG_FILE 2>&1
+    sed -i "s:cacert.pem:ca.pem:" $SSL/openssl.cnf >> $LOG_FILE 2>&1
 
     # Create necessary files: $database, $serial and $new_certs_dir
     # directory (optional)

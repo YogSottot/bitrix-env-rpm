@@ -1,0 +1,58 @@
+---
+# get some usefull variables
+# iptables_status: stateful; stateless; disabled
+# firewalld_status: running or not_running (service)
+# firewalld_package: installed or not_installed 
+# firewalld_bx_type: installed or not_installed (configure bx_trusted or not)
+# 
+# want_iptables
+- include: firewall-service-tests.yml
+
+- name: disable firewalld service
+  service:
+    name: firewalld
+    state: stopped
+    enabled: no
+  when: iptables_status == 'disabled'
+
+- include: iptables-centos6.yml
+  when: ansible_distribution == "CentOS"
+    and ansible_distribution_major_version == "6"
+    and iptables_status != "disabled"
+
+# use iptables-services
+- include: iptables-centos7.yml
+  when: ansible_distribution == "CentOS"
+    and ansible_distribution_major_version == "7"
+    and iptables_status == "stateless"
+
+- include: iptables-centos7.yml
+  when: ansible_distribution == "CentOS"
+    and ansible_distribution_major_version == "7"
+    and iptables_status != "disabled"
+    and want_iptables
+
+- include: iptables-centos7.yml
+  when: ansible_distribution == "CentOS"
+    and ansible_distribution_major_version == "7"
+    and iptables_status == "stateful"
+    and firewalld_status == "not_running"
+
+# use firewalld
+- include: firewalld-centos7.yml
+  when: ansible_distribution == "CentOS"
+    and ansible_distribution_major_version == "7"
+    and iptables_status == "stateful"
+    and firewalld_status == "running"
+    and firewalld_tolerance == "compatible"
+
+- include: iptables-centos7.yml
+  when: ansible_distribution == "CentOS"
+    and ansible_distribution_major_version == "7"
+    and iptables_status == "stateful"
+    and firewalld_status == "running"
+    and firewalld_tolerance == "non_compatible"
+
+
+
+

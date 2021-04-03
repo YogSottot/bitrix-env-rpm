@@ -1,0 +1,44 @@
+---
+#- fail:
+# upgrade php package from 7.2 version to 7.3
+- name: disable remi php72 repository
+  ini_file: 
+    dest: /etc/yum.repos.d/remi-php72.repo
+    section: remi-php72 
+    option: enabled 
+    value: 0
+  tags: remi
+
+- name: enable remi php73 repository
+  ini_file: 
+    dest: /etc/yum.repos.d/remi-php73.repo
+    section: remi-php73 
+    option: enabled 
+    value: 1
+  tags: remi
+
+- name: delete old version php-pecl-zip
+  shell: "rpm -e --nodeps php-pecl-zip || true"
+  args:
+    removes: /usr/lib64/php/modules/zip.so
+        
+
+- name: update system by remi repository
+  yum: 
+    name: php* 
+    state: latest
+    update_cache: yes
+    update_only: yes
+  tags: php7
+
+- name: install new version php-pecl-zip
+  yum:
+    name: php-pecl-zip
+    state: installed
+
+- include: php_ext_dublicates.yml
+
+- name: restart httpd
+  service: name=httpd state=restarted
+  tags: php7
+

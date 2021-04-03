@@ -62,6 +62,8 @@ bx_init(){
 }
 
 start(){
+    bx_ansible_network
+
     log_to_file "Start server configuration by Bitrix-Env" 
     log_to_file "OS info: version=$OS_VERSION type=$OS_TYPE x86_64=$IS_X86_64"
 
@@ -94,6 +96,16 @@ start(){
         fi
     fi
 
+    if [[ $IS_NET_CHANGED -gt 0 ]]; then
+        
+        if [[ $OS_VERSION -eq 7 ]]; then
+            systemctl restart nginx >> $LOGS_FILE 2>&1
+        else
+            service nginx restart >> $LOGS_FILE 2>&1
+        fi
+
+    fi
+
     if [[ $httpd_restart -gt 0 ]]; then
         log_to_file "Update httpd service; need to restart $MYSQL_SERVICE"
 
@@ -110,14 +122,16 @@ start(){
             /etc/php.d/bitrixenv.ini
         log_to_file "Increase max_input_vars value in /etc/php.d/bitrixenv.ini"
     fi
-#    if [[ $IS_OLDER_PHP -gt 0 ]]; then
-#        if [[ $(grep -c "mbstring.internal_encoding" /etc/php.d/bitrixenv.ini) -gt 0 ]]; then
-#            log_to_file "Found mbstring.internal_encoding at /etc/php.d/bitrixenv.ini"
-#            sed -i "s/mbstring.internal_encoding/default_charset/" \
-#            /etc/php.d/bitrixenv.ini && \
-#                log_to_file "Replace mbstring.internal_encoding by default_charset"
-#        fi
-#    fi
+
+    log_to_file "IS_OLDER_PHP=$IS_OLDER_PHP"
+    if [[ $IS_OLDER_PHP -gt 0 ]]; then
+        if [[ $(grep -c "mbstring.internal_encoding" /etc/php.d/bitrixenv.ini) -gt 0 ]]; then
+            log_to_file "Found mbstring.internal_encoding at /etc/php.d/bitrixenv.ini"
+            sed -i "s/mbstring.internal_encoding/default_charset/" \
+            /etc/php.d/bitrixenv.ini && \
+                log_to_file "Replace mbstring.internal_encoding by default_charset"
+        fi
+    fi
 
     # configure apcu module
     if [[ ( $IS_APCU_PHP -gt 0 ) && ( -f /etc/php.d/apc.ini ) ]]; then

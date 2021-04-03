@@ -1,0 +1,24 @@
+---
+- name: Get facts about basic sites
+  delegate_to: "{{ cluster_web_server }}"
+  bx_facts:
+    name: status
+    password: 0
+    site: "{{ web_site_name }}"
+    site_dir: "{{ web_site_dir }}"
+  tags: configure_site
+
+- name: All site option
+  set_fact:
+    bx_site_info: "{{ hostvars[inventory_hostname]['bx_sites'][0] }}"
+  tags: configure_site
+
+- name: Transformer site option
+  set_fact:
+    site_dir: "{{ bx_site_info.DocumentRoot }}"
+    site_db: "{{ bx_site_info.DBName }}"
+    module_transformer: "{{ bx_site_info.module_transformer }}"
+
+- fail:
+    msg: "Module transformer is not installed on the site={{ web_site_name }}"
+  when: module_transformer == 'not_installed'

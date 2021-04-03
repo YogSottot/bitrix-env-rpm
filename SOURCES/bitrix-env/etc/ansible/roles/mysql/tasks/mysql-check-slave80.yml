@@ -1,0 +1,20 @@
+---
+# check mysql options
+- name: start mysql service
+  service:
+    name: mysql
+    state: started
+    enabled: yes
+  when: slave_server == inventory_hostname
+
+- name: check replication status on slave
+  delegate_to: "{{ slave_server }}"
+  bx_mysql:
+    mode: getslave
+    login_unix_socket: "{{ mysql_socket }}"
+  tags: slave_facts
+
+- name: replication is configured
+  fail:
+    msg: "Replication is already configured on {{ slave_server }}. Exit"
+  when: Replication == "Yes"

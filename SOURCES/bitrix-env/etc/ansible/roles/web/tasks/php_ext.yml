@@ -40,6 +40,14 @@
 - debug: 
     msg: "{{ ini }}"
 
+- name: delete extension string
+  lineinfile:
+    dest: "{{ ini }}"
+    regexp: "{{ extension_string }}\\s*=\\s*{{ extension }}.so"
+    state: absent
+  when: type == 'enable'
+  notify: restart httpd
+
 - name: enable extension
   lineinfile: 
     dest: "{{ ini }}"

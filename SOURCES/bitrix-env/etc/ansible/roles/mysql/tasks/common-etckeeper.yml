@@ -1,4 +1,16 @@
 ---
+- name: wait for absent lockfile
+  wait_for:
+    state: absent
+    path: /var/cache/etckeeper/packagelist.pre-install
+    delay: 10
+    timeout: 300
+
+- name: create lockfile
+  file:
+    path: /var/cache/etckeeper/packagelist.pre-install
+    state: touch
+
 - name: create time mark
   shell: date +"%Y-%m-%dT%H-%M-%S"
   register: commitdate
@@ -25,3 +37,7 @@
     path: "/etc/etckeeper_commit_{{ commitdate.stdout }}"
     state: absent
  
+- name: delete lockfile
+  file:
+    path: /var/cache/etckeeper/packagelist.pre-install
+    state: absent

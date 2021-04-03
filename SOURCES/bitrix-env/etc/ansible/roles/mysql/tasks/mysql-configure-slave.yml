@@ -41,6 +41,7 @@
     master_ssl_ca=/var/lib/mysql/ca.pem
     master_ssl_cert=/var/lib/mysql/server.crt
     master_ssl_key=/var/lib/mysql/server.key
+    master_ssl=yes
   tags: mysqld_slave
 
 - name: start replication 

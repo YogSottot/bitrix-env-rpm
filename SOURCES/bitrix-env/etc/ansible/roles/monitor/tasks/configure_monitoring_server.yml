@@ -1,0 +1,41 @@
+---
+# configure server
+- name: install server's packages
+  yum:
+    pkg: "{{ packages }}"
+    state: latest
+    update_cache: yes
+  vars:
+    packages:
+      - munin
+      - nagios
+      - nagios-plugins-nrpe
+      - nagios-plugins-tcp
+      - nagios-plugins-ping
+      - nagios-plugins-ssh
+      - perl-Cache-Memcached
+      - net-tools
+  when: inventory_hostname == monitoring_server
+
+- include_tasks: configure_munin_server.yml
+  when: inventory_hostname == monitoring_server
+
+- include_tasks: configure_nagios_server.yml
+  when: inventory_hostname == monitoring_server
+
+- include_tasks: configure_nagios_hosts.yml
+
+- name: Nagios - start and enable service
+  service:
+    name: nagios
+    state: started
+    enabled: yes
+  when: inventory_hostname == monitoring_server
+
+- name: Nagios - forced restart
+  service:
+    name: nagios
+    state: restarted
+  when: inventory_hostname == monitoring_server
+
+

@@ -14,14 +14,12 @@
   when: "inventory_hostname == new_web_server or inventory_hostname == cluster_web_server"
 
 # configure csync2
-- include: configure_csync.yml
+- include_tasks: configure_csync.yml
   when: "fstype == 'csync'"
-  static: no
 
 # configure lsync
-- include: configure_lsync.yml
+- include_tasks: configure_lsync.yml
   when: "fstype == 'lsync'"
-  static: no
 
 # save settings to ansible inventory
 - include: sites_inventory-web1.yml

@@ -36,7 +36,7 @@ nginx_user: bitrix
 nginx_group: bitrix
 site_stopped: Y
 
-percona_release_rpm: "http://www.percona.com/downloads/percona-release/redhat/0.1-4/percona-release-0.1-4.noarch.rpm"
+percona_release_rpm: "https://repo.percona.com/yum/percona-release-latest.noarch.rpm"
 
 # ansible temporary folder for php-script
 bx_ansible_owner: root

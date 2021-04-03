@@ -5,6 +5,9 @@
 # site_name: - bitrix site names
 - include: sites-gathering_facts_site_names.yml
 
+- debug:
+    msg: "{{ bx_sites_info }}"
+
 - name: set cluster mark to disabled state
   set_fact:
     is_cluster: "disable"
@@ -33,103 +36,44 @@
     - /home/bitrix/dehydrated
     - /var/www/dehydrated
 
-- name: create nginx config
+- name: create nginx LE config
   template:
     src: nginx/letsencrypt-challenge-tokens.conf.j2
     dest: /etc/nginx/bx/conf/letsencrypt-challenge-tokens.conf
 
-- name: delete include for http-config
-  lineinfile:
-    dest: "{{ item.NginxHTTPDir  }}/{{ item.NginxHTTPConfig }}"
-    regexp: "letsencrypt-challenge-tokens.conf;$"
-    state: absent
-  when: is_cluster == 'disable'
-  with_items: "{{ bx_sites_info }}"
-
-# fix for:
-# bx/conf/bitrix_general.conf and bx/conf/bitrix.conf
-- name: update site http-config 
-  lineinfile:
-    dest: "{{ item.NginxHTTPDir }}/{{ item.NginxHTTPConfig }}"
-    insertbefore: "bx/conf/bitrix"
-    line: "include bx/conf/letsencrypt-challenge-tokens.conf;"
-  with_items: "{{ bx_sites_info }}"
-  when: is_cluster == 'disable'
-
-- name: delete include for https-config
-  lineinfile:
-    dest: "{{ item.NginxHTTPDir  }}/{{ item.NginxHTTPSConfig }}"
-    regexp: "letsencrypt-challenge-tokens.conf;$"
-    state: absent
-  when: is_cluster == 'disable'
-  with_items: "{{ bx_sites_info }}"
-
-# fix for:
-# bx/conf/bitrix_general.conf and bx/conf/bitrix.conf
-- name: update site https-config 
-  lineinfile:
-    dest: "{{ item.NginxHTTPDir }}/{{ item.NginxHTTPSConfig }}"
-    insertbefore: "bx/conf/bitrix"
-    line: "include bx/conf/letsencrypt-challenge-tokens.conf;"
-  with_items: "{{ bx_sites_info }}"
-  when: is_cluster == 'disable'
-
-- name: delete include
-  lineinfile:
-    dest: "/etc/nginx/bx/site_enabled/http_balancer.conf"
-    regexp: "letsencrypt-challenge-tokens.conf;$"
-    state: absent
-  when: is_cluster == 'enable'
-
-- name: update site config
-  lineinfile:
-    dest: "/etc/nginx/bx/site_enabled/http_balancer.conf"
-    insertafter: "proxy_set_header"
-    line: "include bx/conf/letsencrypt-challenge-tokens.conf;"
-  when: is_cluster == 'enable'
-
-- name: restart nginx
-  service: 
-    name: nginx
-    state: restarted
-
-# prod configuration
-- include: dehydrated.yml
-  vars:
-    dehydrated_type: "prod"
-
-- name: update ssl_options
+- name: create nginx SSL options config
   template:
     src: nginx/ssl_options.conf.j2
     dest: /etc/nginx/bx/conf/ssl_options.conf
 
-- name: delete old settings from nginx config
-  lineinfile:
-    dest: "{{ item.NginxHTTPSFullPath }}"
-    regexp: "ssl.conf;\\s*$"
-    state: absent
-  with_items: "{{ bx_sites_info }}"
+- include: configure_le_location_per_site.yml
+  when: is_cluster == 'disable' and sites_cnt > 0
 
-- name: delete previously settings
-  bx_blockinfile: insertafter="CERTIFICATE ANSIBLE MANAGED BLOCK" state="delete"
-    dest="{{ item.NginxHTTPSFullPath }}"
-  with_items: "{{ bx_sites_info }}"
-
-- name: add new settings to nginx config 
-  blockinfile:
-    dest: "{{ item.NginxHTTPSFullPath }}"
-    insertbefore: "proxy_set_header"
-    marker: "# CERTIFICATE ANSIBLE MANAGED BLOCK"
-    content: |
-      include bx/conf/ssl_options.conf;
-      ssl_certificate   /home/bitrix/dehydrated/certs/{{ common_name.stdout }}/fullchain.pem;
-      ssl_certificate_key  /home/bitrix/dehydrated/certs/{{ common_name.stdout }}/privkey.pem;
-      ssl_trusted_certificate /home/bitrix/dehydrated/certs/{{ common_name.stdout }}/chain.pem;
-  with_items: "{{ bx_sites_info }}"
+- include: configure_le_location_on_balancer.yml
+  when: is_cluster == 'enable' and sites_cnt > 0
 
 - name: restart nginx
   service: 
     name: nginx
     state: restarted
 
+- include: dehydrated.yml
+  vars:
+    dehydrated_type: "prod"
+
+- include: configure_le_certificates_per_site.yml
+  when: sites_cnt > 0
+
+- include: configure_nginx_push_server.yml
+  when: push_server is defined and push_server > 0
+
+- name: reload nginx
+  service: 
+    name: nginx
+    state: reloaded
+
+- name: reload httpd
+  service: 
+    name: httpd
+    state: reloaded
 

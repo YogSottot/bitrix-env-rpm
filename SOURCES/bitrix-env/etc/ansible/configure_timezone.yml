@@ -78,10 +78,13 @@
 
     # configure nptd service
     - name: install packages for ntp services
-      yum: pkg={{ item }} state=present
-      with_items:
-        - ntp
-        - ntpdate
+      yum:
+        pkg: "{{ packages }}"
+        state: present
+      vars:
+        packages:
+          - ntp
+          - ntpdate
       tags: ntpd_configure
 
     - name: enable ntpd service

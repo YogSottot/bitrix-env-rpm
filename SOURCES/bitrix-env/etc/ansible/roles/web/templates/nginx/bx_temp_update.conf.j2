@@ -1,0 +1,9 @@
+location ~* ^/bx_tmp_download/ {
+    internal;
+    rewrite /bx_tmp_download/(.+) /.bx_temp/{{ item.DBName }}/$1 last;
+}
+
+location ~* ^/.bx_temp/{{ item.DBName }}/ {
+    internal;
+    root /home/bitrix;
+}

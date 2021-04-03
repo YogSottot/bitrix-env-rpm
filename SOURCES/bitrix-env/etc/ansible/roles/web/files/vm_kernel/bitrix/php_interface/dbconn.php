@@ -4,7 +4,7 @@ $DBType = "mysql";
 $DBHost = "localhost";
 $DBLogin = "__LOGIN__";
 $DBPassword = "__PASSWORD__";
-$DBName = "sitemanager";
+$DBName = "__DBNAME__";
 $DBDebug = false;
 $DBDebugToFile = false;
 
@@ -32,4 +32,6 @@ define("BX_CRONTAB_SUPPORT", true);
 define("BX_COMPRESSION_DISABLED", true);
 
 define("BX_DISABLE_INDEX_PAGE", true);
+
+define("BX_TEMPORARY_FILES_DIRECTORY", "/home/bitrix/.bx_temp/__DBNAME__/");
 ?>

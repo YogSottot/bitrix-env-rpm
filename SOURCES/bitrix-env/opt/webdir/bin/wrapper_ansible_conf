@@ -11,6 +11,7 @@ use Pool;
 use Host;
 use SSHAuthUser;
 use Output;
+use Pod::Usage;
 
 # additional modules
 use Data::Dumper;
@@ -49,6 +50,7 @@ my $o_host_id = undef;            # host_id, used while updated network settings
 my $o_update_log   = undef;       # update log path
 my $o_bitrix_type  = 'general';
 my $o_new_hostname = undef;
+my $o_man = undef;
 
 # debug
 my $cmd_options = join( ' ', @ARGV );
@@ -92,13 +94,16 @@ my $result_option = GetOptions(
     'update_log:s'  => \$o_update_log,
     'bitrix_type:s' => \$o_bitrix_type,
     'hostname:s'    => \$o_new_hostname,
+    'man'           => \$o_man,
+    'm'             => \$o_man,
 ) or unknown_arg();
 
 # help message
-if ($o_help) { print_help( $prog_name, 0 ) }
+pod2usage(1) if ( $o_help || $o_format !~ /^(json|plain|te?xt)$/ );
+# manual message
+pod2usage(-exitval => 0, -verbose => 2) if $o_man;
 
 # formt output
-if ( $o_format !~ /^(json|plain|te?xt)$/ ) { print_help( $prog_name, 1 ) }
 if ( $o_format =~ /^te?xt$/ ) { $o_format = "plain" }
 
 # process request
@@ -157,17 +162,17 @@ elsif ( $o_action =~ /^(sshkey|key)$/ ) {
 }
 # Inventory operations
 elsif ( $o_action =~
-/^(bx_php_upgrade|bx_php_upgrade_php56|bx_php_rollback_php7[012]?|bx_php_upgrade_php7[012]?)$/
+/^(bx_php_upgrade|bx_php_upgrade_php56|bx_php_rollback_php[78][01234]?|bx_php_upgrade_php[78][01234]?)$/
   )
 {
     use bxInventory;
     my $inventory = bxInventory->new( debug => $o_verbose );
-    $output = $inventory->update_php($o_action);
+    $output = $inventory->update_php($o_action, $o_hostname);
 }
-elsif ( $o_action =~ /^(bx_upgrade_mysql57)$/ ) {
+elsif ( $o_action =~ /^(bx_upgrade_mysql57|bx_upgrade_mysql80)$/ ) {
     use bxInventory;
     my $inventory = bxInventory->new( debug => $o_verbose );
-    $output = $inventory->update_mysql($o_action);
+    $output = $inventory->update_mysql($o_action, $o_hostname);
 
     # Host operations
 }
@@ -270,66 +275,246 @@ else {
 $output->print($o_format);
 exit;
 
-# print usage
-sub print_usage {
-    my $prog = shift;
-    print
-"Usage: $prog [-vh] [-a add|create|view|copy|pw|monitor] [-i|-ip host_ip -H|--hostname hostname -g|--group group] [ -k path/to/ssh/key ] \n";
-}
+__END__
+=pod
+=head1 NAME
 
-# help message
-sub print_help {
-    my $prog = shift;
-    my $exit = shift;
-    print_usage($prog);
-    print <<EOT;
-Options:
-  -h|--help      - show this message
-  -v|--verbose   - enable verbose mode.
-  -o|--output    - define output format, plain or json (default: plain)
-  -i|--ip        - add description of host ( group settting by --group option)
-  -H|--host      - hostname for human usage ( default: host_ip )
-  -g|--group     - group name ( default: hosts )
-  -a|--action    - add|create|copy|pw|bx_info|bx_update|bx_reboot|dbs_list configuration in for ansible
-  -u|--user      - user for ssh connection ( default: root )
-  -p|--pass      - password for ssh connection ( used only for key installation  )
-  -P|--new       - new password ( password can|must be changed if password policy demand it)
-  -k|--key       - key file for installation
-  -t|--timezone  - timezone name (default: Europe/Moscow)
-  --php          - update php settings (default: not updated)
-  --host_id      - host ID, used when update network settings
- Ex.
-  * list of hosts and  groups in the ansible hosts file
- $prog -o json
-  * add host vm1 with ip address 192.168.1.125 to config file
- $prog -a add -i 192.168.1.125 -H vm1
-  * create default configuration with manager on local host
- $prog -a create 
-  * install ssh key on the server
- $prog -a copy -i 192.168.1.125 -k /etc/ansible/.ssh/lBNltMqvWJ.bxkey.pub -p password
-  * change password for user on remote host
- $prog -a pw -i 192.168.1.125 -p oldpassword -P newpassword -o json
-  * update all hosts in the pool
- $prog -a bx_update -o json
-  * update one host in the pool
- $prog -a bx_update -H vm1 -o json 
-  * status for monitoring in the pool
- $prog -a monitor-status
-  * reboot server
- $prog -a bx_reboot -H vm1 -o json
-  * change bitrix password
- $prog -a bx_passwd -u bitrix -H vm1 -P newpassword -o json
-  * list existen db on host
- $prog -a dbs_list -H vm1 -o json
-  * server info
- $prog -a bx_info -H vm1 -o json
-  * set timezone settings for the pool
- $prog -a timezone -o json --timezone=Europe/Lisbon --php
-  * update host settings by new IP address
- $prog -a update_network --host_id 1401866581_XXXXXXXX -i 172.17.0.14
-  * check the log and update the network settings if necessary (this action added to crontab)
- $prog -a check_network --update_log /opt/webdir/logs/update_pool.log
+    wrapper_ansible_conf - Managing MySQL servers in the Bitrix pool
 
-EOT
-    exit;
-}
+=head1 SYNOPSIS
+
+    wrapper_ansible_conf --help|-h
+    wrapper_ansible_conf [--verbose|-v] [--output|-o json|plain] \
+        [-a status|view|bx_info] \
+        [-H|--host pool_hostname]
+    wrapper_ansible_conf [--verbose|-v] [--output|-o json|plain] \
+        [-a create|delete_pool|add|del|forget_host] \
+        [-H|--host pool_hostname] [-I|--interface interface_name]
+    wrapper_ansible_conf [--verbose|-v] [--output|-o json|plain] \
+        [-a change_hostname|change_ip|timezone] \
+        [-H|--host pool_hostname]
+    wrapper_ansible_conf [--verbose\-v] [--output|-o json|plain] \
+        [-a check_network|update_network|bx_reboot|bx_password|bx_update|bx_upgrade] \
+        [-H|--host pool_hostname]
+    wrapper_ansible_conf [--verbose\-v] [--output|-o json|plain] \
+        [-a enable_beta_version|disable_beta_version]
+    wrapper_ansible_conf [--verbose\-v] [--output|-o json|plain] \
+        [-a sshkey|key] \
+        [-H|--host pool_hostname]
+     wrapper_ansible_conf [--verbose\-v] [--output|-o json|plain] \
+        [-a bx_php_upgrade|bx_php_upgrade_php56|bx_php_rollback_php7[01234]|bx_php_upgrade_php7[01234]] \
+        [-H|--host pool_hostname]
+      wrapper_ansible_conf [--verbose\-v] [--output|-o json|plain] \
+        [-a bx_upgrade_mysql57|bx_upgrade_mysql8]
+        [-H|--host pool_hostname]
+ 
+=head1 OPTIONS
+
+=over 15
+
+=item B<--help|-h>
+
+    Print a brief help message and exits.
+
+=item B<--man|-m>
+
+    Prints the manual page and exits.
+
+=item B<--verbose|-v>
+
+    Enable verbose/debug output.
+
+=item B<-H|--host>
+
+    Server name in the Bitrix pool.
+
+=item B<--action|-a>
+
+    Available options for actions in the Bitrix pool.
+
+=item B<-g|--group pool_group>
+
+    Define the pool group name. Ex. memcached or mysql.
+
+=item B<-i|--ip ipv4>
+
+    Define IPv4 adress that will be used in action.
+
+=item B<-u|--user username>
+
+    Define user login.
+
+=item B<-p|--pass password_string>
+
+    Define user password
+
+=item B<-P|--new new_password_string>
+
+    Define user new password
+
+=item B<-k|--key /path/to/ssh/key>
+    Define user OpenSHH key
+
+=item B<-I|--interface interface_name>
+    Define network interface name
+
+=item B<-t|--timezone timezone>
+    Define timezone name
+
+=item B<--host_id pool_host_id>
+    Secure host identifier that used when IP address is changed
+
+=item B<--hostname hostname>
+    New hostname for the pool server
+
+=back
+
+=head2 ACTIONS
+
+=over 18
+
+=item B<view|status>
+
+    Get brief information about all servers or one server in the Bitrix pool.
+
+    wrapper_ansible_conf -a status --host pool_hostname
+
+    wrapper_ansible_conf -a status -o json
+
+=item B<bx_info>
+
+    Get all information about one server in the Bitrix pool.
+
+    wrapper_ansible_conf -a bx_info --host pool_hostname
+
+=item B<create>
+
+    Create Bitrix pool on current host.
+
+    wrapper_ansible_conf -a create --host pool_hostname \
+        --interface interface_name 
+
+
+=item B<delete_pool>
+
+    Remove Bitrix pool on current host.
+
+    wrapper_ansible_conf -a delete_pool
+
+=item B<forget_host>
+
+    Delete the server from Bitrix pool without updating configuration on it.
+    This option is used when the server is not available.
+
+    wrapper_ansible_conf -a forget_host --host pool_hostname
+
+=item B<change_hostname>
+
+    Change hostname.
+    This action changes the host name, but does not change its identifier in the Bitrix pool.
+
+    wrapper_ansible_conf -a change_hostname --host pool_hostname
+        --hostname new_hostname
+
+=item B<change_ip>
+
+    Change IP address for server in the Bitrix pool,
+    that used for connection to the server. 
+    Update ansible configuration.
+
+    wrapper_ansible_conf -a change_ip --host pool_hostname \
+        --ip new_ipv4
+
+=item B<update_network>
+
+    This action allows to client inform about the need 
+    to update the IP address in the pool for the specified server
+    Update ansible configuration.
+    Host Id is defined in /etc/ansible/ansible-roles on client.
+
+    wrapper_ansible_conf -a update_network --host_id host_id \
+        --ip new_ipv4
+
+=item B<check_network>
+
+    This action causes the wizard to check for network change requests.
+    
+    wrapper_ansible_conf -a check_network
+
+=item B<enable_beta_version|disable_beta_version>
+
+    Enable or disable Bitrix beta version on the server pool.
+
+    wrapper_ansible_conf -a enable_beta_version|disable_beta_version
+
+=item B<bx_update|bx_upgrade>
+
+    Update all packages(bx_upgrade) or bitrix-packages(bx_update)
+    on servers in the Bitrix pool.
+
+    wrapper_ansible_conf -a bx_upgrade [--host pool_hostname]
+
+=item B<bx_passwd>
+
+    Change password for defined user
+
+    wrapper_ansible_conf -a bx_passwd  --host pool_hostname \
+        --user username
+
+=item B<bx_reboot>
+    
+    Reboot server
+    wrapper_ansible_conf -a bx_reboot --host pool_hostname
+
+=item B<timezone>
+
+    Change timezone for all servers in the pool.
+
+    wrapper_ansible_conf -a timezone \
+        --timezone timezone_name [--php]
+
+=item B<sshkey|key>
+
+    Get current OpenSSH key path.
+
+    wrapper_ansible_conf -a key
+
+=item B<bx_php_upgrade*|bx_upgrade_mysql*>
+    
+    Upgrade php or/and mysql version on the server
+
+    wrapper_ansible_conf -a bx_upgrade_mysql57
+
+=item B<add|del>
+
+    Add or delete host to the Bitrix group. 
+    If the host configuration is not in the Bitrix pool, it will be created.
+
+    wrapper_ansible_conf -a add --host pool_hostname --ip ip_address
+
+=item B<copy>
+
+    Copy OpenSHH key to the server
+
+    wrapper_ansible_conf -a copy --key /path/to/file \
+        --ip ip_address --pass ROOT_PASSWORD
+
+=item B<pw>
+    
+    Update root password on the server
+
+    wrapper_ansible_conf -a pw --pass CURRENT_PASSWORD \
+        --new NEW_PASSWORD --ip ip_address
+    
+=back
+
+=head1 EXAMPLES
+
+
+=head1 DESCRIPTION
+
+    The script <wrapper_ansible_conf> is used to manage servers in the Bitrix Pool.
+    It allows you to get the current settings for main configuration like hostname, 
+    network settings; update  software like php and mysql; and manage configuration.
+
+ =cut

@@ -1,22 +1,18 @@
 ---
-- name: update host file
-  delegate_to: "{{ monitoring_server  }}"
-  lineinfile: "dest=/etc/ansible/host_vars/{{ inventory_hostname }} regexp='^iptables_sate:' line='iptables_sate: \"enable\"'"
-  tags: iptables
+- yum:
+    name: iptables-services
+    state: present
 
-- name: create a file which will holds firewald rules
-  shell: mktemp /tmp/XXXXXX_configure.sh
-  register: tmp_file
-  tags: iptables
+- service:
+    name: firewalld
+    enabled: no
+    state: stopped
+  ignore_errors: true
 
-- name: update the file which will holds firewalld rules
-  template: src=iptables/generate_base-centos7.sh.j2
-    dest={{ tmp_file.stdout }} mode=0700 owner=root group=root
-  tags: iptables
+- include: iptables-executer.yml
 
-- name: configure firewalld
-  shell: "bash {{ tmp_file.stdout  }}"
-  tags: iptables
+- service:
+    name: iptables
+    enabled: yes
+    state: started
 
-- name: delete temporary file
-  file: path="{{ tmp_file.stdout }}" state=absent

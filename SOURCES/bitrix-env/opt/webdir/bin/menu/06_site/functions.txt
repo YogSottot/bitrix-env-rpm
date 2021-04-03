@@ -158,7 +158,8 @@ SM0056="Backup time is set to __OPT1__:__OPT2__"
 # Некорректное значение для часов
 SM0057="Invalid hour value, please try again."
 # Выбирите день недели для создания бэкапа
-SM0058="Enter the day of the week when the backup starts (0-6): "
+SM0058="Enter the day of the week when the backup starts 
+(1 - Monday, 2 - Tuesday, 3 - Wednesday, 4 - Thursday, 5 - Friday, 6 - Saturday, 7 - Sunday): "
 # День недели установлен в значение __OPT1__
 SM0059="Day is set to __OPT1__"
 # Некорректное значение для дня недели
@@ -187,14 +188,14 @@ SM0070="Do you want to disable backup? (y/N): "
 SM0071="Manage backup settings"
 
 # NTLM настройки
-SM0072="NetBIOS Domain Name (ex. TEST): "
+SM0072="NetBIOS Domain/Workgroup Name (__OPT1__): "
 SM0073="NetBIOS Domain Name cannot be empty. Try again."
-SM0074="NetBIOS Hostname (default: __OPT1__): "
-SM0075="Full Domain Name: (ex. TEST.LOCAL): "
+SM0074="NetBIOS Hostname (__OPT1__): "
+SM0075="Full Domain Name: (__OPT1__): "
 SM0076="Full Domain Name cannot be empty. Try again."
-SM0077="Domain password server (ex. TEST-DC-SP.TEST.LOCAL): "
+SM0077="Domain password server (__OPT1__): "
 SM0078="Domain password server cannot be empty. Try again."
-SM0079="Domain admin user name (default: Administrator): "
+SM0079="Domain admin user name (__OPT1__): "
 SM0080="User name cannot be empty. Try again."
 SM0081="Domain admin user password:  "
 SM0082="NTLM Settings: "
@@ -205,6 +206,7 @@ SM0086="Password Server"
 SM0087="Domain User"
 SM0088="Domain Password"
 SM0089="Domain Password File"
+SM9990="Password cannot be empty. Try again."
 
 # Введите имя сайта: 
 # Он и его сатый-ссылки будет настроены на использование NTLM.
@@ -275,6 +277,33 @@ SM0119="Configure site options"
 # Настройка опции proxy_ignore_client_abort
 SM0120="1. Configure proxy_ignore_client_abort for the site"
 
+# Настройка доп. опций для сайта
+SM0141="2. Enable custom nginx setting"
+SM0142="2. Configure BX_TEMPORARY_FILES_DIRECTORY"
+# В меню короткие обозначения, нужно описание, что значат эти непонятные названия
+SM0143="Site options: "
+SM0144=" IGA  - Nginx-option ignore_client_abort"
+SM0145=" NCSS - Additional site configs in bx/site_settings/<SITE_NAME>/\*.conf"
+SM0146=" NCTF - Nginx-config to support option BX_TEMPORARY_FILES_DIRECTORY"
+SM0147=" DCTF - Option value BX_TEMPORARY_FILES_DIRECTORY in dbconn.php.
+        If the standard directory /home/bitrix/.bx_temp is used,
+        only the relative path will be shown."
+
+# Хотите включить "персональные" конфиги для сайта?
+SM0148="Do you want enable personal nginx configs for all sites? (Y|n): "
+# Хотите настроить BX_TEMPORARY_FILES_DIRECTORY для сайта?
+SM0149="Do you want configure BX_TEMPORARY_FILES_DIRECTORY for all sites? (Y|n): "
+
+# Включение персональные кониги для сайта
+SM0150="Enable personal nginx configs"
+# Настйрока BX_TEMPORARY_FILES_DIRECTORY
+SM0151="Configure BX_TEMPORARY_FILES_DIRECTORY"
+
+# Персональные конфиги уже подключены к сайту
+SM0152="Personal configs are already configured on the site __OPT1__."
+# Настройка BX_TEMPORARY_FILES_DIRECTORY уже добавлена для сайта
+SM0153="BX_TEMPORARY_FILES_DIRECTORY setting already added for the site __OPT1__."
+
 # Главное меню
 SM1001="Create a site"
 SM1002="Delete a site"
@@ -307,7 +336,8 @@ SM0134="2. $SM1004"
 SM0135="3. $SM1005"
 SM0136="4. $SM1006"
 SM0137="5. $SM1010"
-SM0138="6. $SM1011"
+SM0138="7. $SM1011"
+SM0139="6. $SM1007"
 
 # Команда завершилась ошибкой
 SM0019="Command returned error"

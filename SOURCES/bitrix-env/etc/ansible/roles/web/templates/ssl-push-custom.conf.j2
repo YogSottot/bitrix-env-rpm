@@ -1,0 +1,17 @@
+### push-server ssl options
+include bx/conf/ssl_options.conf;
+
+{% if manage_web == 'configure_cert' %}
+ssl_certificate   /etc/nginx/certs/push-server/{{ certificate | basename }};
+ssl_certificate_key  /etc/nginx/certs/push-server/{{ private_key | basename }};
+{% if certificate_chain is defined %}
+ssl_trusted_certificate /etc/nginx/certs/push-server/{{ certificate_chain | basename }};
+{% endif %}
+{% endif %}
+
+{% if manage_web == 'configure_le' %}
+ssl_certificate   /home/bitrix/dehydrated/certs/{{ common_name.stdout }}/fullchain.pem;
+ssl_certificate_key  /home/bitrix/dehydrated/certs/{{ common_name.stdout }}/privkey.pem;
+ssl_trusted_certificate /home/bitrix/dehydrated/certs/{{ common_name.stdout }}/chain.pem;
+{% endif %}
+

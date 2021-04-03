@@ -21,7 +21,7 @@ Listen 127.0.0.1:8888
 	</DirectoryMatch>
 
 	<Directory /home/bitrix/www/>
-		Options Indexes FollowSymLinks MultiViews
+		Options FollowSymLinks MultiViews
 		AllowOverride All
 		DirectoryIndex index.php index.html index.htm
 		Order allow,deny

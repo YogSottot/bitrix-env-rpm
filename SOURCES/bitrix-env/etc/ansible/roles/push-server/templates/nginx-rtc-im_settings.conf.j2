@@ -1,3 +1,4 @@
+{% set rtc_upstream = hostname|default(inventory_hostname) %}
 log_format simple '$time_local $status $request';
 
 # if connection ti not set
@@ -15,18 +16,18 @@ map $http_upgrade  $replace_upgrade {
 upstream nodejs_sub {
   ip_hash;
   keepalive 1024;
-  server {{ hostname }}:8010;
-  server {{ hostname }}:8011;
-  server {{ hostname }}:8012;
-  server {{ hostname }}:8013;
-  server {{ hostname }}:8014;
-  server {{ hostname }}:8015;
+  server {{ rtc_upstream }}:8010;
+  server {{ rtc_upstream }}:8011;
+  server {{ rtc_upstream }}:8012;
+  server {{ rtc_upstream }}:8013;
+  server {{ rtc_upstream }}:8014;
+  server {{ rtc_upstream }}:8015;
 }
 
 # pub services
 upstream nodejs_pub {
   ip_hash;
   keepalive 1024;
-  server {{ hostname }}:9010;
-  server {{ hostname }}:9011;
+  server {{ rtc_upstream }}:9010;
+  server {{ rtc_upstream }}:9011;
 }

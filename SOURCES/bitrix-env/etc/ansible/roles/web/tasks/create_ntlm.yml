@@ -15,28 +15,24 @@
 - name: gathering facts about installed sites with the same DB
   bx_facts: name=list password=0 install='(kernel|link)'
     status=finished dbname={{ manage_kernel | default('sitemanager0') }}
-  tags: sites_facts
 
 - name: create variable bx_sites_info - all sites with the same DB
   set_fact:
     bx_sites_info: "{{ hostvars[inventory_hostname]['bx_sites'] }}"
-  tags: sites_facts
 
 - name: gathering facts about installed kernel site with defined DB
   bx_facts: name=list password=0 install='(kernel|ext_kernel)'
     status=finished dbname={{ manage_kernel | default('sitemanager0') }}
-  tags: sites_facts
 
 - name: create variable bx_kernel_site - installed kernel site with defined DB
   set_fact:
     bx_kernel_site: "{{ hostvars[inventory_hostname]['bx_sites'] }}"
-    ntlm_pass: "{{ lookup('file', ntlm_pass_file) }}"
-  tags: sites_facts
- 
+
+
 ############ Configure Winbind (samba, kerberos and etc.)
 ####
 - include: samba_configs.yml
-  when: "ntlm_dps != 'NOT_DEFINED'"
+  when: ntlm_dps != 'NOT_DEFINED'
 ####
 ############ /Configure Winbind (samba, kerberos and etc.)
 
@@ -44,12 +40,12 @@
 ####
 - name: test that the domain has successfully been joined by
   bx_ntlm: idmap_id={{ idmap_range_start }}  
-  tags: domain_test
 
 - name: exit if check returned that the host is not added to domain
-  fail: msg="AD status={{ domain_status }} winbind status={{ nss_status }}"
-  when: "domain_status == 'not_configured' or nss_status == 'not_configured'"
-  tags: domain_test
+  fail: 
+    msg: "AD status={{ domain_status }} winbind status={{ nss_status }}"
+  when: domain_status == 'not_configured' 
+    or nss_status == 'not_configured'
 ####
 ############ /Test domain
 
@@ -57,54 +53,62 @@
 #### in case web cluster, apache settings will created on master server only
 ####
 - name: create apache config with main settings (listen and ntlm module enable)
-  template: src=httpd/mod_ntlm.conf.j2 
-    dest={{ httpd_base_dir }}/{{ httpd_config_dir }}/mod_ntlm.conf
-    owner={{ site_bitrix }} group={{ site_bitrix }}
-    mode=0644
-  tags: apache_config
+  template:
+    src: httpd/mod_ntlm.conf.j2
+    dest: "/etc/httpd/bx/conf/mod_ntlm.conf"
+    owner: bitrix
+    group: bitrix
+    mode: 0644
   notify: restart httpd
 
 - name: create apache config for sites
-  template: src=httpd/ntlm_site.conf.j2 
-    dest={{ httpd_base_dir }}/{{ httpd_config_dir }}/ntlm_{{ item.ServerName }}.conf
-    owner={{ site_bitrix }} group={{ site_bitrix }}
-    mode=0644
-  tags: apache_config
+  template:
+    src: httpd/ntlm_site.conf.j2
+    dest: "/etc/httpd/bx/conf/ntlm_{{ item.ServerName }}.conf"
+    owner: bitrix
+    group: bitrix
+    mode: 0644
   with_items: "{{ bx_sites_info }}"
   notify: restart httpd
 
 - name: create temporary directory for php scripts
-  file: path="{{ bx_ansible_temp_dir_fn }}"
-    state=directory mode=0750
-    owner={{ bx_ansible_owner }} group={{ bx_ansible_group }}
-  tags: web_configs
+  file:
+    path: "/opt/webdir/.ansible"
+    state: directory
+    mode: 0750
+    owner: root
+    group: bitrix
 
 - name: create temporary directories for sites
   with_items: "{{ bx_sites_info }}"
-  tags: web_configs
-  file: path="{{ bx_ansible_temp_dir_fn }}/{{ item.SiteName }}"
-    state=directory mode=0750
-    owner={{ bx_ansible_owner }} group={{ bx_ansible_group }}
+  file:
+    path: "/opt/webdir/.ansible/{{ item.SiteName }}"
+    state: directory
+    mode: 0750
+    owner: root
+    group: bitrix
 
 - name: save ntlm script to temporary directory
-  template: src="ntlm_settings.php.j2"
-    dest="{{ bx_ansible_temp_dir_fn }}/{{ item.SiteName }}/ntlm_settings.php"
-    owner={{ bx_ansible_owner }} group={{ bx_ansible_group }} 
-    mode=0640
+  template:
+    src: "ntlm_settings.php.j2"
+    dest: "/opt/webdir/.ansible/{{ item.SiteName }}/ntlm_settings.php"
+    mode: 0640
+    owner: root
+    group: bitrix
   with_items: "{{ bx_sites_info }}"
-  tags: sites_configs
 
 - name: enable NTLM in site settings - execute ntlm script
-  shell: php -f "{{ bx_ansible_temp_dir_fn }}/{{ item.SiteName }}/ntlm_settings.php"
+  shell: php -f ntlm_settings.php
+  args:
+    chdir: "/opt/webdir/.ansible/{{ item.SiteName }}"
   with_items: "{{ bx_sites_info }}"
-  tags: sites_configs
   become: yes
   become_user: "{{ bx_ansible_executer }}"
 
 - name: delete temporary files
-  file: path={{ bx_ansible_temp_dir_fn }}
-    state=absent
-  tags: sites_configs
+  file:
+    path: "/opt/webdir/.ansible"
+    state: absent
   when: "ansible_playbook_debug != 'DEBUG'"
 ####
 ############ /Apache and sites configs
@@ -117,4 +121,3 @@
   tags: ansible_hosts
 ####
 ############ /update ansible group settings
-

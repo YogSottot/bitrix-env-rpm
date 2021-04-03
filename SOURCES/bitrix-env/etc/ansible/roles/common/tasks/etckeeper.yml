@@ -1,0 +1,49 @@
+---
+# configure etckeeper
+- name: wait for absent lockfile
+  wait_for:
+    state: absent
+    path: /var/cache/etckeeper/packagelist.pre-install
+    delay: 10
+    timeout: 300
+
+- name: create lockfile
+  file:
+    path: /var/cache/etckeeper/packagelist.pre-install
+    state: touch
+
+- name: deploy etckeeper config
+  template:
+    src: etckeeper.conf.j2
+    dest: /etc/etckeeper/etckeeper.conf
+  tags: etckeeper
+
+- name: init etckeeper
+  shell: /usr/bin/etckeeper init
+  args:
+    creates: /etc/.hg/hgrc
+  tags: etckeeper
+
+- name: check if the directory contains uncommitted changes
+  shell: /usr/bin/etckeeper unclean && echo "True" || echo "False"
+  register: hgstatus
+  ignore_errors: True
+  tags: etckeeper
+
+- name: count commit date
+  shell: date +"%Y-%m-%d %H:%M:%S"
+  register: commitdate
+  tags: etckeeper
+  when: "'True' in hgstatus.stdout"
+
+- name: commit changes by etckeeper
+  shell: /usr/bin/etckeeper commit "commit from ansible task at {{ commitdate.stdout }}"
+  tags: etckeeper
+  when: "'True' in hgstatus.stdout"
+
+- name: delete lockfile
+  file:
+    path: /var/cache/etckeeper/packagelist.pre-install
+    state: absent
+
+

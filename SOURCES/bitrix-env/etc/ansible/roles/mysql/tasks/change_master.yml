@@ -8,6 +8,7 @@
 - include: sites-checks.yml
 
 - include: mysql-check-master.yml
+  when: mysql_uni_version|int < 80
 
 - name: additional variables that present mysql server
   set_fact:  

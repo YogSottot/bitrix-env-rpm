@@ -15,6 +15,7 @@ use Pool;
 use Data::Dumper;
 use Getopt::Long;
 use File::Basename qw( dirname basename );
+use Pod::Usage;
 
 # program options
 my $prog_name = basename $0;
@@ -40,6 +41,7 @@ my $o_mysql_server = undef;      # ip address or hostname for mysql server
 my $o_format       = 'plain';    # format of stdout message
 my $o_verbose      = 0;
 my $o_help         = undef;
+my $o_man          = undef;
 
 # get command line options
 Getopt::Long::Configure("bundling");
@@ -58,16 +60,19 @@ my $result_option = GetOptions(
     'cluster_password:s' => \$options->{'cluster_password'},
     'replica_login:s'    => \$options->{'replica_login'},
     'replica_password:s' => \$options->{'replica_password'},
-    'password_file:s'    => \$options->{'password_file'},    
+    'password_file:s'    => \$options->{'password_file'},
     "o:s"                => \$o_format,
     'output'             => \$o_format,
-) or unknown_arg();
+    'man'                => \$o_man,
+    'm'                  => \$o_man,
+) or pod2usage(2);
 
 # help message
-if ($o_help) { print_help( $prog_name, 0 ) }
+pod2usage(1) if ( $o_help || $o_format !~ /^(json|plain|te?xt)$/ );
+# manual message
+pod2usage(-exitval => 0, -verbose => 2) if $o_man;
 
-# formt output
-if ( $o_format !~ /^(json|plain|te?xt)$/ ) { print_help( $prog_name, 1 ) }
+
 if ( $o_format =~ /^te?xt$/ ) { $o_format = "plain" }
 
 # process request
@@ -91,11 +96,11 @@ elsif ( $o_action eq "remove" ) {
 elsif ( $o_action eq "update" ) {
     $confMysql = $confPool->update();
 }
-elsif ( $o_action =~ /^(change_password|client_config)$/ ){
-    $confMysql = $confPool->password($o_mysql_server, $1);
+elsif ( $o_action =~ /^(change_password|client_config)$/ ) {
+    $confMysql = $confPool->password( $o_mysql_server, $1 );
 }
-elsif ( $o_action =~ /^(stop_service|start_service)$/ ){
-    $confMysql = $confPool->manage($o_mysql_server, $1);
+elsif ( $o_action =~ /^(stop_service|start_service)$/ ) {
+    $confMysql = $confPool->manage( $o_mysql_server, $1 );
 }
 else {
     $confMysql = Output->new(
@@ -104,47 +109,130 @@ else {
     );
 }
 $confMysql->print($o_format);
+exit;
 
-# print usage
-sub print_usage {
-    my $prog = shift;
-    print
-"Usage: $prog [-vh] [-a status|list|slave|master|remove] [-s server_ip] \n";
-}
+__END__
+=pod
+=head1 NAME
 
-# help message
-sub print_help {
-    my $prog = shift;
-    my $exit = shift;
-    print_usage($prog);
-    print <<EOT;
-Options:
-  -h|--help    - show this message
-  -v|--verbose - enable verbose mode.
-  -a|--action  - mysql action: list|status|master|slave|remove|options
-  -s|--server  - mysql server
-  -c|--config  - config file ( default: /etc/ansible/group_vars/bitrix-mysql )
-     --mysql_login      - super user, usage for creation of replica
-     --mysql_password   - super user password
-     --cluster_login    - cluster user
-     --cluster_password - password
-     --replica_login    - replication user
-     --replica_password - replication password
- Ex.
-  * get status of mysql servers
- $prog -o json
-  * get status for one server
- $prog -a status -s vm1
-  * create first slave server and all accounts for bx cluster work
- $prog -s vm2 -a slave --cluster_password="XXXXXXXXXXX" --mysql_password='YYYYYYYYYYYYY' --replica_password="ZZZZZZZZZZ"
-  * change master server
- $prog -a master -s vm2
-  * delete slave server
- $prog -a remove -s vm1
-  * test if all option connfigured
- $prog -a options 
+    bx-mysql - Managing MySQL servers in the Bitrix pool
 
-EOT
-    exit;
-}
+=head1 SYNOPSIS
 
+    bx-mysql --help|-h
+    bx-mysql [--verbose|-v] [--output|-o json|plain] [-a status|list] \
+        [-s|--server pool_hostname]
+    bx-mysql [--verbose|-v] [--output|-o json|plain] [-a master|slave|remove] \
+        [-s|--server pool_hostname] \
+        [--cluster_login cluster_login --cluster_password cluster_password] \
+        [--replica_login replica_login --replica_password replica_password]
+    bx-mysql [--verbose|-v] [--output|-o json|plain] [-a update|change_password|client_config] \
+        [-s|--server pool_hostname] \
+        [--password_file /path/to/file]
+    bx-mysql [--verbose\-v] [--output|-o json|plain] [-a stop_service|start_service] \
+        [-s|--server pool_hostname]
+
+=head1 OPTIONS
+
+=over 8
+
+=item B<--help|-h>
+    
+    Print a brief help message and exits.
+
+=item B<--man|-m>
+    
+    Prints the manual page and exits.
+
+=item B<--verbose|-v>
+
+    Enable verbose/debug output.
+
+=item B<--server|-s>
+
+    Server name in the Bitrix pool.
+
+=item B<--action|-a>
+
+    Available options for actions in the Bitrix pool.
+
+=item B<--password_file>
+    
+    File with MySQL password. Mandatory option for changing root password.
+
+=item B<--cluster_login and --cluster_password>
+
+    MySQL login and password that used by Bitrix cluster module.
+
+=item B<--replica_login and --replica_password>
+
+    MySQL login and password that used by MySQL replication process. 
+
+=back
+
+=head2 ACTIONS
+
+=over 7
+
+=item B<status>
+    
+    Get mysql status in a specific server.
+
+    bx-mysql -a status --server pool_hostname
+
+=item B<list>
+
+    Get mysql status for all mysql servers in the Bitrix pool.
+
+    bx-mysql -a list
+
+=item B<slave>
+
+    Create MySQL replication on the specified pool server.
+    
+    bx-mysql -a slave --server pool_hostname \
+        --cluster_login cluster_login --cluster_password cluster_password \
+        --replica_login replica_login --replica_password replica_password
+
+
+=item B<master>
+
+    Change MySQL master.
+
+    bx-mysql -a master --server pool_hostname
+
+=item B<remove>
+
+    Delete MySQL service on the specified pool server.
+    Only slave-server can be deleted.
+
+    bx-mysql -a remove --server pool_hostname
+ 
+=item B<change_password>
+
+    Update MySQL root password.
+    Password value is saved in password file, 
+    it will be deleted upfter update process.
+
+    bx-mysql -a change_password --server pool_hostname \
+        --password_file /path/to/password_file
+
+=item B<stop_service|start_service>
+
+    Start and stop MySQL service on the specified pool server
+
+    bx-mysql -a stop_service --server pool_hostname
+    
+=back
+
+=head1 EXAMPLES
+
+
+=head1 DESCRIPTION
+
+    The script <bx-mysql> is used to manage, create and delete MySQL servers.
+    It allows you to get the current settings for the MySQL service, 
+    as well as take a number of steps to configure it: 
+    change the password, update the configuration, and restart.
+
+ =cut

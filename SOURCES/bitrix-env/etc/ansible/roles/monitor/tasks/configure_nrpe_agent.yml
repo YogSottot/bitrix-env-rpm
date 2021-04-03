@@ -1,0 +1,46 @@
+---
+# NRPE agent
+########
+
+## package installation
+- name: Configure nrpe user
+  user:
+    state: present
+    system: yes
+    name: "{{ nrpe_server_user }}" 
+    group: "{{ nrpe_server_group }}"
+    comment: "{{ nrpe_server_user }} monitoring user"
+
+- name: Create nrpe directory
+  file:
+    state: directory
+    path: "{{ nrpe_server_data_dir }}"
+    owner: "{{ nrpe_server_user }}"
+    group: "{{ nrpe_server_user }}"
+    mode: 0775
+    recurse: yes
+
+### configuration nrpe agents
+# Nagios Remote Plugin Executor
+- name: Nrpe agent - additional config directory
+  file:
+    path: "{{ nrpe_server_include_dir }}"
+    state: directory
+
+- name: Nrpe agent - main config
+  template:
+    src: nrpe.cfg.j2
+    dest: /etc/nagios/nrpe.cfg
+
+- name: Nrpe agent - start and enable service
+  service:
+    name: nrpe
+    state: started
+    enabled: yes
+
+- name: Nrpe agent - forced restart
+  service:
+    name: nrpe
+    state: restarted
+  tags: service
+

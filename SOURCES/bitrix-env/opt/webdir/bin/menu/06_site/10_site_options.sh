@@ -41,9 +41,52 @@ proxy_ignore_client_abort() {
     fi
 }
 
+enable_custom_settings() {
+    task_exec=
+    task_desc=
+
+    print_message "$(get_text "$SM0148" "$site_name")" \
+        "" "" site_answer 'y'
+
+    [[ $(echo "$site_answer" | grep -icw 'y') -gt 0 ]] && \
+        task_exec="$bx_sites_script -a nginx_custom_site_settings --enable" && \
+        task_desc="$SM0150"
+
+    if [[ $DEBUG -gt 0 ]]; then
+        echo "$task_exec"
+    fi
+
+    if [[ -n "$task_exec" ]]; then
+        exec_pool_task "$task_exec" "$task_desc"
+    fi
+}
+
+
+enable_bx_temp_files_dir() {
+
+    task_exec=
+    task_desc=
+
+    print_message "$(get_text "$SM0149" "$site_name")" \
+        "" "" site_answer 'y'
+    [[ $(echo "$site_answer" | grep -icw 'y') -gt 0 ]] && \
+        task_exec="$bx_sites_script -a dbconn_temp_files --enable" && \
+        task_desc="$SM0151"
+
+    if [[ $DEBUG -gt 0 ]]; then
+        echo "$task_exec"
+    fi
+
+    if [[ -n "$task_exec" ]]; then
+        exec_pool_task "$task_exec" "$task_desc"
+    fi
+}
+
+
 sub_menu(){
     menu_00="$SM0201"
     menu_01="$SM0120"
+    menu_02="$SM0142"
 
     MENU_SELECT=
     until [[ -n "$MENU_SELECT" ]]; do
@@ -60,7 +103,7 @@ sub_menu(){
         if [[ $POOL_SUBMENU_TASK_LOCK -eq 1 ]]; then
             menu_list="\n$menu_00"
         else
-            menu_list="\n$menu_01\n$menu_00"
+            menu_list="\n$menu_01\n$menu_02\n$menu_00"
         fi
 
         print_menu
@@ -75,6 +118,7 @@ sub_menu(){
         case "$MENU_SELECT" in
             0) exit ;;
             1) proxy_ignore_client_abort;;
+            2) enable_bx_temp_files_dir ;;
             *) error_pick ;;
         esac
         MENU_SELECT=

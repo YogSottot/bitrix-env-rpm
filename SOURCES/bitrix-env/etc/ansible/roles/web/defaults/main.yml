@@ -117,11 +117,7 @@ bitrix_site_collation: utf8_unicode_ci
 # charset: utf-8 or windows-1251
 bitrix_site_charset: utf-8
 
-# site mbstring settings
-# cp1251 - "php_admin_value mbstring.func_overload 0"
-bitrix_site_php_overload: " "
-
-# cp1251 - "php_admin_value mbstring.internal_encoding latin"
+# cp1251 - "php_admin_value mbstring.internal_encoding cp1251"
 bitrix_site_php_internal: " "
 
 # debug for web part
@@ -151,3 +147,5 @@ lsync_logdir: /var/log/lsyncd
 cache_directory: /opt/webdir/tmp
 # mysql connect: local or cluster
 mysql_playbook: local
+
+is_json_module: false

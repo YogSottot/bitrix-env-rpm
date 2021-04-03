@@ -35,13 +35,6 @@ location ~* ^/bitrix/components/bitrix/player/mediaplayer/player$ {
   add_header Access-Control-Allow-Origin *;
 }
 
-# ticket id: 96045
-location ~* ^/bitrix/rk.php {
-    valid_referers $host;
-    if ($invalid_referer) { return 403; }
-    proxy_pass $proxyserver;
-}
-
 # Process dav request on
 # main company
 # extranet
@@ -80,60 +73,82 @@ location ^~ /bitrix/groupdav.php 			{ proxy_pass $proxyserver; }
 # Use nginx to return static content from s3 cloud storage
 # /upload/bx_cloud_upload/<schema>.<backet_name>.<s3_point>.amazonaws.com/<path/to/file>
 location ^~ /upload/bx_cloud_upload/ {
-
-    location ~ ^/upload/bx_cloud_upload/(http[s]?)\.([^/:\s]+)\.(s3|s3-us-west-1|s3-eu-west-1|s3-ap-southeast-1|s3-ap-northeast-1)\.amazonaws\.com/([^\s]+)$ {
+	# Amazon
+    location ~ ^/upload/bx_cloud_upload/(http[s]?)\.([^/:\s]+)\.(s3|us-east-2|us-east-1|us-west-1|us-west-2|af-south-1|ap-east-1|ap-south-1|ap-northeast-3|ap-northeast-2|ap-southeast-1|ap-southeast-2|ap-northeast-1|ca-central-1|cn-north-1|cn-northwest-1|eu-central-1|eu-west-1|eu-west-2|eu-south-1|eu-west-3|eu-north-1|me-south-1|sa-east-1)\.amazonaws\.com/([^\s]+)$ {
         internal;
-        resolver 8.8.8.8;
+        resolver 8.8.8.8 ipv6=off;
         proxy_method GET;
         proxy_set_header	X-Real-IP		$remote_addr;
         proxy_set_header	X-Forwarded-For		$proxy_add_x_forwarded_for;
         proxy_set_header	X-Forwarded-Server	$host;
         #proxy_max_temp_file_size 0;
+        more_clear_input_headers 'Authorization';
         proxy_pass $1://$2.$3.amazonaws.com/$4;
     }
 
+	# Rackspace
     location ~ ^/upload/bx_cloud_upload/(http[s]?)\.([^/:\s]+)\.([^/:\s]+)\.([^/:\s]+)\.rackcdn\.com/([^\s]+)$ {
         internal;
-        resolver 8.8.8.8;
+        resolver 8.8.8.8 ipv6=off;
         proxy_method GET;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Server $host;
+        more_clear_input_headers 'Authorization';
         #proxy_max_temp_file_size 0;
         proxy_pass $1://$2.$3.$4.rackcdn.com/$5;
     }
 
+	# Clodo
     location ~ ^/upload/bx_cloud_upload/(http[s]?)\.([^/:\s]+)\.clodo\.ru\:(80|443)/([^\s]+)$ {
         internal;
-        resolver 8.8.8.8;
+        resolver 8.8.8.8 ipv6=off;
         proxy_method GET;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Server $host;
+        more_clear_input_headers 'Authorization';
         #proxy_max_temp_file_size 0;
         proxy_pass $1://$2.clodo.ru:$3/$4;
     }
 
+	# Google
     location ~ ^/upload/bx_cloud_upload/(http[s]?)\.([^/:\s]+)\.commondatastorage\.googleapis\.com/([^\s]+)$ {
         internal;
-        resolver 8.8.8.8;
+        resolver 8.8.8.8 ipv6=off;
         proxy_method GET;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Server $host;
+        more_clear_input_headers 'Authorization';
         #proxy_max_temp_file_size 0;
         proxy_pass $1://$2.commondatastorage.googleapis.com/$3;
     }
 
+	# Selectel
     location ~ ^/upload/bx_cloud_upload/(http[s]?)\.([^/:\s]+)\.selcdn\.ru/([^\s]+)$ {
         internal;
-        resolver 8.8.8.8;
+        resolver 8.8.8.8 ipv6=off;
         proxy_method GET;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Server $host;
+        more_clear_input_headers 'Authorization';
         #proxy_max_temp_file_size 0;
         proxy_pass $1://$2.selcdn.ru/$3;
+    }
+
+	# Yandex
+	location ~ ^/upload/bx_cloud_upload/(http[s]?)\.([^/:\s]+)\.storage\.yandexcloud\.net/([^\s]+)$ {
+        internal;
+        resolver 8.8.8.8 ipv6=off;
+        proxy_method GET;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Server $host;
+        more_clear_input_headers 'Authorization';
+        #proxy_max_temp_file_size 0;
+        proxy_pass $1://$2.storage.yandexcloud.net/$3;
     }
 
     location ~* .*$	{ deny all; }
@@ -141,10 +156,12 @@ location ^~ /upload/bx_cloud_upload/ {
 
 # Static content
 location ~* ^/(upload|bitrix/images|bitrix/tmp) { 
-  expires 30d; 
+  if ( $upstream_http_x_accel_redirect = ''  ) {
+          expires 30d;
+  }
 }
 
-location  ~* \.(css|js|gif|png|jpg|jpeg|ico|ogg|ttf|woff|eot|otf)$ {
+location  ~* \.(css|js|gif|png|jpg|jpeg|ico|ogg|ttf|woff|eot|otf|svg|woff2)$ {
   error_page 404 /404.html;
   expires 30d;
 }

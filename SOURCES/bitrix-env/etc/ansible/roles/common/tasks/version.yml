@@ -41,11 +41,15 @@
     and '7.3.' in ansible_distribution_version 
 
 - name: remove old version bitrix-env4
-  yum: pkg=bitrix-env4 state=absent
+  yum:
+    pkg: bitrix-env4
+    state: absent
   tags: yum_remove
   when: "inventory_hostname == common_server or common_server == 'NOT_DEFINED'"
 
 - name: update bitrix-env
-  yum: pkg={{ bx_package_name }} state=latest
+  yum:
+    pkg: "{{ bx_package_name }}"
+    state: latest
   tags: yum_update
   when: "inventory_hostname == common_server or common_server == 'NOT_DEFINED'"

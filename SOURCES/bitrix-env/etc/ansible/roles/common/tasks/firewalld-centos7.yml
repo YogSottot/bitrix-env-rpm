@@ -1,0 +1,9 @@
+---
+- include: firewalld-executer.yml
+
+- service:
+    name: firewalld
+    enabled: yes
+    state: started
+
+

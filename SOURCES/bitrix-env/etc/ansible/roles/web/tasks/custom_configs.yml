@@ -1,0 +1,89 @@
+---
+- name: gathering facts about processed site
+  delegate_to: "{{ cluster_web_server }}"
+  bx_facts:
+    name: list
+    password: 0
+    error: 0
+  tags: configure_site
+
+- name: create variable with site options
+  set_fact:
+    bx_sites_info: "{{ hostvars[inventory_hostname]['bx_sites'] }}"
+  tags: configure_site
+
+- name: create custom settings directory
+  file:
+    path: "/etc/nginx/bx/site_settings/{{ item.SiteName }}"
+    state: directory
+    owner: bitrix
+    group: bitrix
+  loop: "{{ bx_sites_info }}"
+  when: item.SiteInstall != 'ext_kernel'
+    and item.nginx_custom_settings == 'off'
+
+- name: update nginx http-config
+  blockinfile:
+    block: |
+        # custom options for sites; doesn't changes on update
+        include bx/site_settings/{{ item.SiteName }}/*.conf;
+    path: "{{ item.NginxHTTPEDir }}/{{ item.NginxHTTPConfig }}"
+    insertbefore: "Include parameters common to all website"
+  loop: "{{ bx_sites_info }}"
+  when: item.SiteInstall != 'ext_kernel'
+    and item.nginx_custom_settings == 'off'
+
+- name: update nginx https-config
+  blockinfile:
+    block: |
+        # custom options for sites; doesn't changes on update
+        include bx/site_settings/{{ item.SiteName }}/*.conf;
+    path: "{{ item.NginxHTTPEDir }}/{{ item.NginxHTTPSConfig }}"
+    insertbefore: "Include parameters common to all website"
+  loop: "{{ bx_sites_info }}"
+  when: item.SiteInstall != 'ext_kernel'
+    and item.nginx_custom_settings == 'off'
+
+- name: create custom nginx config bx_temp_files
+  template:
+    src: nginx/bx_temp_update.conf.j2
+    dest: "/etc/nginx/bx/site_settings/{{ item.SiteName }}/bx_temp.conf"
+    owner: bitrix
+    group: bitrix
+  loop: "{{ bx_sites_info }}"
+  when: option == 'dbconn_temp_files'
+    and item.SiteInstall != 'ext_kernel'
+    and item.nginx_bx_temp_files == 'off'
+
+- name: create BX_TEMPORARY_FILES_DIRECTORY directory
+  file:
+    path: "/home/bitrix/.bx_temp/"
+    state: directory
+    owner: bitrix
+    group: bitrix
+    mode: 0770
+  when: option == 'dbconn_temp_files'
+
+- name: create BX_TEMPORARY_FILES_DIRECTORY directory for sites
+  file:
+    path: "/home/bitrix/.bx_temp/{{ item.DBName }}"
+    state: directory
+    owner: bitrix
+    group: bitrix
+    mode: 0770
+  when: option == 'dbconn_temp_files'
+  loop: "{{ bx_sites_info }}"
+
+- name: create BX_TEMPORARY_FILES_DIRECTORY option for sites
+  lineinfile:
+    path: "{{ item.DocumentRoot }}/bitrix/php_interface/dbconn.php"
+    line: "define(\"BX_TEMPORARY_FILES_DIRECTORY\", \"/home/bitrix/.bx_temp/{{ item.DBName }}/\");"
+    insertbefore: 'BX_FILE_PERMISSIONS'
+  when: option == 'dbconn_temp_files' 
+    and item.dbconn_BX_TEMPORARY_FILES_DIRECTORY == ''
+  loop: "{{ bx_sites_info }}"
+
+- name: reload nginx
+  service:
+    name: nginx
+    state: reloaded

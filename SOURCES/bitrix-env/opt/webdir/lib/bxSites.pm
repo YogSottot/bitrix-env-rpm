@@ -10,6 +10,7 @@ use Output;
 use bxSite;
 use bxSiteFiles;
 use Host;
+use bxInventory;
 use bxMysql;
 use File::Temp;
 use Pool;
@@ -33,7 +34,7 @@ sub set_filter {
     return {};
 }
 
-sub generate_password {
+sub generate_simple_password {
     my $password = '';
     my @chars = ( "A" .. "Z", "a" .. "z", "1" .. "9" );
     $password .= $chars[ rand @chars ] for 1 .. 15;
@@ -1056,7 +1057,7 @@ sub configurePushServer {
 
 sub testListSites {
     my ( $self, $opts ) = @_;
-    my ( @site_names, $sites_filter );
+    my ( @site_names, $sites_filter, @special_sites );
     my $message_p = ( caller(0) )[3];
     my $message_t = __PACKAGE__;
 
@@ -1068,6 +1069,29 @@ sub testListSites {
     }
 
     $opts->{site_names} =~ s/\s+//g;
+
+    my $configure_push_server = 0;
+    if ( $opts->{site_names} =~ /push-server/ ) {
+        $opts->{site_names} =~ s/^push-server,(.+)$/$1/;
+        $opts->{site_names} =~ s/(.+),push-server,(.+)$/$1,$2/;
+        $opts->{site_names} =~ s/(.+),push-server$/$1/;
+        $opts->{site_names} =~ s/^push-server$//;
+
+        push @special_sites, "push-server";
+    }
+
+    #print Dumper(\@special_sites);
+
+ # any special sites is updated by existen site; default-site is used by default
+    if ( $opts->{site_names} eq "" ) {
+
+        #$opts->{site_names} = "default";
+        return Output->new(
+            error => 0,
+            data =>
+              [ "site_names", \@site_names, $sites_filter, \@special_sites ],
+        );
+    }
 
     # create list of sites
     if ( $opts->{site_names} =~ /,/ ) {
@@ -1119,7 +1143,130 @@ sub testListSites {
 
     return Output->new(
         error => 0,
-        data  => [ "site_names", \@site_names, $sites_filter ],
+        data  => [ "site_names", \@site_names, $sites_filter, \@special_sites ],
+    );
+
+}
+
+sub statusCerts {
+    my ( $self, $opts ) = @_;
+
+    #print Dumper($opts);
+    my %certs;
+    my $cnt       = 0;
+    my $message_p = ( caller(0) )[3];
+    my $message_t = __PACKAGE__;
+
+    if ( defined $opts->{cert} && ( $opts->{cert} !~ /^\// ) ) {
+        $opts->{cert} = catfile( "/etc/nginx", $opts->{cert} );
+    }
+
+    # sites
+    my $l = $self->listAllSite();
+    return $l if ( $l->is_error );
+    my $sites = $l->data->[1];
+    foreach my $s ( keys %$sites ) {
+        my $info = $sites->{$s};
+        if (   ( $info->{SiteInstall} eq 'kernel' )
+            || ( $info->{SiteInstall} eq 'link' ) )
+        {
+            if ( defined $opts->{cert} ) {
+                if ( $info->{HTTPSCert} ne $opts->{cert} ) {
+                    next;
+                }
+            }
+            my $cert_path = $info->{HTTPSCert};
+            if ( not defined $certs{$cert_path} ) {
+                $certs{$cert_path}->[0] = $s;
+                $cnt++;
+            }
+            else {
+                push @{ $certs{$cert_path} }, $s;
+            }
+        }
+    }
+
+    # push-stream-server
+    my $p  = Pool->new();
+    my $pi = $p->get_ansible_data();
+    return $pi if ( $pi->is_error );
+    my $is_nginx_push = 1;
+    foreach my $h ( keys %{ $pi->{data}->[1] } ) {
+        my $hi = $pi->{data}->[1]->{$h};
+        if ( grep( /^push$/, keys %{ $hi->{groups} } ) ) {
+            $is_nginx_push = 0;
+        }
+    }
+
+    if ($is_nginx_push) {
+        my $push_config = '/etc/nginx/bx/conf/ssl-push.conf';
+        if ( -f $push_config ) {
+
+            my $hh;
+            my $cert_path = undef;
+            open( $hh, '<', $push_config )
+              or return Output->new(
+                error => 0,
+                data  => [
+                    "site_certs",
+                    {
+                        certs => \%certs,
+                        cnt   => $cnt
+                    }
+                ],
+              );
+
+            while (<$hh>) {
+                s/^\s+//;
+                s/\s+$//;
+                next if (/^#/);
+                next if (/^$/);
+
+                my $str = $_;
+                if ( $str =~ /^ssl_certificate\s+(\S+)/ ) {
+                    $cert_path = $1;
+                    $cert_path =~ s/['"]//g;
+                    $cert_path =~ s/;$//;
+                }
+            }
+            close $hh;
+
+            #print "cert_path=> $cert_path\n";
+
+            if ( defined $cert_path ) {
+                my $add = 0;
+                if ( defined $opts->{cert} ) {
+                    if ( $cert_path eq $opts->{cert} ) {
+                        $add = 1;
+                    }
+                }
+                else {
+                    $add = 1;
+                }
+
+                if ($add) {
+                    if ( not defined $certs{$cert_path} ) {
+                        $certs{$cert_path}->[0] = 'push-server';
+                        $cnt++;
+                    }
+                    else {
+                        push @{ $certs{$cert_path} }, 'push-server';
+                    }
+                }
+            }
+        }
+    }
+
+    return Output->new(
+        error => 0,
+        data  => [
+            "site_certs",
+            {
+                certs => \%certs,
+                cnt   => $cnt
+            }
+        ],
+
     );
 
 }
@@ -1127,7 +1274,7 @@ sub testListSites {
 sub configureLE {
     my ( $self, $opts ) = @_;
 
-    my ( @site_names, @dns, $email, $sites_filter );
+    my ( @site_names, @dns, $email, $sites_filter, @special_sites );
     my $message_p = ( caller(0) )[3];
     my $message_t = __PACKAGE__;
     my $logOutput = Output->new(
@@ -1138,8 +1285,12 @@ sub configureLE {
 
     my $test_sites = $self->testListSites($opts);
     return $test_sites if ( $test_sites->is_error );
-    @site_names   = @{ $test_sites->data->[1] };
-    $sites_filter = $test_sites->data->[2];
+    @site_names    = @{ $test_sites->data->[1] };
+    $sites_filter  = $test_sites->data->[2];
+    @special_sites = @{ $test_sites->data->[3] };
+
+    my $sites_cnt = @site_names;
+    my $specs_cnt = @special_sites;
 
     # test options
     foreach my $k ( "dns", "email" ) {
@@ -1158,12 +1309,20 @@ sub configureLE {
     }
 
     my $a_opts = {
-        dns_names    => \@dns,
-        site_names   => \@site_names,
-        email        => $opts->{email},
-        manage_web   => 'configure_le',
-        sites_filter => $sites_filter,
+        dns_names  => \@dns,
+        sites_cnt  => $sites_cnt,
+        email      => $opts->{email},
+        manage_web => 'configure_le',
+        specs_cnt  => $specs_cnt,
     };
+    if ($sites_cnt) {
+        $a_opts->{site_names}   = \@site_names;
+        $a_opts->{sites_filter} = $sites_filter;
+    }
+
+    if ( $specs_cnt > 0 && grep /^push-server$/, @special_sites ) {
+        $a_opts->{push_server} = 1;
+    }
 
     $logOutput->log_data( "$message_p: configure LE certificate fo sites "
           . $opts->{site_names} );
@@ -1186,7 +1345,7 @@ sub configureLE {
 sub configureCert {
     my ( $self, $opts ) = @_;
 
-    my ( @site_names, $sites_filter );
+    my ( @site_names, $sites_filter, @special_sites );
     my $message_p = ( caller(0) )[3];
     my $message_t = __PACKAGE__;
     my $logOutput = Output->new(
@@ -1197,8 +1356,12 @@ sub configureCert {
 
     my $test_sites = $self->testListSites($opts);
     return $test_sites if ( $test_sites->is_error );
-    @site_names   = @{ $test_sites->data->[1] };
-    $sites_filter = $test_sites->data->[2];
+    @site_names    = @{ $test_sites->data->[1] };
+    $sites_filter  = $test_sites->data->[2];
+    @special_sites = @{ $test_sites->data->[3] };
+
+    my $sites_cnt = @site_names;
+    my $specs_cnt = @special_sites;
 
     # test options
     foreach my $k ( "private_key", "certificate" ) {
@@ -1233,9 +1396,18 @@ sub configureCert {
             }
         }
     }
-    $opts->{manage_web}   = "configure_cert";
-    $opts->{site_names}   = \@site_names;
-    $opts->{sites_filter} = $sites_filter;
+    $opts->{manage_web} = "configure_cert";
+    $opts->{sites_cnt}  = $sites_cnt;
+    $opts->{specs_cnt}  = $specs_cnt;
+
+    if ($sites_cnt) {
+        $opts->{site_names}   = \@site_names;
+        $opts->{sites_filter} = $sites_filter;
+    }
+
+    if ( $specs_cnt > 0 && grep /^push-server$/, @special_sites ) {
+        $opts->{push_server} = 1;
+    }
 
     $logOutput->log_data( "$message_p: configure own certificate fo sites "
           . $opts->{site_names} );
@@ -1257,7 +1429,7 @@ sub configureCert {
 sub resetCert {
     my ( $self, $opts ) = @_;
 
-    my ( @site_names, $sites_filter );
+    my ( @site_names, $sites_filter, @special_sites );
     my $message_p = ( caller(0) )[3];
     my $message_t = __PACKAGE__;
     my $logOutput = Output->new(
@@ -1268,16 +1440,32 @@ sub resetCert {
 
     my $test_sites = $self->testListSites($opts);
     return $test_sites if ( $test_sites->is_error );
-    @site_names   = @{ $test_sites->data->[1] };
-    $sites_filter = $test_sites->data->[2];
+    @site_names    = @{ $test_sites->data->[1] };
+    $sites_filter  = $test_sites->data->[2];
+    @special_sites = @{ $test_sites->data->[3] };
 
-    $opts->{manage_web}   = "reset_cert";
-    $opts->{site_names}   = \@site_names;
-    $opts->{sites_filter} = $sites_filter;
+    my $sites_cnt = @site_names;
+    my $specs_cnt = @special_sites;
+
+    $opts->{manage_web} = "reset_cert";
+    $opts->{sites_cnt}  = $sites_cnt;
+    $opts->{specs_cnt}  = $specs_cnt;
+
+    if ($sites_cnt) {
+        $opts->{site_names}   = \@site_names;
+        $opts->{sites_filter} = $sites_filter;
+    }
+
+    if ( $specs_cnt > 0 && grep /^push-server$/, @special_sites ) {
+        $opts->{push_server} = 1;
+    }
 
     $logOutput->log_data(
         "$message_p: reset certificate configuration for sites "
-          . $opts->{site_names} );
+          . ( $opts->{site_names} ) ? $opts->{site_names}
+        : " " . ( $opts->{push_server} ) ? $opts->{push_server}
+        :                                  ""
+    );
 
     # create site by ansible task
     my $po       = Pool->new();
@@ -1290,6 +1478,160 @@ sub resetCert {
     );
 
     my $created_process = $dh->startAnsibleProcess( "site_certificate", $opts );
+    return $created_process;
+}
+
+# nginx_custom_site_settings|dbconn_temp_files
+sub siteCustomSettings {
+    my ( $self, $opt, $val ) = @_;
+
+    my $message_p = ( caller(0) )[3];
+    my $message_t = __PACKAGE__;
+    my $logOutput = Output->new(
+        error   => 0,
+        logfile => $self->logfile,
+        debug   => $self->debug
+    );
+
+    my $a_opts = {
+        option     => $opt,
+        value      => $val,
+        manage_web => 'custom_configs',
+    };
+
+    # create site by ansible task
+    my $po       = Pool->new();
+    my $ansData  = $po->ansible_conf;
+    my $cmd_play = $ansData->{'playbook'};
+    my $cmd_conf = catfile( $ansData->{'base'}, "web.yml" );
+    my $dh       = bxDaemon->new(
+        debug    => $self->debug,
+        task_cmd => qq($cmd_play $cmd_conf)
+    );
+
+    my $created_process = $dh->startAnsibleProcess( "custom_configs", $a_opts );
+    return $created_process;
+}
+
+sub configureTransformer {
+    my ( $self, $opts ) = @_;
+
+    my $message_p = ( caller(0) )[3];
+    my $message_t = __PACKAGE__;
+    my $logOutput = Output->new(
+        error   => 0,
+        logfile => $self->logfile,
+        debug   => $self->debug
+    );
+
+    if (   not defined $opts->{transformer_host}
+        || \not defined $opts->{web_site_name}
+        || \not defined $opts->{web_site_dir} )
+    {
+        return Output->new(
+            error   => 1,
+            message => "$message_p: Some mandatory options are missing.",
+        );
+    }
+
+    if ( not defined $opts->{transformer_domains} ){
+        $opts->{transformer_domains} = ['localhost', $opts->{web_site_name}];
+    }else{
+        if ( $opts->{transformer_domains} =~ /,/ ){
+            my @transformer_domains = split(',' , $opts->{transformer_domains} );
+            $opts->{transformer_domains} = \@transformer_domains;
+        }else{
+            $opts->{transformer_domains} = [$opts->{transformer_domains}];
+        }
+    }
+
+    my $host = Host->new( host => $opts->{transformer_host} );
+    my $is_host_in_pool = $host->host_in_pool();
+    if ( $is_host_in_pool->is_error ) {
+        return $is_host_in_pool;
+    }
+
+    my $bx_pool = Pool->new();
+    my $an_data = $bx_pool->ansible_conf;
+    my $host_vars_path =
+      catfile( $an_data->{'host_vars'}, $opts->{transformer_host} );
+    if ( -f $host_vars_path ){
+        my $inventory = get_from_yaml($host_vars_path);
+        if ( $inventory->is_error ){
+            return $inventory;
+        }
+        if (defined $inventory->{redis_password}){
+            $opts->{redis_password} = $inventory->{redis_password};
+        }
+        if (defined $inventory->{redis_root_password}){
+            $opts->{redis_root_password} = $inventory->{redis_root_password};
+        }
+    }
+
+    $opts->{is_create} = "true";
+    if ( not defined $opts->{redis_password} ) {
+        $opts->{redis_password} = generate_simple_password();
+    }
+    if ( not defined $opts->{redis_root_password} ) {
+        $opts->{redis_root_password} = generate_simple_password();
+    }
+
+    $logOutput->log_data(
+        "$message_p: configure transformer-service" . $opts->{web_site_name} );
+
+    # create site by ansible task
+    my $po       = Pool->new();
+    my $ansData  = $po->ansible_conf;
+    my $cmd_play = $ansData->{'playbook'};
+    my $cmd_conf = catfile( $ansData->{'base'}, "transformer.yml" );
+    my $dh       = bxDaemon->new(
+        debug    => $self->debug,
+        task_cmd => qq($cmd_play $cmd_conf)
+    );
+
+    my $created_process =
+      $dh->startAnsibleProcess( "configure_transformer", $opts );
+    return $created_process;
+}
+
+sub removeTransformer {
+    my ( $self, $opts ) = @_;
+
+    my $message_p = ( caller(0) )[3];
+    my $message_t = __PACKAGE__;
+    my $logOutput = Output->new(
+        error   => 0,
+        logfile => $self->logfile,
+        debug   => $self->debug
+    );
+
+    if (   not defined $opts->{transformer_host}
+        || \not defined $opts->{web_site_name}
+        || \not defined $opts->{web_site_dir} )
+    {
+        return Output->new(
+            error   => 1,
+            message => "$message_p: Some mandatory options are missing.",
+        );
+    }
+
+    $opts->{is_remove} = "true";
+
+    $logOutput->log_data(
+        "$message_p: remove transformer-service" . $opts->{web_site_name} );
+
+    # create site by ansible task
+    my $po       = Pool->new();
+    my $ansData  = $po->ansible_conf;
+    my $cmd_play = $ansData->{'playbook'};
+    my $cmd_conf = catfile( $ansData->{'base'}, "transformer.yml" );
+    my $dh       = bxDaemon->new(
+        debug    => $self->debug,
+        task_cmd => qq($cmd_play $cmd_conf)
+    );
+
+    my $created_process =
+      $dh->startAnsibleProcess( "remove_transformer", $opts );
     return $created_process;
 }
 

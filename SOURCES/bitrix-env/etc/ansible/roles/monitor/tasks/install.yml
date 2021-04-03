@@ -8,505 +8,81 @@
 ########
 
 ## package installation
-- name: debug commands
-  shell:  yum --version ; yum list installed | grep -e '(nagios|nrpe)'
-  register: yum_info
-  ignore_errors: true
+- name: Install common packages
+  yum: pkg={{ packages }} state=latest update_cache=yes
+  vars:
+    packages:
+      - munin-common
+      - munin-node
+      - nrpe
+      - nagios-plugins
+      - nagios-plugins-http
+      - nagios-plugins-disk
+      - nagios-plugins-load
+      - nagios-plugins-procs
+      - nagios-plugins-swap
+      - nagios-plugins-users
+      - nagios-plugins-mysql
+      - perl-Cache-Memcached
+      - net-tools
 
-- name: debug output
-  debug: msg="{{ yum_info }}"
-
-- name: install monitoring agents and plugins
-  yum: pkg={{ item }} state=latest update_cache=yes
-  with_items:
-   - munin-common
-   - munin-node
-   - nrpe
-   - nagios-plugins
-   - nagios-plugins-http
-   - nagios-plugins-disk
-   - nagios-plugins-load
-   - nagios-plugins-procs
-   - nagios-plugins-swap
-   - nagios-plugins-users
-   - nagios-plugins-mysql
-   - perl-Cache-Memcached
-   - net-tools
-  tags: package
-  when: "inventory_hostname != monitoring_server"
-
-- name: install monitoring servers
-  yum: pkg={{ item }} state=latest update_cache=yes
-  with_items:
-   - munin
-   - munin-common
-   - munin-node
-   - nagios
-   - nagios-plugins-nrpe
-   - nagios-plugins-tcp
-   - nagios-plugins-http
-   - nagios-plugins-ping
-   - nagios-plugins-ssh
-   - nrpe
-   - nagios-plugins
-   - nagios-plugins-http
-   - nagios-plugins-disk
-   - nagios-plugins-load
-   - nagios-plugins-procs
-   - nagios-plugins-swap
-   - nagios-plugins-users
-   - nagios-plugins-mysql
-   - perl-Cache-Memcached
-   - net-tools
-  tags: package
-  when: "inventory_hostname == monitoring_server"
-
-## create users
-- name: create user for munin and munin-node services
-  user: state=present system=yes name={{ munin_server_user }} 
-    group={{ munin_server_group }}
-    comment="{{ munin_server_user }} monitoring user"
-  tags: users
-
-- name: create user for nrpe service
-  user: state=present system=yes name={{ nrpe_server_user }} 
-    group={{ nrpe_server_group }}
-    comment="{{ nrpe_server_user }} monitoring user"
-  tags: users
-
-- name: create user for nagios service
-  user: state=present system=yes name={{ nagios_server_user }} 
-    group={{ nagios_server_group }}
-    comment="{{ nagios_server_user }} monitoring user"
-  tags: users
-  when: "'bitrix-mgmt' in group_names"
-
-- name: update apache user
-  user: state=present append=yes 
-    groups={{ apache_group }} name={{ apache_user }}
-  tags: users
-  when: "'bitrix-mgmt' in group_names"
-
-- name: set access rights for munin and munin-node service - log dir
-  file: state=directory path={{ item }} 
-    owner={{ munin_server_user }} 
-    group={{ munin_server_group }} 
-    mode=0775 recurse=yes
-  with_items:
-   - "{{ munin_server_logs_dir }}"
-   - "{{ munin_client_logs_dir }}"
-   - "{{ munin_server_data_dir }}"
-   - "{{ munin_server_data_dir }}/{{ munin_plugins_state_dir }}"
-   - "{{ munin_server_data_dir }}/{{ munin_graph_group }}"
-  tags: dirs
-
-- name: test if host folder existen on monitoring server
-  shell: test -d "{{ munin_server_data_dir }}/{{ inventory_hostname }}" && echo "FolderExist" || echo "FolderNotExist"
-  delegate_to: "{{ monitoring_server }}"
-  tags: dirs
-  register: host_dir_status
-  ignore_errors: True
-
-- name: move old content to new folder
-  shell: rsync -a "{{ munin_server_data_dir }}/{{ inventory_hostname }}/" "{{ munin_server_data_dir }}/{{ munin_graph_group }}/"
-  delegate_to: "{{ monitoring_server }}"
-  tags: dirs
-  when: "'FolderExist' in host_dir_status.stdout"
-
-- name: delete old content
-  file: path="{{ munin_server_data_dir }}/{{ inventory_hostname }}"
-    state=absent
-  delegate_to: "{{ monitoring_server }}"
-  tags: dirs
-  when: "'FolderExist' in host_dir_status.stdout"
-
-- name: create symbolic link from group folder
-  file: src="{{ munin_server_data_dir }}/{{ munin_graph_group }}"
-    dest="{{ munin_server_data_dir }}/{{ inventory_hostname }}"
-    state=link
-  delegate_to: "{{ monitoring_server }}"
-  tags: dirs
-
-- name: set access rights for nrpe service
-  file: state=directory path={{ nrpe_server_data_dir }} owner={{ nrpe_server_user }} group={{ nrpe_server_user }} mode=0775 recurse=yes
-  tags: dirs
-
-- name: set access rights for nagios service
-  file: state=directory path={{ item }} 
-    owner={{ nagios_server_user }} group={{ nagios_server_group }} mode=0775 recurse=yes
-  tags: dirs
-  with_items:
-    - "{{ nagios_server_data_dir }}"
-    - "{{ nagios_server_data_dir }}/checkresults"
-  when: "'bitrix-mgmt' in group_names"
-
-## configure munin-node ( monitoring agents )
-- name: munin - create plugins directory
-  file: path=/etc/munin/{{ item }} state=directory owner={{ munin_server_user }} group={{ munin_server_group }} mode=0775
-  with_items:
-    - plugins
-    - plugin-conf.d
-  tags: configure_monitor_agents
-
-- name: munin - additional plugins for munin
-  copy: src={{ item }} dest=/usr/share/munin/plugins/
-    owner=root group=root mode=0755
-  with_items:
-   - process_status_
-   - df_size
-   - memcached_
-  tags: configure_monitor_agents
-
-- name: munin - enable munitoring plugins
-  file: src=/usr/share/munin/plugins/{{ item }} dest=/etc/munin/plugins/{{ item }} state=link
-  with_items:
-   - iostat
-   - load
-   - memory
-   - netstat
-   - open_files
-   - processes
-   - swap
-   - threads
-   - df_size
-   - meminfo
-  tags: configure_monitor_agents
-
-- name: munin - create link for iface plugin
-  file: src=/usr/share/munin/plugins/if_ dest=/etc/munin/plugins/if_{{ iface }} state=link
-  tags: config_munin_node
-
-- name: munin - enable munitoring plugins - db servers
-  file: src=/usr/share/munin/plugins/{{ item }} dest=/etc/munin/plugins/{{ item }} state=link
-  with_items:
-   - mysql_bytes
-   - mysql_queries
-   - mysql_slowqueries
-   - mysql_threads
-  tags: configure_monitor_agents
-  when: "'bitrix-mysql' in group_names"
-
-- name: munin - enable munitoring plugins - db servers - bitrix plugins
-  file: src=/usr/share/munin/plugins/{{ item }} dest=/etc/munin/plugins/{{ item }}mysqld state=link
-  with_items:
-   - process_status_
-  tags: configure_monitor_agents
-  when: "'bitrix-mysql' in group_names"
-
-- name: copy apache status config to httpd dir
-  template: src=bx_apache_status.conf.j2 dest=/etc/httpd/bx/conf/bx_apache_status.conf
-    owner=bitrix group=root mode=0644
-  tags: configure_monitor_agents
+# WEB monitoring
+- name: Configure apache status page
+  template:
+    src: bx_apache_status.conf.j2
+    dest: /etc/httpd/bx/conf/bx_apache_status.conf
+    owner: bitrix
+    group: root
+    mode: 0644
   when: "'bitrix-web' in group_names"
   notify: restart httpd
 
-- name: copy nginx status config to nginx dir
-  template: src=nginx_server_status.conf.j2 
-    dest=/etc/nginx/bx/site_avaliable/nginx_server_status.conf
-    owner=bitrix group=root mode=0644
-  tags: configure_monitor_agents
+- name: Configure nginx status page
+  template:
+    src: nginx_server_status.conf.j2 
+    dest: /etc/nginx/bx/site_avaliable/nginx_server_status.conf
+    owner: bitrix
+    group: root
+    mode: 0644
+  notify: restart nginx
   when: "'bitrix-web' in group_names"
 
-- name: enable nginx status for server
-  file: src=/etc/nginx/bx/site_avaliable/nginx_server_status.conf 
-    dest=/etc/nginx/bx/site_enabled/nginx_server_status.conf
-    state=link
-  tags: configure_monitor_agents
+- name: Enable nginx status page
+  file:
+    src: /etc/nginx/bx/site_avaliable/nginx_server_status.conf
+    dest: /etc/nginx/bx/site_enabled/nginx_server_status.conf
+    state: link
   when: "'bitrix-web' in group_names"
   notify: restart nginx
 
-- name: munin - enable munitoring plugins - httpd servers
-  file: src=/usr/share/munin/plugins/{{ item }} dest=/etc/munin/plugins/{{ item }} state=link
-  with_items:
-   - apache_accesses
-   - apache_processes
-   - apache_volume
-   - nginx_request
-   - nginx_status
-  tags: configure_monitor_agents
-  when: "'bitrix-web' in group_names"
+- include_tasks: configure_munin_agent.yml
 
-- name: munin - enable munitoring plugins - httpd servers - bitrix plugins
-  file: src=/usr/share/munin/plugins/{{ item }} dest=/etc/munin/plugins/{{ item }}httpd state=link
-  with_items:
-   - process_status_
-  tags: configure_monitor_agents
-  when: "'bitrix-web' in group_names"
+- include_tasks: configure_nrpe_agent.yml
 
-- name: munin - enable munitoring plugins - httpd servers - bitrix plugins
-  file: src=/usr/share/munin/plugins/{{ item }} dest=/etc/munin/plugins/{{ item }}nginx state=link
-  with_items:
-   - process_status_
-  tags: configure_monitor_agents
-  when: "'bitrix-web' in group_names"
+- include_tasks: configure_monitoring_server.yml
 
-- name: munin - enable munitoring plugins - memcached servers - bitrix plugins
-  file: src=/usr/share/munin/plugins/{{ item }} dest=/etc/munin/plugins/{{ item }}memcached state=link
-  with_items:
-   - process_status_
-  tags: configure_monitor_agents
-  when: "'bitrix-memcached' in group_names"
-
-- name: munin - enable munitoring plugins - memcached service - instance monitoring
-  file: src=/usr/share/munin/plugins/memcached_ dest=/etc/munin/plugins/memcached_{{ item }} state=link
-  with_items:
-   - bytes
-   - counters
-   - rates
-  tags: configure_monitor_agents
-  when: "'bitrix-memcached' in group_names"
-
-- name: munin - enable munitoring plugins - serachd servers - bitrix plugins
-  file: src=/usr/share/munin/plugins/{{ item }} dest=/etc/munin/plugins/{{ item }}searchd state=link
-  with_items:
-   - process_status_
-  tags: configure_monitor_agents
-  when: "'bitrix-searchd' in group_names"
-
-- name: munin - bitrix configuration for plugins
-  template: src=plugin-conf.d/{{ item }}.j2 dest=/etc/munin/plugin-conf.d/{{ item }} 
-    owner={{ munin_server_user }} group={{ munin_server_group }} mode=0664
-  with_items:
-    - bx
-  tags: configure_monitor_agents
-
-- name: munin - additional configs for plugins
-  copy: src=plugin-conf.d/{{ item }} dest=/etc/munin/plugin-conf.d/{{ item }} owner={{ munin_server_user }} group={{ munin_server_group }} mode=0664
-  with_items:
-   - df
-   - fw_
-   - hddtemp_smartctl
-   - munin-node
-   - postfix
-   - sendmail
-  tags: configure_monitor_agents
-
-- name: munin - disable munin crontab for client nodes
-  copy: src=crond_munin_disable dest=/etc/cron.d/munin
-  tags: configure_monitor_agents
-  when: "'bitrix-mgmt' not in group_names"
-
-- name: munin - create agent configuration file
-  template: src=munin-node.conf.j2  dest=/etc/munin/munin-node.conf owner={{ munin_server_user }} group={{ munin_server_group }} mode=0664
-  tags: config_munin_node
-
-- name: munin - ensure service started in system
-  service: name=munin-node state=started enabled=yes
-  tags: service
-
-- name: munin - restart munin-node
-  service: name=munin-node state=restarted 
-  tags: service
-
-### configuration nrpe agents
-# Nagios Remote Plugin Executor
-- name: nrpe - create additional config directory
-  file: path={{ nrpe_server_include_dir }} state=directory
-  tags: configure_monitor_agents
-
-- name: nrpe - create nrpe config
-  template: src=nrpe.cfg.j2 dest=/etc/nagios/nrpe.cfg
-  tags: configure_monitor_agents
-
-- name: nrpe - ensure service started in system
-  service: name=nrpe state=started enabled=yes
-  tags: service
-
-- name: nrpe - restart nrpe
-  service: name=nrpe state=restarted
-  tags: service
-
-
-### configure munin server ( monitoring server )
-# munin master is responsible for gathering data from munin nodes
-- name: munin-master - create munin-master config
-  template: src=munin.conf.j2 dest=/etc/munin/munin.conf 
-    owner={{ munin_server_user }} group={{ munin_server_group }} mode=0664
-  tags: configure_monitor_servers
-  when: "'bitrix-mgmt' in group_names"
-
-- name: munin-master - create directory for additional configs
-  file: path=/etc/munin/conf.d state=directory 
-    owner={{ munin_server_user }} group={{ munin_server_group }} mode=0775
-  tags: configure_monitor_servers
-  when: "'bitrix-mgmt' in group_names"
-
-- name: munin-master - add all hosts from default group on monitoring
-  template: src=munin-hosts.conf.j2 dest=/etc/munin/conf.d/munin-hosts.conf
-    owner={{ munin_server_user }} group={{ munin_server_group }} mode=0664
-  tags: configure_monitor_servers
-  when: "'bitrix-mgmt' in group_names"
-
-### nagios monitoring server
-# Nagios offers monitoring and alerting services for servers, switches, applications, and services.
-- name: nagios - create config
-  template:  src=nagios.cfg.j2 dest=/etc/nagios/nagios.cfg
-    owner={{ nagios_server_user }} group={{ nagios_server_group }}
-    mode=0640
-  tags: configure_monitor_servers
-  when: "'bitrix-mgmt' in group_names"
-
-- name: nagios - create bitrix-pool directory
-  file: path={{ nagios_server_include_dir }} 
-    state=directory 
-    owner={{ nagios_server_user }} group={{ nagios_server_group }} 
-    mode=0750 
-  tags: configure_monitor_servers
-  when: "'bitrix-mgmt' in group_names"
-
-- name: nagios - replace default localhost file
-  template: src=nagios-localhost.cfg.j2 
-    dest=/etc/nagios/objects/localhost.cfg 
-    owner={{ nagios_server_user }} group={{ nagios_server_group }} 
-    mode=0644
-  tags: configure_monitor_servers
-  when: "'bitrix-mgmt' in group_names"
-
-- name: nagios - create commands and default tests definitions 
-  template: src=nagios-{{ item }}.j2 
-    dest=/etc/nagios/conf.d/{{ item }} 
-    owner={{ nagios_server_user }} group={{ nagios_server_group }} 
-    mode=0644
-  with_items:
-    - check_nrpe_commands.cfg
-    - default_tests_for_servers.cfg
-    - email_commands.cfg
-  tags: configure_monitor_servers
-  when: "'bitrix-mgmt' in group_names"
-
-- name: nagios - define variables
-  set_fact:
-    nagios_ip: "{{ bx_netaddr }}"
-    nagios_alias: "{{ inventory_hostname }}"
-    nagios_host: "{{ bx_host|default(inventory_hostname) }}"
-  tags: facts
-
-- name: nagios - create hosts configuration
-  delegate_to: 127.0.0.1
-  template: src=nagios-host.cfg.j2 
-    dest={{ nagios_server_include_dir }}/{{ nagios_alias }}.cfg 
-    owner={{ nagios_server_user }} group={{ nagios_server_group }} mode=0644
-  tags: configure_monitor_servers
-
-- name: nagios - configure contacts
-  template: src=contacts.cfg.j2
-    dest=/etc/nagios/objects/contacts.cfg
-    owner={{ nagios_server_user  }} group={{ nagios_server_group  }}
-    mode=0644
-  tags: configure_monitor_servers
-  when: "'bitrix-mgmt' in group_names"
-
-- name: nagios - configure web interface
-  template: src=cgi.cfg.j2
-    dest=/etc/nagios/cgi.cfg
-    owner={{ nagios_server_user  }} group={{ nagios_server_group  }}
-    mode=0644
-  tags: configure_monitor_servers
-  when: "'bitrix-mgmt' in group_names"
-
-- name: nagios - change access for config
-  file: path=/etc/nagios
-    state=directory
-    owner={{ nagios_server_user }} group={{ nagios_server_group }} 
-    recurse=yes
-  tags: configure_monitor_servers
-
-- name: nagios - change access for log files
-  file: path={{ nagios_server_log_dir }}
-    state=directory
-    owner={{ nagios_server_user }} group={{ nagios_server_group }} 
-  tags: configure_monitor_servers
-
-- name: nagios - configure msmtp
-  template: src=nagios-msmtprc.j2
-    dest={{ nagios_msmtp_config }}
-    owner={{ nagios_server_user  }} group={{ nagios_server_group  }}
-    mode=0600 
-  tags: configure_monitor_servers
-  when: "monitoring_status == 'enable' and 'bitrix-mgmt' in group_names"
-
-- name: nagios - ensure service started
-  service: name=nagios state=started enabled=yes
-  tags: service
-  when: "'bitrix-mgmt' in group_names"
-
-- name: nagios - restart service
-  service: name=nagios state=restarted
-  tags: configure_monitor_servers
-  when: "'bitrix-mgmt' in group_names"
-
-### http access on monitoring server for 
-# munin
-# nagios
-- name: munin-master - remove existen login from httpasswd file
-  htpasswd: path={{ munin_server_htpasswd }} 
-    name={{ munin_server_login }}
-    owner=root group=bitrix mode=0640 state=absent
-  tags: configure_basic_access
-  when: "'bitrix-mgmt' in group_names"
-
-- name: munin-master - add login to httpasswd file
-  htpasswd: path={{ munin_server_htpasswd }} 
-    name={{ munin_server_login }} password={{ munin_server_password|string }}
-    owner=root group=bitrix mode=0640 state=present create=yes
-  tags: configure_basic_access
-  when: "'bitrix-mgmt' in group_names"
-
-- name: nagios - remove existen login from httpasswd file
-  htpasswd: path={{ nagios_server_htpasswd }} 
-    name={{ nagios_server_login }}
-    owner=root group=bitrix mode=0640 state=absent
-  tags: configure_basic_access
-  when: "'bitrix-mgmt' in group_names"
-
-- name: nagios - add login to httpasswd file
-  htpasswd: path={{ nagios_server_htpasswd }} 
-    name={{ nagios_server_login }} password={{ nagios_server_password|string }} 
-    owner=root group=bitrix mode=0640 state=present create=yes
-  tags: configure_basic_access
-  when: "'bitrix-mgmt' in group_names"
-
-- name: apache - create config for monitoring locations
-  template: src=apache-nagios.conf.j2 dest=/etc/httpd/bx/conf/nagios.conf
-  tags: configure_web_service
-  when: "'bitrix-mgmt' in group_names"
-
-- name: apache - restart
-  service: name=httpd state=restarted
-  tags: configure_web_service
-  when: "'bitrix-mgmt' in group_names"
-
-- name: nginx - create config for monitoring locations
-  template: src=nginx_server_monitor.conf.j2 dest=/etc/nginx/bx/conf/server_monitor.conf
-  tags: configure_web_service
-  when: "'bitrix-mgmt' in group_names"
-
-- name: nginx - enable monitor config
-  file: dest=/etc/nginx/bx/server_monitor.conf src=/etc/nginx/bx/conf/server_monitor.conf state=link force=yes
-  tags: configure_web_service
-  when: "'bitrix-mgmt' in group_names"
-
-- name: nginx - restart service
-  service: name=nginx state=restarted
-  tags: configure_web_service
-  when: "'bitrix-mgmt' in group_names"
-
-# group_vars: bitrix-hosts
-- name: update group variables
+# ANSIBLE configuration update
+- name: Update group variables
   delegate_to: "{{ cluster_web_server }}"
-  bx_conf: group=hosts state=update 
-    monitoring_status=enable nagios_server_login={{ nagios_server_login }}
-    nagios_server_password={{ nagios_server_password }}
-    munin_server_login={{ munin_server_login }}
-    munin_server_password={{ munin_server_password }}
-  when: "'bitrix-mgmt' in group_names"
-  tags: ansible_hosts
+  bx_conf:
+    group: hosts
+    state: update
+    monitoring_status: enable
+    monitoring_server: "{{ monitoring_server| default(cluster_web_server) }}"
+    nagios_server_login: "{{ nagios_server_login }}"
+    nagios_server_password: "{{ nagios_server_password }}"
+    munin_server_login: "{{ munin_server_login }}"
+    munin_server_password: "{{ munin_server_password }}"
+  when: inventory_hostname == monitoring_server
 
-- name: update group variables for email settings
+- name: Update group variables for email settings
   delegate_to: "{{ cluster_web_server }}"
-  bx_conf: group=hosts state=update 
-    notify_nagios={{ notify_nagios }}
-    monitor_email={{ monitor_email }}
-  when: "notify_nagios is defined and notify_nagios and 'bitrix-mgmt' in group_names"
-  tags: ansible_hosts
+  bx_conf:
+    group: hosts
+    state: update 
+    notify_nagios: "{{ notify_nagios }}"
+    monitor_email: "{{ monitor_email }}"
+  when: notify_nagios is defined 
+    and notify_nagios 
+    and inventory_hostname == monitoring_server
 

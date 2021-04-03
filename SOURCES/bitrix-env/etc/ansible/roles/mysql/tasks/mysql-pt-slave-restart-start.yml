@@ -6,12 +6,11 @@
     state: latest
   ignore_errors: true
 
-- name: enable percona repository
-  ini_file:
-    dest: /etc/yum.repos.d/percona-release.repo
-    section: percona-release-noarch
-    option: enabled
-    value: 1
+- name: update percona release
+  shell: yum -y --nogpg update percona-release
+
+- name: enable percona tools repository
+  shell: percona-release enable tools release
 
 - name: install percona-toolkit
   yum: 
@@ -51,4 +50,8 @@
     enabled: yes
     state: started
 
+- name: starting pt-slave-restart
+  shell: /opt/webdir/bin/pt-slave-restart start
+  args:
+    creates: /var/run/slave_restart.pid
 

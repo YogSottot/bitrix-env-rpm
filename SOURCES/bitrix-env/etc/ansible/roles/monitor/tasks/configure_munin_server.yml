@@ -1,0 +1,115 @@
+---
+# MUNIN master server
+- name: test if host folder existen on monitoring server
+  shell: test -d "{{ munin_server_data_dir }}/{{ inventory_hostname }}" && echo "FolderExist" || echo "FolderNotExist"
+  register: host_dir_status
+  ignore_errors: True
+
+- name: move old content to new folder
+  shell: rsync -a "{{ munin_server_data_dir }}/{{ inventory_hostname }}/" "{{ munin_server_data_dir }}/{{ munin_graph_group }}/"
+  when: "'FolderExist' in host_dir_status.stdout"
+
+- name: delete old content
+  file:
+    path: "{{ munin_server_data_dir }}/{{ inventory_hostname }}"
+    state: absent
+  when: "'FolderExist' in host_dir_status.stdout"
+
+- name: create symbolic link from group folder
+  file:
+    src: "{{ munin_server_data_dir }}/{{ munin_graph_group }}"
+    dest: "{{ munin_server_data_dir }}/{{ inventory_hostname }}"
+    state: link
+
+- name: Create munin-tmpfiles config 
+  copy:
+    src: munin.conf
+    dest: /etc/tmpfiles.d/munin.conf
+  when: ansible_distribution == "CentOS"
+    and ansible_distribution_major_version == "7"
+
+- name: Re-run systemd-tmpfiles
+  shell: systemd-tmpfiles --create /etc/tmpfiles.d/munin.conf
+  when: ansible_distribution == "CentOS"
+    and ansible_distribution_major_version == "7"
+
+- name: Munin-master - create munin-master config
+  template:
+    src: munin.conf.j2
+    dest: /etc/munin/munin.conf 
+    owner: "{{ munin_server_user }}"
+    group: "{{ munin_server_group }}"
+    mode: 0664
+
+- name: Munin-master - create directory for additional configs
+  file:
+    path: /etc/munin/conf.d
+    state: directory 
+    owner: "{{ munin_server_user }}"
+    group: "{{ munin_server_group }}"
+    mode: 0775
+
+- name: Munin-master - add all hosts from default group on monitoring
+  template:
+    src: munin-hosts.conf.j2
+    dest: /etc/munin/conf.d/munin-hosts.conf
+    owner: "{{ munin_server_user }}"
+    group: "{{ munin_server_group }}"
+    mode: 0664
+
+### http access on monitoring server for 
+# munin
+# nagios
+- name: Munin-master - remove old record in httpasswd
+  htpasswd:
+    path: "{{ munin_server_htpasswd }}"
+    name: "{{ munin_server_login }}"
+    owner: root
+    group: bitrix
+    mode: 0640
+    state: absent
+
+- name: Munin-master - add login to httpasswd file
+  htpasswd:
+    path: "{{ munin_server_htpasswd }}" 
+    name: "{{ munin_server_login }}"
+    password: "{{ munin_server_password|string }}"
+    owner: root
+    group: bitrix
+    mode: 0640
+    state: present
+    create: yes
+
+- name: "Munin-master - enable data collector"
+  copy:
+    src: crond_munin
+    dest: /etc/cron.d/munin
+  when: ansible_distribution == "CentOS"
+    and ansible_distribution_major_version == "6"
+
+
+- name: "Munin-master - remove old cron file"
+  file:
+    path: /etc/cron.d/munin
+    state: absent
+  when: ansible_distribution == "CentOS"
+    and ansible_distribution_major_version == "7"
+
+
+- name: "Munin-master - enable systemd service"
+  service:
+    name: munin.service
+    state: started
+    enabled: yes
+  when: ansible_distribution == "CentOS"
+    and ansible_distribution_major_version == "7"
+
+- name: "Munin-master - enable systemd timer"
+  service:
+    name: munin.timer
+    state: started
+    enabled: yes
+  when: ansible_distribution == "CentOS"
+    and ansible_distribution_major_version == "7"
+
+

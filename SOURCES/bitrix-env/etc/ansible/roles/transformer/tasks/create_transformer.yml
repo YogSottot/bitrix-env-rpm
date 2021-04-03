@@ -1,0 +1,42 @@
+---
+- name: Update system
+  yum:
+    name: '*'
+    state: latest
+  when: inventory_hostname == transformer_host
+
+# test site information
+- include_tasks: gather_site_info.yml
+  when: inventory_hostname == transformer_host
+
+# Erlang
+- include_tasks: configure_erlang.yml
+  when: inventory_hostname == transformer_host
+
+# RabbitMQ
+- include_tasks: configure_rabbitmq.yml
+  when: inventory_hostname == transformer_host
+
+# LibreOffice
+- include_tasks: configure_libreoffice.yml
+  when: inventory_hostname == transformer_host
+
+# Ffmpeg
+- include_tasks: configure_ffmpeg.yml
+  when: inventory_hostname == transformer_host
+
+# Copy Files
+- include_tasks: configure_sync_docroot.yml
+  when: transformer_host != cluster_web_server 
+
+# Configure worker service
+- include_tasks: configure_transformer_worker.yml
+  when: inventory_hostname == transformer_host
+
+# Update /etc/hosts
+- name: Update hosts file
+  lineinfile:
+    path: /etc/hosts
+    insertbefore: "ANSIBLE MANAGED BLOCK"
+    firstmatch: yes
+    line: "{{ cluster_web_netaddr }} {{ web_site_name }}"

@@ -1,0 +1,130 @@
+#!/bin/bash
+# temporary plugin for mysql 8.0 opts
+# mode: 
+# getslave - SHOW REPLICA STATUS/Master_Server_Id
+
+#set -e
+
+export LANG="en_US.UTF-8"
+
+BY_TABLE=1      # if set to 1 it is create dump per table
+                # Longer but more reliable for large databases
+REPLACE=0       # relace destionation database or not
+
+MYSQL_CNF=/root/.my.cnf # can set login and password from file
+DEFAULT_CONF_USAGE=0
+MYSQLCMD=$(which mysql)
+
+LOGDIR=/opt/webdir/logs
+[[ ! -d $LOGDIR ]] && mkdir -m 750 $LOGDIR
+
+TMPDIR=/tmp
+[[ -d /dev/shm ]] && TMPDIR=/dev/shm
+TMPFILE=$(mktemp $TMPDIR/.bx_mysql_XXXX)
+
+# print error message
+print_error() {
+  msg=$1
+  echo "{\"changed\":false,\"failed\":true,\"msg\":\"$msg\"}"
+  [[ -f $TMPFILE ]] && rm -f $TMPFILE
+  exit 1
+}
+
+print_facts() {
+    facts="${1}"
+    msg="${2}"
+
+    ansible_facts="{\"changed\":false,\"failed\":false,"
+    ansible_facts="${ansible_facts}\"ansible_facts\":$facts,"
+    ansible_facts="${ansible_facts}\"msg\":\"$msg\"}"
+
+    echo "$ansible_facts"
+    [[ -f $TMPFILE ]] && rm -f $TMPFILE
+    exit 0
+}
+
+# run query
+my_query(){
+    local query="${1}"
+    local cfg="${2:-$MYSQL_CNF}"
+    local opts="${3}"
+
+    [[ -z $query ]] && return 1
+
+    local tmp_f=$(mktemp /tmp/XXXXX_command)
+    echo "$query" > $tmp_f
+    mysql --defaults-file=$cfg $opts < $tmp_f >> $TMPFILE 2>&1
+    mysql_rtn=$?
+
+    rm -f $tmp_f
+    return $mysql_rtn
+}
+
+defaults(){
+    [[ -z $login_unix_socket ]] && \
+        login_unix_socket=/var/lib/mysqld/mysqld.sock
+}
+
+getversion(){
+    if [[ -n $mysql_host ]]; then
+        my_query 'SHOW VARIABLES LIKE "version"' $MYSQL_CNF "--host $mysql_host --port $mysql_port"
+        my_rtn=$?
+    else
+        my_query 'SHOW VARIABLES LIKE "version"'
+        my_rtn=$?
+    fi
+
+    if [[ $my_rtn -gt 0 ]]; then
+        print_error "An error has occurred: $(head -n1 $TMPFILE)"
+    fi
+
+    MYVERSION=$(cat $TMPFILE | awk '/version/{print $2}' | \
+        sed -e "s/\-[0-9]\+//;s/\.//g" )
+
+    return $my_rtn
+
+}
+
+getslave(){
+    defaults
+
+    getversion
+    if [[ $MYVERSION -gt 8021 ]]; then
+        slave_sql='SHOW REPLICA STATUS\G'
+    else
+        slave_sql='SHOW SLAVE STATUS\G'
+    fi
+
+    if [[ -n $mysql_host ]]; then
+        my_query "$slave_sql" $MYSQL_CNF "--host $mysql_host --port $mysql_port"
+        my_rtn=$?
+    else
+        my_query "$slave_sql"
+        my_rtn=$?
+    fi
+
+    if [[ $my_rtn -gt 0 ]]; then
+        print_error "An error has occurred: $(head -n1 $TMPFILE)"
+    fi
+
+    Master_Server_Id=$(cat $TMPFILE | awk -F ':' '/Master_Server_Id/{print $2}' | \
+        sed -e 's/\s\+//g')
+    if [[ -n $Master_Server_Id ]]; then
+        facts="{\"Master_Server_Id\":$Master_Server_Id,\"Replication\":\"Yes\"}"
+        msg="Replication configured."
+    else
+        facts="{\"Replication\":\"No\"}"
+        msg="Replication not configured."
+    fi
+    
+    print_facts "$facts" "$msg"
+}
+
+
+# get options from file
+source ${1}
+
+if [[ $mode == "getslave" ]]; then
+    getslave
+fi
+

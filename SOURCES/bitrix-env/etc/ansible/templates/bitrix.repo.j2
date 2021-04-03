@@ -2,16 +2,16 @@
 [bitrix]
 name=Bitrix Env - {{ ansible_distribution }}-{{ ansible_distribution_major_version }} - $basearch
 failovermethod=priority
-baseurl=http://repos.1c-bitrix.ru/yum/el/{{ ansible_distribution_major_version }}/$basearch
+baseurl=https://repos.1c-bitrix.ru/yum/el/{{ ansible_distribution_major_version }}/$basearch
 enabled=1
 gpgcheck=1
-gpgkey=http://repos.1c-bitrix.ru/yum/RPM-GPG-KEY-BitrixEnv
+gpgkey=https://repos.1c-bitrix.ru/yum/RPM-GPG-KEY-BitrixEnv
 {% else %}
 [bitrix-beta]
 name=Bitrix Env Beta - {{ ansible_distribution  }}-{{ ansible_distribution_major_version  }} - $basearch
 failovermethod=priority
-baseurl=http://repos.1c-bitrix.ru/yum-beta/el/{{ ansible_distribution_major_version }}/$basearch
+baseurl=https://repos.1c-bitrix.ru/yum-beta/el/{{ ansible_distribution_major_version }}/$basearch
 enabled=1
 gpgcheck=1
-gpgkey=http://repos.1c-bitrix.ru/yum/RPM-GPG-KEY-BitrixEnv
+gpgkey=https://repos.1c-bitrix.ru/yum/RPM-GPG-KEY-BitrixEnv
 {% endif %}

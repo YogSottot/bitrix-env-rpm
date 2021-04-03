@@ -29,8 +29,21 @@
   mysql_user: name={{ cluster_login }} state=absent login_unix_socket={{ mysql_socket }}
   tags: mysql_clear
 
+# reset slave
+- name: stop slave process
+  mysql_replication:
+    mode: stopslave
+  when: mysql_uni_version == '80'
+
+- name: reset slave 
+  mysql_replication:
+    mode: resetslaveall
+  when: mysql_uni_version == '80'
+
+# stop service
 - include: mysql-disable_service.yml 
 
+# delete replication files
 - name: delete replication files
   file: path=/var/lib/mysql/{{ item }} state=absent
   with_items: 

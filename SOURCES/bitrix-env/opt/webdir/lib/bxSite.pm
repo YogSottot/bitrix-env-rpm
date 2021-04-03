@@ -81,7 +81,7 @@ sub https_options_in_config {
             $ssl_info->{'HTTPSCertChain'} = $ssl_trusted_certificate;
         }
 
-        if (/^ssl\s+on\s*;$/) {
+        if (/^ssl_protocols\s+/) {
             $ssl_info->{'HTTPSConf'} = $nginx_config;
         }
 
@@ -136,8 +136,14 @@ sub https_options_in_config {
 sub get_nginx_options {
     my $nginx_config = shift;
 
-    my $nginx_options = { CompositeNginx => 'disable', 
-    proxy_ignore_client_abort => 'off', };
+    my $nginx_options = { 
+        CompositeNginx => 'disable', 
+        proxy_ignore_client_abort => 'off', 
+        nginx_custom_settings => 'off',
+        nginx_bx_temp_files => 'off',
+        nginx_bx_temp_config => '',
+        nginx_custom_settings_directory => '',
+    };
 
     if ( !-f $nginx_config ) { return $nginx_options; }
 
@@ -157,6 +163,23 @@ sub get_nginx_options {
         if (/^proxy_ignore_client_abort\s+on;$/) {
             $nginx_options->{'proxy_ignore_client_abort'} = 'on';
         }
+        # bx/site_settings/ksh770.office.bitrix.ru/
+        if (/^include\s+(bx\/site_settings\/[^\/]+)\/\*\.conf;$/) {
+            my $sub_dir = $1;
+            my $settings_dir = catfile('/etc/nginx/', $sub_dir);
+
+            if (-d $settings_dir){
+                $nginx_options->{'nginx_custom_settings'} = 'on';
+                $nginx_options->{'nginx_custom_settings_directory'} = $settings_dir;
+            }
+
+            if ( -f catfile( $settings_dir, 'bx_temp.conf' ) ){
+                $nginx_options->{nginx_bx_temp_files} = 'on';
+                $nginx_options->{nginx_bx_temp_config} = catfile( $settings_dir, 'bx_temp.conf' );
+            }
+
+        }
+ 
     }
 
     close $nh;
@@ -234,6 +257,7 @@ sub apache_config_options {
         message         => '',
         ApacheConf      => '',
         ApacheConfScale => '',
+        ApacheConfNTLM  => '',
         DocumentRoot    => '',
         ServerName      => '',
         SiteCharset     => 'utf-8',
@@ -255,6 +279,20 @@ sub apache_config_options {
         "/etc/httpd/bx-scale/conf",
         $site_name . '.' . $apache_ext
     );
+
+    my $apache_conf_ntlm = catfile(
+        $apache_dir, 'ntlm_'. $site_name . '.' . $apache_ext
+    );
+
+    if ($site_name eq 'default'){
+        $apache_conf_ntlm = catfile(
+            $apache_dir, 'ntlm_'. hostname . '.' . $apache_ext
+    );
+ 
+    }
+    if ( -f $apache_conf_ntlm ){
+        $apache_options->{ApacheConfNTLM} = $apache_conf_ntlm;
+    }
 
     if ( $site_name !~ /^default$/ ) {
         $apache_conf = catfile( $apache_dir,
@@ -1209,7 +1247,9 @@ logfile /home/bitrix/msmtp_$site_name.log
 host $site_email_settings->{'SMTPHost'}
 port $site_email_settings->{'SMTPPort'}
 from $site_email_settings->{'EmailAddress'}
+aliases /etc/aliases
 keepbcc off);
+
 
     # auth settings
     if ( defined $site_email_settings->{'SMTPUser'} ) {
@@ -2020,6 +2060,7 @@ sub siteOptions {
     my $created_process = $dh->startAnsibleProcess( "site_options", $a_opts );
     return $created_process;
 }
+
 
 # Manage certificates by LE
 

@@ -1,0 +1,59 @@
+---
+# mysql_package: "Percona-Server-server",
+# mysql_uni_version: 57
+- name: Update system
+  yum:
+    name: "*"
+    state: latest
+
+- include_tasks: common-etckeeper.yml
+
+- include_tasks: sites-gathering_facts-not_mandatory.yml
+
+- include_tasks: backup_dbs.yml
+  when: "proccess_sites and inventory_hostname == master_server"
+
+- include: shutdown_mysqld.yml
+
+- name: Delete old packages
+  shell: "rpm -qa | grep Percona-Server | xargs rpm -e --nodeps"
+  args:
+    removes: /bin/mysql
+  ignore_errors: true
+
+- name: Enable Percona 80 repository
+  shell: percona-release enable ps-80 release
+
+- name: Install percona-server
+  yum:
+    name: percona-server-server
+    state: latest
+
+- name: Gathering facts
+  bx_vat:
+
+- name: Performance options
+  bx_perf:
+    state: performance
+
+- name: Restore my.cnf
+  template:
+    src: my80.cnf.j2
+    dest: /etc/my.cnf
+    mode: 0644
+    owner: root
+    group: mysql
+
+- name: Restore bvat.cnf
+  template:
+    src: bvat/bx_perf-bvat80.cnf.j2
+    dest: /etc/mysql/conf.d/bvat.cnf
+    mode: 0644
+    owner: root
+    group: mysql
+
+- name: Start mysql service
+  service:
+    name: mysql
+    state: started
+    enabled: yes

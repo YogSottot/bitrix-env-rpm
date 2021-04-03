@@ -1,0 +1,156 @@
+---
+## create users
+- name: create user for nagios service
+  user:
+    state: present
+    system: yes
+    name: "{{ nagios_server_user }}" 
+    group: "{{ nagios_server_group }}"
+    comment: "{{ nagios_server_user }} monitoring user"
+
+- name: Nagios - set access rights for directories
+  file:
+    state: directory
+    path: "{{ item }}"
+    owner: "{{ nagios_server_user }}"
+    group: "{{ nagios_server_group }}"
+    mode: 0775
+    recurse: yes
+  with_items:
+    - "{{ nagios_server_data_dir }}"
+    - "{{ nagios_server_data_dir }}/checkresults"
+
+- name: Nagios - main config
+  template:
+    src: nagios.cfg.j2
+    dest: /etc/nagios/nagios.cfg
+    owner: "{{ nagios_server_user }}"
+    group: "{{ nagios_server_group }}"
+    mode: 0640
+
+- name: Nagios - create bitrix-pool directory
+  file:
+    path: "{{ nagios_server_include_dir }}"
+    state: directory
+    owner: "{{ nagios_server_user }}"
+    group: "{{ nagios_server_group }}"
+    mode: 0750 
+
+- name: Nagios - replace default localhost file
+  template:
+    src: nagios-localhost.cfg.j2
+    dest: /etc/nagios/objects/localhost.cfg
+    owner: "{{ nagios_server_user }}"
+    group: "{{ nagios_server_group }}"
+    mode: 0640
+
+- name: Nagios - create conf.d directory
+  file:
+    path: "/etc/nagios/conf.d"
+    state: directory
+    owner: "{{ nagios_server_user }}"
+    group: "{{ nagios_server_group }}"
+
+- name: Nagios - create commands and default tests definitions 
+  template:
+    src: "nagios-{{ item }}.j2"
+    dest: "/etc/nagios/conf.d/{{ item }}"
+    owner: "{{ nagios_server_user }}"
+    group: "{{ nagios_server_group }}"
+    mode: 0640
+  with_items:
+    - check_nrpe_commands.cfg
+    - default_tests_for_servers.cfg
+    - email_commands.cfg
+
+- name: Nagios - configure contacts
+  template:
+    src: contacts.cfg.j2
+    dest: /etc/nagios/objects/contacts.cfg
+    owner: "{{ nagios_server_user }}"
+    group: "{{ nagios_server_group }}"
+    mode: 0644
+
+- name: Nagios - configure web interface
+  template:
+    src: cgi.cfg.j2
+    dest: /etc/nagios/cgi.cfg
+    owner: "{{ nagios_server_user }}"
+    group: "{{ nagios_server_group }}"
+    mode: 0644
+
+- name: Nagios - change access for config
+  file:
+    path: /etc/nagios
+    state: directory
+    owner: "{{ nagios_server_user }}"
+    group: "{{ nagios_server_group }}" 
+    recurse: yes
+
+- name: Nagios - change access for log files
+  file:
+    path: "{{ nagios_server_log_dir }}"
+    state: directory
+    owner: "{{ nagios_server_user }}"
+    group: "{{ nagios_server_group }}" 
+
+- name: Nagios - configure mail agent
+  template:
+    src: nagios-msmtprc.j2
+    dest: "{{ nagios_msmtp_config }}"
+    owner: "{{ nagios_server_user }}"
+    group: "{{ nagios_server_group }}"
+    mode: 0600 
+  when: monitoring_status == 'enable'
+
+- name: Nagios - remove existen login from httpasswd file
+  htpasswd:
+    path: "{{ nagios_server_htpasswd }}"
+    name: "{{ nagios_server_login }}"
+    owner: root
+    group: bitrix
+    mode: 0640
+    state: absent
+
+- name: Nagios - add login to httpasswd file
+  htpasswd:
+    path: "{{ nagios_server_htpasswd }}"
+    name: "{{ nagios_server_login }}"
+    password: "{{ nagios_server_password|string }}" 
+    owner: root
+    group: bitrix
+    mode: 0640
+    state: present
+    create: yes
+
+- name: Nagios - update access rights
+  file:
+    path: /usr/share/nagios/html/config.inc.php
+    mode: 0640
+    owner: root
+    group: bitrix
+
+- name: Nginx - create config for monitoring locations
+  template:
+    src: nginx_server_monitor.conf.j2
+    dest: /etc/nginx/bx/conf/server_monitor.conf
+  tags: configure_web_service
+
+- name: Nginx - enable monitor config
+  file:
+    dest: /etc/nginx/bx/server_monitor.conf
+    src: /etc/nginx/bx/conf/server_monitor.conf
+    state: link
+    force: yes
+  tags: configure_web_service
+
+- name: Apache - create config for monitoring locations
+  template:
+    src: apache-nagios.conf.j2
+    dest: /etc/httpd/bx/conf/nagios.conf
+
+- name: Apache - forced restart
+  service:
+    name: httpd
+    state: restarted
+

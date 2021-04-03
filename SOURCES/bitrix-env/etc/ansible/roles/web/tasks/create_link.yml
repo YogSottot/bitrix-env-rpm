@@ -27,6 +27,7 @@
   set_fact:
     kernel_default_root: "{{ kernel_default.DocumentRoot }}"
     kernel_default_charset: "{{ kernel_default.SiteCharset }}"
+    kernel_default_db: "{{ kernel_default.DBName }}"
   tags: sites_facts
 
 - name: create additional variables when they not defined in the input
@@ -49,14 +50,13 @@
   set_fact:
     bitrix_site_encoding: cp1251
     bitrix_site_collation: cp1251_general_ci
-    bitrix_site_php_overload: "php_admin_value mbstring.func_overload 0"
-    bitrix_site_php_internal: "php_admin_value mbstring.internal_encoding latin"
+    bitrix_site_php_internal: "php_admin_value mbstring.internal_encoding cp1251"
   when: "kernel_default_charset == 'windows-1251'"
 
-#- name: set charset options for new site
-#set_fact:
-#  bitrix_site_php_internal: "php_admin_value default_charset latin"
-#when: "kernel_default_charset == 'windows-1251' and php_older_version == 1"
+- name: set charset options for new site
+  set_fact:
+    bitrix_site_php_internal: "php_admin_value default_charset cp1251"
+  when: "kernel_default_charset == 'windows-1251' and php_older_version == 1"
 
 # defined is_cluster and bx_sites_info variables
 - include: bx_sites_info.yml
@@ -71,36 +71,92 @@
 ####
 - include: test_site_exist.yml
 
-- name: debug
-  debug: msg="bxkernel={{ kernel_default_root  }}"
+# test images, upload and bitrix directories
+- name: check directory bitrix exists
+  delegate_to: "{{ cluster_web_server }}"
+  stat:
+    path: "{{ kernel_default_root }}/bitrix"
+  register: bitrix_details
 
-- name: test kernel site directory exists for link creation
-  delegate_to:  "{{ cluster_web_server }}"
-  bx_test_kernel_dir_existen: bxkernel={{ kernel_default_root }}
-  register: kernel_dirs_status
-  tags: test_site
+- name: check directory upload exists
+  delegate_to: "{{ cluster_web_server }}"
+  stat:
+    path: "{{ kernel_default_root }}/upload"
+  register: upload_details
 
-- name: exit when kernel site directory does not contain mandatory directories
-  fail: msg="Kernel sitedir does not contain {{ bxkernel_status.directory }}"
-  when: "kernel_dirs_status.found == 0"
-  tags: test_site
+- name: check directory images exists
+  delegate_to: "{{ cluster_web_server }}"
+  stat:
+    path: "{{ kernel_default_root }}/images"
+  register: images_details
+
+- fail:
+    msg: "There are no directory {{ kernel_default_root }}/bitrix"
+  when: not bitrix_details.stat.exists|bool
+
+- fail:
+    msg: "There are no directory {{ kernel_default_root }}/upload"
+  when: not upload_details.stat.exists|bool
+
+- debug:
+    msg: "There are no directory {{ kernel_default_root }}/images"
+  when: not images_details.stat.exists|bool
+
 ####
 ######## /testing input options - to avoid the situation with overwriting existing data
 
 ######## create site directories on all web servers in the pool
 ####
+- name: test cp1251 locale
+  shell: "locale -a | grep ru_RU.cp1251 -ic"
+  register: locale_cmd
+  ignore_errors: true
+  when: "kernel_default_charset == 'windows-1251'"
+
+- name: ensure locale exists
+  shell: localedef -c -i ru_RU -f CP1251 ru_RU.CP1251
+  when: kernel_default_charset == 'windows-1251'
+    and locale_cmd.stdout == "0"
+
 - include: create_basic_dirs.yml
 
+- name: create folder for temporary files
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ site_bitrix }}"
+    group: "{{ site_bitrix }}"
+    mode: 0770
+  loop:
+    - "/home/bitrix/.bx_temp"
+    - "/home/bitrix/.bx_temp/{{ kernel_default_db }}"
+    - "/etc/nginx/bx/site_settings"
+    - "/etc/nginx/bx/site_settings/{{ web_site_name }}"
+  when: "'bitrix-web' in group_names"
+
 - name: create symbolic link to bitrix kernel directories
-  file: dest={{ web_site_root_dir }}/{{ item }}
-    src={{ kernel_default_root }}/{{ item }} state=link
-    owner={{ site_bitrix }} group={{ site_bitrix }}
+  file: 
+    dest: "{{ web_site_root_dir }}/{{ item }}"
+    src: "{{ kernel_default_root }}/{{ item }}"
+    state: link
+    owner: "{{ site_bitrix }}"
+    group: "{{ site_bitrix }}"
   with_items:
     - bitrix
     - upload
-    - images
   tags: create_site_files
   when: "'bitrix-web' in group_names"
+
+- name: create symbolic link to images kernel directory
+  file: 
+    dest: "{{ web_site_root_dir }}/images"
+    src: "{{ kernel_default_root }}/images"
+    state: link
+    owner: "{{ site_bitrix }}"
+    group: "{{ site_bitrix }}"
+  tags: create_site_files
+  when: images_details.stat.exists|bool and 'bitrix-web' in group_names
+
 ####
 ######## /create site directories on all web servers in the pool
 
@@ -119,6 +175,16 @@
 ####
 - include: create_web_configs.yml
   when: "'bitrix-web' in group_names"
+
+- name: create custom nginx config
+  template:
+    src: nginx/bx_temp_link.conf.j2
+    dest: "/etc/nginx/bx/site_settings/{{ web_site_name }}/bx_temp.conf"
+    owner: bitrix
+    group: bitrix
+  notify: restart nginx
+  when: "inventory_hostname == cluster_web_server"
+
 ####
 ######## /create configs for web services
 

@@ -149,6 +149,20 @@ WEB0065="Manage web server configuration"
 WEB0066="1. Manage PHP extensions"
 WEB0067="2. Configure certificates"
 
+# Настройка сертифката для push-server должна быть привязана к настройке сертифката для сайта.
+# Невозможно настроить LE сертификат только для push-server
+WEB0068="Setting up a certificate for push-server should be tied to a site."
+WEB0069="There are no options to configure LE certificate for push-server only."
+
+# Введите путь к сертификату
+WEB0070="Enter certificate file path: "
+# 
+WEB0071="Certificate path must not be empty!"
+WEB0072="There are no sites with certificate: __OPT1__"
+
+# Дефолтный сертификат уже установлен на сайты: __OPT1__
+WEB0073="There is installed default certificate on sites: __OPT1__"
+
 WEB0200="Press ENTER to exit."
 WEB0201="0. Go to previous screen or exit"
 WEB0202="Enter 0 to exit:"

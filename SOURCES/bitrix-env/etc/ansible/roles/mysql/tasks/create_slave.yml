@@ -8,11 +8,15 @@
 # slave_server      = <hostname>
 # mysql_last_id     = last used server-id in the pool
 # on localhost gathering facts abount installed sites
-- include: sites-gathering_facts.yml
+- include_tasks: sites-gathering_facts.yml
 
-- include: sites-checks.yml
+- include_tasks: sites-checks.yml
 
-- include: mysql-check-slave.yml
+- include_tasks: mysql-check-slave.yml
+  when: mysql_uni_version|int < 80
+
+- include_tasks: mysql-check-slave80.yml
+  when: mysql_uni_version|int >= 80
 
 - name: replication variables on the slave-server
   set_fact: 
@@ -36,26 +40,25 @@
   #- name: debug
   #debug: msg="cluster_password={{ cluster_password }} replica_password={{ replica_password }}"
 
-- include: common-etckeeper.yml
+- include_tasks: common-etckeeper.yml
   when: "slave_server == inventory_hostname or master_server == inventory_hostname"
 
 # configure mysql options and user's access
-- include: configure-certs.yml
+- include_tasks: configure-certs.yml
   when: "inventory_hostname == slave_server or inventory_hostname == master_server"
-  static: no
 
-- include: setup.yml
+- include_tasks: setup.yml
   when: "slave_server == inventory_hostname or master_server == inventory_hostname"
 
-- include: mysql_uuid.yml
-  when: "slave_server == inventory_hostname and mysql_mid_version == '7'"
+- include_tasks: mysql_uuid.yml
+  when: "slave_server == inventory_hostname"
 
 # sync master and slave operations
-- include: mysql-master-lock.yml
+- include_tasks: mysql-master-lock.yml
   when: "slave_server == inventory_hostname or master_server == inventory_hostname"
 
 # update php configs of sites; only on web balancer
-- include: sites-update_settings.yml
+- include_tasks: sites-update_settings.yml
   when: "cluster_web_server == inventory_hostname"
 
 - name: restart httpd
@@ -63,14 +66,14 @@
   when: "'bitrix-web' in group_names"
 
 # disable public part of site, agents and events - delegate_to localhost(balancer)
-- include: sites-make_public.yml
+- include_tasks: sites-make_public.yml
   when: "inventory_hostname == cluster_web_server"
 
 # configure mysql slave server
-- include: mysql-configure-slave.yml
+- include_tasks: mysql-configure-slave.yml
   when: "inventory_hostname == slave_server"
 
-- include: mysql-pt-slave-restart-start.yml
+- include_tasks: mysql-pt-slave-restart-start.yml
   when: "inventory_hostname == slave_server"
 
 ## enable public part of site
@@ -78,16 +81,16 @@
   set_fact: site_stopped='N'
   when: "'bitrix-web' in group_names"
 
-- include: sites-make_public.yml
+- include_tasks: sites-make_public.yml
   when: "inventory_hostname == cluster_web_server"
  
 # register slave in cluster module - delegate to localhost(balancer)
 # Note: we use slave_server variables and execute script on cluster_web_server
-- include: sites-register_slave.yml
+- include_tasks: sites-register_slave.yml
   when: "inventory_hostname == slave_server"
 
 # update ansible config files
-- include: mysql-inventory-slave.yml
+- include_tasks: mysql-inventory-slave.yml
   when: "inventory_hostname == slave_server"
 
 # delete lock file
@@ -99,5 +102,5 @@
   tags: mysql_sync
 
 # monitoring plugins
-- include: mysql-monitor-slave.yml
+- include_tasks: mysql-monitor-slave.yml
   when: "monitoring_status == 'enable' and slave_server == inventory_hostname"

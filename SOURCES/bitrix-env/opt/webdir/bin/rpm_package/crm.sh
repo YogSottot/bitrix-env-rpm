@@ -132,8 +132,21 @@ install() {
 }
 
 upgrade(){
-
     export BITRIX_ENV_TYPE=$BITRIX_ENV_TYPE
+
+    # http://jabber.bx/view.php?id=113476
+    if [[ ( -f /etc/ansible/hosts ) && \
+        ( $(grep -v '^$\|^#' /etc/ansible/hosts | grep -c "bitrix-hosts") -gt 0 ) ]]; then
+        log_to_file "Run common playbook"
+        ansible-playbook /etc/ansible/common.yml \
+            -e common_manage=update_push_server >> $LOGS_FILE 2>&1
+        if [[ $? -gt 0 ]]; then
+            log_to_file "Cannot run common-playbok" "ERROR"
+        else
+            log_to_file "Run common-playbook after update"
+            rm -f $INVENTORY_TEMP $PLAYBOOK_OPTIONS
+        fi
+    fi
 
 }
 

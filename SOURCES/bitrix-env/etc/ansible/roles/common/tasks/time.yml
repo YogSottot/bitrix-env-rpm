@@ -30,10 +30,13 @@
   notify: restart mysqld
 
 - name: ntpd - install packages
-  yum: pkg={{ item }} state=present 
-  with_items:
-    - ntp
-    - ntpdate
+  yum:
+    pkg: "{{ packages }}"
+    state: present
+  vars:
+    packages:
+      - ntp
+      - ntpdate
   tags: ntpd
 
 - name: ntpd - ensure service started

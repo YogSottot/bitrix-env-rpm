@@ -65,6 +65,7 @@ my (
     $o_SMTPAuth,     $o_password_file,     $o_tmpdir,
     $o_fstype,       $o_extension,         $o_dns,
     $o_private_key,  $o_certificate_chain, $o_certificate,
+    $o_domains
 );
 
 # get command line options
@@ -128,6 +129,7 @@ my $result_option = GetOptions(
     'certificate:s'       => \$o_certificate,
     'certificate_chain:s' => \$o_certificate_chain,
     'nodejspush'          => \$o_push,
+    'domains:s'           => \$o_domains,
 ) or unknown_arg();
 
 # help message
@@ -269,6 +271,25 @@ elsif ( $o_action =~ /^(push_configure_nodejs|push_remove_nodjs)$/ ) {
     my $bxSites = bxSites->new( debug => $o_verbose );
     $sites = $bxSites->configurePushServer( $o_hostname, $o_action );
 }
+elsif ( $o_action eq "configure_transformer" ){
+    my $bxSites = bxSites->new( debug => $o_verbose  );
+    my $opts = {
+        web_site_name => $o_site,
+        web_site_dir => $o_root,
+        transformer_host => $o_hostname,
+        transformer_domains => $o_domains,
+    };
+    $sites = $bxSites->configureTransformer($opts);
+}
+elsif ( $o_action eq "remove_transformer" ){
+    my $bxSites = bxSites->new( debug => $o_verbose  );
+    my $opts = {
+        web_site_name => $o_site,
+        web_site_dir => $o_root,
+        transformer_host => $o_hostname,
+    };
+    $sites = $bxSites->removeTransformer($opts);
+}
 elsif ( $o_action =~ /^(configure_le)$/ ) {
     my $bxSites = bxSites->new( debug => $o_verbose );
     my $opts = {
@@ -291,11 +312,15 @@ elsif ( $o_action =~ /^(configure_cert)$/ ) {
     }
     $sites = $bxSites->configureCert($opts);
 }
-elsif ( $o_action =~ /^(reset_cert)$/ ) {
+elsif ( $o_action eq "reset_cert" ) {
     my $bxSites = bxSites->new( debug => $o_verbose );
 
     my $opts = { site_names => $o_site, };
     $sites = $bxSites->resetCert($opts);
+}elsif ( $o_action eq "cert_status" ) {
+    my $bxSites = bxSites->new( debug => $o_verbose );
+    my $opts = { cert => $o_certificate };
+    $sites = $bxSites->statusCerts( $opts );
 }
 
 elsif ( $o_action =~ /^backup$/ ) {
@@ -403,6 +428,10 @@ elsif ( $o_action =~ /^cron$/ ) {
 }
 elsif ( $o_action =~ /^(proxy_ignore_client_abort)$/ ) {
     $sites = $bx->siteOptions( $1, ($o_enable) ? "on" : "off", );
+}
+elsif ( $o_action =~ /^(nginx_custom_site_settings|dbconn_temp_files)$/ ) {
+    my $bxSites = bxSites->new( debug => $o_verbose  );
+    $sites = $bxSites->siteCustomSettings( $1, ($o_enable) ? "on" : "off" );
 }
 elsif ( $o_action =~ /^https$/ ) {
     if ($o_site) {

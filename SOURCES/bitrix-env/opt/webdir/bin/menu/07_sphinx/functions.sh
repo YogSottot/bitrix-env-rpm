@@ -40,7 +40,7 @@ get_sphinx_servers_status(){
         host_ident=$(echo "$line" | awk -F':' '{print $1}' | sed -e "s/^\s\+//")
         host_ip=$(echo "$line" | awk -F':' '{print $2}' | sed -e "s/^\s\+//")
         host_hostname=$(echo "$line" | awk -F':' '{print $5}' | sed -e "s/^\s\+//")
-        sphinx_version=$(echo "$line" | awk -F':' '{print $14}' | sed -e "s/^\s\+//")
+        sphinx_version=$(echo "$line" | awk -F':' '{print $15}' | sed -e "s/^\s\+//")
 
         if [[ $sphinx_version == "not_installed" ]]; then
             NOSPHINX_SERVERS_CN=$(( $NOSPHINX_SERVERS_CN + 1 ))

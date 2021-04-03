@@ -1,0 +1,101 @@
+#!/bin/bash
+#   get iptables status
+#   
+export LANG=en_EN.UTF-8
+export NOLOCALE=yes
+export PATH=/sbin:/bin:/usr/sbin:/usr/bin
+
+[[ -z $DEBUG ]] && DEBUG=0
+MYSQL_CNF=/root/.my.cnf
+TMP_DIR=/opt/webdir/tmp
+[[ ! -d $TMP_DIR ]] && mkdir -m 700 $TMP_DIR
+LOG_FILE=$TMP_DIR/bx_iptables_$$.log
+debug(){
+    mess=$1
+
+    [[ $DEBUG -gt 0 ]] && echo "$(date +%s) $mess" >> $LOG_FILE
+}
+
+
+check_iptables_status() {
+    iptables_status='disabled'
+    iptables_tmp=$(mktemp $TMP_DIR/bx_iptables.XXXXX)
+    iptables_test_port=2222
+    iptables_test_port_is_good=0
+
+    # test if port is close (nobody listen)
+    while [[ $iptables_test_port_is_good -eq 0 ]]; do
+        ss -lnp | egrep ":80\s+$iptables_test_port" > $iptables_tmp 2>&1
+        if [[ $? -gt 0 ]]; then
+            iptables_test_port_is_good=1
+        else
+            iptables_test_port=$(( $iptables_test_port + 1 ))
+        fi
+    done
+
+    # iptables working (stateless)
+    iptables -I INPUT -p tcp \
+        --dport $iptables_test_port -j ACCEPT > $iptables_tmp 2>&1
+    if [[ $? -eq 0 ]]; then
+        iptables_status='stateless'
+        iptables -D INPUT -p tcp \
+            --dport $iptables_test_port -j ACCEPT > $iptables_tmp 2>&1
+    fi
+
+    # iptables working (stateful)
+    if [[ $iptables_status == "stateless" ]]; then
+        iptables -I INPUT -m state --state NEW \
+            -p tcp --dport $iptables_test_port -j ACCEPT > $iptables_tmp 2>&1
+        if [[ $? -eq 0 ]]; then
+            iptables_status='stateful'
+            iptables -D INPUT -m state --state NEW \
+                -p tcp --dport $iptables_test_port -j ACCEPT > $iptables_tmp 2>&1
+        fi
+    fi
+    rm -f $iptables_tmp
+}
+
+check_firewalld_status(){
+    firewalld_package="not_installed"
+    firewalld_status="not_running"
+    firewalld_bx_type="not_installed"
+
+    firewalld_tmp=$(mktemp $TMP_DIR/firewalld.XXXXX)
+    rpm -qi firewalld > $firewalld_tmp 2>&1
+    if [[ $? -gt 0 ]]; then
+        rm -f $firewalld_tmp
+        return 0
+    fi
+    firewalld_package="installed"
+
+    firewall-cmd --state > $firewalld_tmp 2>&1
+    if [[ $? -gt 0 ]]; then
+        rm -f $firewalld_tmp
+        return 0
+    fi
+
+    if [[ $(grep -c '^running$' $firewalld_tmp) -gt 0 ]]; then
+        firewalld_status="running"
+        if [[ $(firewall-cmd --get-active-zones | grep bx_trusted -c) -gt 0 ]]; then
+            firewalld_bx_type="installed"
+        fi
+    fi
+    rm -f $firewalld_tmp
+}
+
+
+debug "get iptables status"
+check_iptables_status
+
+debug "get firewalld status"
+check_firewalld_status
+
+ANSIBLE_OUTPUT='{"ansible_facts":{'
+ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"firewalld_package":"'$firewalld_package'",'
+ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"firewalld_status":"'$firewalld_status'",'
+ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"firewalld_bx_type":"'$firewalld_bx_type'",'
+ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"iptables_status":"'$iptables_status'"'
+ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'}}'
+
+echo -n $ANSIBLE_OUTPUT
+exit 0

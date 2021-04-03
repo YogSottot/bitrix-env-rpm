@@ -44,7 +44,7 @@ CH023="Unknown action: __OPT1__"
 # На сервере не найден интерфейс=ИМЯ
 CH024="There is no network interface __OPT1__ on the server"
 # Пожалуйста, подтвердите ОБНОВЛЕНИЕ|ПЕРЕЗАГРУЗКУ|ВЫКЛЮЧЕНИЕ сервера
-CH025="Please confirm you want to __OPT1__  the server (N|y):"
+CH025="Please confirm you want to __OPT1__ the server (N|y):"
 
 CH0091="Configure network interface manually"
 CH0092="If you are connected to the server 

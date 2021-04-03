@@ -1,0 +1,27 @@
+---
+- name: test push-server directory
+  find:
+    path: /etc/nginx/certs
+    file_type: directory
+    patterns: push-server
+  register: own_push_directory
+  ignore_errors: true
+
+- name: delete certificate push-server
+  shell: "rm -rf ./push-server"
+  args:
+    chdir: /etc/nginx/certs
+  when: own_push_directory.matched > 0
+
+- name: Delete push ssl config
+  file:
+    path: /etc/nginx/bx/conf/ssl-push-custom.conf
+    state: absent
+
+- name: Recreate symbolic link
+  file:
+    src: /etc/nginx/bx/conf/ssl.conf
+    dest: /etc/nginx/bx/conf/ssl-push.conf
+    state: link
+    force: yes
+

@@ -26,6 +26,10 @@
   tags: php7
 
 - name: update system by remi repository
-  yum: name=php* state=latest
+  yum: 
+    name: php* 
+    state: latest
+    update_cache: yes
+    update_only: yes
   tags: php7
 

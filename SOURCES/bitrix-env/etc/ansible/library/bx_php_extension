@@ -1,0 +1,103 @@
+#!/bin/bash
+# fix php errors
+export LANG="en_US.UTF-8"
+export PATH=/usr/bin:/usr/sbin:/bin:/sbin
+TMPFILE=$(mktemp /tmp/php_extensions.XXXXX)
+
+# print error message
+print_error() {
+  msg=$1
+  echo "{\"changed\":false,\"failed\":true,\"msg\":\"$msg\"}"
+  [[ -f $TMPFILE ]] && rm -f $TMPFILE
+  exit 1
+}
+
+# print timezone info
+print_changed() {
+  msg=$1
+
+  echo "{\"changed\":true,\"msg\":\"$msg\"}"
+  [[ -f $TMPFILE ]] && rm -f $TMPFILE
+
+  exit 0
+}
+
+print_notchanged() {
+  msg=$1
+
+  echo "{\"changed\":false,\"msg\":\"$msg\"}"
+  [[ -f $TMPFILE ]] && rm -f $TMPFILE
+
+  exit 0
+}
+
+
+# get ansible options
+source ${1}
+
+# default values
+php_include_dir=/etc/php.d
+[[ -z "$state" ]] && state=duplicates
+[[ ! -d $php_include_dir ]] && print_notchanged "Not found $php_include_dir"
+
+
+# php -m
+# PHP Warning:  Module 'mcrypt' already loaded in Unknown on line 0
+php -m > $TMPFILE 2>&1
+DUBLICATE_MODULES=$(cat $TMPFILE | \
+    egrep -o "Module '\S+' already loaded" | \
+    awk '{print $2}' | sed -e "s/'//g;")
+MODULES_CHANGED=
+MODULES_UNCHANGED=
+if [[ -n $DUBLICATE_MODULES ]]; then
+    for mod in $DUBLICATE_MODULES; do
+        php_inis=$(find /etc/php.d/ -maxdepth 1 -type f -name "*.ini" \
+            -exec grep -H "^\s*extension=$mod" '{}' ';' | \
+            awk -F':' '{print $1}')
+        if [[ -n $php_inis ]]; then
+            MODULES_CHANGED="$MODULES_CHANGED $mod"
+
+            remove_files_cnt=0
+            remove_files=
+            first_file=
+            cnt=0
+            for file in $php_inis; do
+                cnt=$(( $cnt + 1 ))
+                [[ -z $first_file ]] && first_file=$file
+                # file /etc/php.d/30-mcrypt.ini is not owned by any package
+                rpm -qf $file > $TMPFILE 2>&1
+                if [[ $? -gt 0 ]]; then
+                    remove_files_cnt=$(( $remove_files_cnt + 1 ))
+                    remove_files=$remove_files" $file"
+                fi
+            done
+
+            if [[ ( $remove_files_cnt -gt 0 ) ]]; then
+                if [[ $remove_files_cnt -lt $cnt ]]; then
+                    rm -f $remove_files
+                else
+                    echo -n > $first_file
+                fi
+            else
+                echo -n > $first_file
+            fi
+        else
+            MODULES_UNCHANGED="$MODULES_UNCHANGED $mod"
+        fi
+    done
+    if [[ -n $MODULES_CHANGED ]]; then
+        MESS="Fix dublicates for $MODULES_CHANGED"
+    fi
+    if [[ -n $MODULES_UNCHANGED ]]; then
+        if [[ -n $MESS ]]; then
+            MESS=$MESS"; Cannot fix $MODULES_UNCHANGED"
+        else
+            MESS="Cannot fix $MODULES_UNCHANGED"
+            print_error "$MESS"
+        fi
+    fi
+    print_changed "$MESS"
+else
+    print_notchanged "No dublicates found for php-modules."
+fi
+

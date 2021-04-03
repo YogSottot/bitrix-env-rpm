@@ -1,0 +1,17 @@
+---
+## Hosts configuration
+- name: Nagios - define variables
+  set_fact:
+    nagios_ip: "{{ bx_netaddr }}"
+    nagios_alias: "{{ inventory_hostname }}"
+    nagios_host: "{{ bx_host|default(inventory_hostname) }}"
+
+- name: Nagios - create host configuration
+  delegate_to: "{{ monitoring_server }}"
+  template:
+    src: nagios-host.cfg.j2 
+    dest: "{{ nagios_server_include_dir }}/{{ nagios_alias }}.cfg"
+    owner: "{{ nagios_server_user }}"
+    group: "{{ nagios_server_group }}"
+    mode: 0644
+  notify: restart nagios

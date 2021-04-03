@@ -1,3 +1,5 @@
+#proxy_intercept_errors on;
+
 # Set error handlers
 error_page 403 /403.html;
 error_page 404 = @fallback;

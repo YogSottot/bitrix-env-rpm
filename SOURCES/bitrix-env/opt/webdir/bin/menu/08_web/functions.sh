@@ -19,6 +19,7 @@ mysql_menu_fnc=$mysql_menu_dir/functions.sh
 [[ -f $web_menu/functions.txt    ]] && \
     . $web_menu/functions.txt
 
+
 # get status for web servers
 # return
 # WEB_SERVERS -list of web servers

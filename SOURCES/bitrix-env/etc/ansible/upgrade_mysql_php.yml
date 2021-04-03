@@ -16,6 +16,8 @@
 
     - include_vars: /etc/ansible/group_vars/bitrix-web.yml
 
+    - fail:
+
     - name: get host info
       bx_vat:
 
@@ -140,7 +142,6 @@
       shell: mv /etc/php.d/{{ item }} /etc/php.d/{{ item }}.disabled
         creates=/etc/php.d/{{ item }}.disabled
       with_items:
-        - dom.ini
         - gmp.ini
         - posix.ini
         - sybase_ct.ini
@@ -153,7 +154,6 @@
     - name: create terminator for next update
       file: path=/etc/php.d/{{ item }} state=touch
       with_items:
-        - dom.ini
         - gmp.ini
         - posix.ini
         - sybase_ct.ini

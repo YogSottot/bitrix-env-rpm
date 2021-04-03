@@ -15,8 +15,8 @@ use YAML::XS qw(DumpFile LoadFile);
 use SSHAuthUser;
 use bxNetworkNode;
 
-Moose::Exporter->setup_import_methods(
-    as_is => [ 'get_from_yaml', 'generate_password', 'save_to_yaml', 'generate_tmp' ],
+Moose::Exporter->setup_import_methods( as_is =>
+      [ 'get_from_yaml', 'generate_password', 'save_to_yaml', 'generate_tmp' ],
 );
 
 # ident short name host in config files
@@ -88,7 +88,7 @@ sub get_bitrix_options {
         base              => $bitrix_dir,
         logs              => catfile( $bitrix_dir, 'logs' ),
         aHostsTemplate    => catfile( $bitrix_dir, 'templates', 'ansible' ),
-        aHostsRoles       => [ 'mgmt', 'mysql', 'web', 'memcached', 'sphinx', ],
+        aHostsRoles       => [ 'mgmt', 'mysql', 'web', 'memcached', 'sphinx', 'transformer' ],
         aHostsDefaultRole => 'hosts',
         aHostsPrefix      => 'bitrix',
     };
@@ -126,11 +126,11 @@ sub generate_random {
 
 sub generate_password {
     my $password = '';
-    my @chars = ( "A" .. "Z", 
-        "a" .. "z", 
+    my @chars    = (
+        "A" .. "Z",
+        "a" .. "z",
         "1" .. "9",
-        '?', '!', '@', '&', '-', '_', '+', 
-        '@', '%', '(', ')', '{','}',
+        '?', '!', '@', '&', '-', '_', '+', '@', '%', '(', ')', '{', '}',
         '}', '[', ']', '=',
     );
     $password .= $chars[ rand @chars ] for 1 .. 15;
@@ -254,12 +254,14 @@ sub get_ssh_key {
 
 sub save_to_yaml {
     my ( $options, $file ) = @_;
+
     # workaround about numbers
-    foreach my $k (keys %$options){
-        if ($options->{$k} =~ /^\d+$/){
-            $options->{$k} = $options->{$k}-0;
+    foreach my $k ( keys %$options ) {
+        if ( $options->{$k} =~ /^\d+$/ ) {
+            $options->{$k} = $options->{$k} - 0;
         }
     }
+
     #print Dumper($options);
 
     my $message_p = ( caller(0) )[3];
@@ -1064,6 +1066,14 @@ sub parse_host_vars {
           : 9306;
     }
 
+    # transformer
+    if ( defined $host_info->{roles}->{transformer} ){
+        $host_info->{roles}->{transformer} = {
+            transformer_site => ( $co->{transformer_site} ) ? $co->{transformer_site} : '',
+            transformer_dir => ( $co->{transformer_dir} ) ? $co->{transformer_dir} : ''
+        };
+    }
+
     return $host_info;
 }
 
@@ -1612,7 +1622,7 @@ sub get_inventory_info {
 #   if usage mysql cluster => exit
 #   else                   => run ansible updater for php and mysql by remi rpms
 sub update_php {
-    my ( $self, $type ) = @_;
+    my ( $self, $type, $inventory_host ) = @_;
 
     my $message_p = ( caller(0) )[3];
     my $message_t = __PACKAGE__;
@@ -1652,29 +1662,34 @@ sub update_php {
     # 2. start ansible process of updating mysql and php
     my $ansible_options = $self->ansible_options;
     my $cmd_playbook    = $ansible_options->{'playbook'};
-    my ($opts, $startProcess, $etc_playbook, $type_playbook);
+    my ( $opts, $startProcess, $etc_playbook, $type_playbook );
 
-    if ( $type =~ /^(bx_php_upgrade|bx_php_upgrade_php56)$/ ){
-        $etc_playbook = ( $type eq "bx_php_upgrade_php56" )
-            ? catfile( $ansible_options->{'base'}, 'upgrade_php.yml'  )
-            : catfile( $ansible_options->{'base'}, 'upgrade_mysql_php.yml' );
+    if ( $type =~ /^(bx_php_upgrade|bx_php_upgrade_php56)$/ ) {
+        $etc_playbook =
+          ( $type eq "bx_php_upgrade_php56" )
+          ? catfile( $ansible_options->{'base'}, 'upgrade_php.yml' )
+          : catfile( $ansible_options->{'base'}, 'upgrade_mysql_php.yml' );
 
     }
-    elsif ( $type =~ /^(bx_php_upgrade_php7|bx_php_rollback_php7)$/ ){
+    elsif ( $type =~ /^(bx_php_upgrade_php7|bx_php_rollback_php7)$/ ) {
         $etc_playbook = catfile( $ansible_options->{'base'}, 'web.yml' );
-        $opts = ($type eq 'bx_php_upgrade_php7')
-            ? { manage_web => "upgrade_php7" }
-            : { manage_web => "rollback_php7" };
+        $opts =
+            ( $type eq 'bx_php_upgrade_php7' )
+          ? { manage_web => "upgrade_php", to_php_version => 70 }
+          : { manage_web => "downgrade_php", to_php_version => 56 };
     }
-    elsif ( $type =~ /^bx_php_upgrade_php(71|72)$/ ){
+    elsif ( $type =~ /^bx_php_upgrade_php(70|71|72|73|74|80)$/ ) {
         my $version = $1;
         $etc_playbook = catfile( $ansible_options->{'base'}, 'web.yml' );
-        $opts = { manage_web => "upgrade_php" . $version };
+        $opts = { manage_web => "upgrade_php", to_php_version => $version };
     }
-    elsif ( $type =~ /^bx_php_rollback_php(70|71)$/ ){
+    elsif ( $type =~ /^bx_php_rollback_php(70|71|72|73|74)$/ ) {
         my $version = $1;
         $etc_playbook = catfile( $ansible_options->{'base'}, 'web.yml' );
-        $opts = { manage_web => "rollback_php" . $version };
+        $opts = { manage_web => "downgrade_php", to_php_version => $version };
+    }
+    if ( defined $inventory_host ) {
+        $opts->{updated_hostname} = $inventory_host;
     }
 
     my $bxDaemon = bxDaemon->new(
@@ -1682,17 +1697,18 @@ sub update_php {
         debug    => $self->debug,
         logfile  => $self->logfile,
     );
-    if ( not defined $opts ){
+    if ( not defined $opts ) {
         $startProcess = $bxDaemon->startProcess($type);
-    } else {
-        $startProcess = $bxDaemon->startAnsibleProcess($type, $opts);
+    }
+    else {
+        $startProcess = $bxDaemon->startAnsibleProcess( $type, $opts );
     }
 
     return $startProcess;
 }
 
 sub update_mysql {
-    my ( $self, $type ) = @_;
+    my ( $self, $type, $inventory_host ) = @_;
 
     my $message_p = ( caller(0) )[3];
     my $message_t = __PACKAGE__;
@@ -1707,48 +1723,36 @@ sub update_mysql {
 
     #print Dumper($pool_status);
 
-    # 1. testing that not mysql cluster is not configured
-    my $pool_servers = $pool_status->{'params'};
-    my $mysql_count  = 0;
-    my @mysql_servers;
-    foreach my $srv ( keys %$pool_servers ) {
-        if ( defined $pool_servers->{$srv}->{'roles'}->{'mysql'} ) {
-            $mysql_count++;
-            push @mysql_servers, $srv;
-        }
-    }
-
-    if ( ( $mysql_count > 1 ) ) {
-
-        # phrase_bxInventory_1
-        return Output->new(
-            error   => 1,
-            message => "Found multiple MySQL servers: "
-              . join( ',', @mysql_servers )
-              . ". Automatic update of the cluster configuration is disabled."
-        );
-    }
-
     # 2. start ansible process of updating mysql and php
     my $ansible_options = $self->ansible_options;
     my $cmd_playbook    = $ansible_options->{'playbook'};
-    my ($opts, $startProcess, $etc_playbook, $type_playbook);
+    my ( $opts, $startProcess, $etc_playbook, $type_playbook );
     $etc_playbook = catfile( $ansible_options->{'base'}, 'mysql.yml' );
-    $opts = { mysql_manage => "upgrade_mysql57" };
+    if ( $type eq "bx_upgrade_mysql57" ) {
+
+        $opts = { mysql_manage => "upgrade_mysql57" };
+    }
+    elsif ( $type eq "bx_upgrade_mysql80" ) {
+        $opts = { mysql_manage => "upgrade_mysql80" };
+
+    }
+    if ( defined $inventory_host ) {
+        $opts->{updated_hostname} = $inventory_host;
+    }
 
     my $bxDaemon = bxDaemon->new(
         task_cmd => qq($cmd_playbook $etc_playbook),
         debug    => $self->debug,
         logfile  => $self->logfile,
     );
-    if ( not defined $opts ){
+    if ( not defined $opts ) {
         $startProcess = $bxDaemon->startProcess($type);
-    } else {
-        $startProcess = $bxDaemon->startAnsibleProcess($type, $opts);
+    }
+    else {
+        $startProcess = $bxDaemon->startAnsibleProcess( $type, $opts );
     }
 
     return $startProcess;
 }
-
 
 1;

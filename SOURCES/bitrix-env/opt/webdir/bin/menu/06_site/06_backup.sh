@@ -33,6 +33,7 @@ update_backup() {
     print_message "$SM0205" "" "" backup_period 1
     case $backup_period in
     "0")
+        # once a day
         _min=10
         _hour=24
         _day='*'
@@ -48,21 +49,28 @@ update_backup() {
         done
     ;;
     "1")
+        # once a week (default)
         _min=10
         _hour=23
         _day='*'
         _month='*'
-        _wday=8
-        until [[ ( $_wday -ge 0 ) && ( $_wday -le 7 ) ]]; do
+        _wday=0
+        # week_day_arr[input]=cron_day
+        week_days_arr=(0 1 2 3 4 5 6 0)
+        week_days_arr_str=(0 monday tuesday wednesday thursday friday saturday sunday)
+
+        until [[ ( $_wday -gt 0 ) && ( $_wday -le 7 ) ]]; do
             print_message "$SM0058" "" "" _wday $_wday
-            if [[ ( $_wday -ge 0 ) && ( $_wday -le 7 ) ]]; then
-                echo "$(get_text "$SM0059" "$_wday")"
+            if [[ ( $_wday -gt 0 ) && ( $_wday -le 7 ) ]]; then
+                echo "$(get_text "$SM0059" "${week_days_arr_str[$_wday]}")"
             else
                 echo "$SM0060" ;
             fi
         done
+        _wday=${week_days_arr[$_wday]}
     ;;
     "2")
+        # once a month
         _min=10
         _hour=23
         _day=32

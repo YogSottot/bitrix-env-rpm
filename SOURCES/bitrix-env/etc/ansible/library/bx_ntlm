@@ -3,7 +3,7 @@
 export LANG=en_EN.UTF-8
 export PATH=$PATH:/sbin:/usr/sbin
 
-[[ -z $DEBUG ]] && DEBUG=1
+[[ -z $DEBUG ]] && DEBUG=0
 TMP=/opt/webdir/logs
 LOG=$TMP/bx_ntlm.log
 [[ $DEBUG -gt 0 ]] 2>/dev/null && echo -n "" > $LOG
@@ -81,6 +81,10 @@ parse_data(){
         [[ -f $safe_file ]] || print "Not found file=$safe_file" error
         ntlm_user=$(grep '# NTLM_USER' $safe_file -A 1 | tail -n1) 
         ntlm_pass=$(grep '# NTLM_PASSWORD' $safe_file -A 1 | tail -n1) 
+
+        ntlm_dps=$(grep '# NTLM_DPS' $safe_file -A 1 | tail -n1) 
+        ntlm_dnf=$(grep '# NTLM_DNF' $safe_file -A 1 | tail -n1) 
+
         #ntlm_user=$(printf "%q" "$ntlm_user_file")
         #ntlm_pass=$(printf "%q" "$ntlm_pass_file")
 
@@ -123,6 +127,13 @@ elif [[ "$state" == "join" ]]; then
     net_join_code=$?
 
     debug "net ads join return=$net_join_code"
+    
+    if [[ $net_join_code -gt 0 ]]; then
+        # try use ntlm_dps and ntlm_fqdn
+        net ads join -S $ntlm_dps -D $NTLM_DNF -U $ntlm_user%$ntlm_pass 1>>$LOG 2>&1
+        net_join_code=$?
+        debug "net ads join return=$net_join_code"
+    fi
 
     [[ $net_join_code -gt 0 ]] && \
         print "Error: net ads join returned error=$net_join_code" error

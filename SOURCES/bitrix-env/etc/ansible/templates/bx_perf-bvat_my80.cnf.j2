@@ -1,0 +1,14 @@
+# memory: {{ max_memory }}MB
+[mysqld]
+    innodb_buffer_pool_size = {{ innodb_buffer_pool_size }}M
+    max_connections = {{ max_connections }}
+    table_open_cache = {{ table_open_cache }}
+    thread_cache_size = {{ thread_cache_size }}
+    max_heap_table_size = {{ max_heap_table_size }}M
+    tmp_table_size = {{ tmp_table_size }}M
+    key_buffer_size = {{ key_buffer_size }}M
+    join_buffer_size = {{ join_buffer_size }}M
+    sort_buffer_size = {{ sort_buffer_size }}M
+    bulk_insert_buffer_size = {{ bulk_insert_buffer_size }}M
+    myisam_sort_buffer_size = {{ myisam_sort_buffer_size }}M
+

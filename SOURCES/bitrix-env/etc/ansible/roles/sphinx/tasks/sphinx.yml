@@ -8,7 +8,12 @@
 ####
 - name: gathering facts about installed sites
   delegate_to: "{{ cluster_web_server }}"
-  bx_facts: name=list password=0 install=kernel status=finished dbname={{ manage_kernel }}
+  bx_facts:
+    name: list
+    password: 0
+    install: kernel
+    status: finished
+    dbname: "{{ manage_kernel }}"
   tags: sites_facts
 
 - name: create variable bx_sites_info
@@ -21,7 +26,7 @@
 
 ######## configure sphinx service
 ####
-- include: install.yml
+- include_tasks: install.yml
   when: "inventory_hostname == manage_node and manage_sphinx == 'create'"
 
 ####
@@ -29,46 +34,41 @@
 
 ######## create index for sites
 ####
-- include: index.yml
+- include_tasks: index.yml
   when: "inventory_hostname == manage_node and manage_sphinx == 'create'"
-  static: no
 #####
 ######### /create index for sites
 
 ######### create or delete sphinx instance in the site
 #####
-- include: sites-cache_directory-execute.yml
+- include_tasks: sites-cache_directory-execute.yml
   vars:
     php_script: "{{ manage_sphinx }}_index_in_web.php"
     php_server: "{{ cluster_web_server }}"
   when: "inventory_hostname == manage_node"
-  static: no
 
 #####
 ######### /create or delete sphinx instance in the site
 
 ######## disable service and delete role
 ####
-- include: delete.yml
+- include_tasks: delete.yml
   when: "inventory_hostname == manage_node and manage_sphinx == 'delete'"
-  static: no
 
 ####
 ######## /disable service and delete role
 
 ######## /configure monitoring 
 ####
-- include: enable_monitor.yml
+- include_tasks: enable_monitor.yml
   when: "monitoring_status == 'enable' and 
     inventory_hostname == manage_node 
     and manage_sphinx == 'create'"
-  static: no
 
-- include: disable_monitor.yml
+- include_tasks: disable_monitor.yml
   when: "monitoring_status == 'enable' and 
     inventory_hostname == manage_node and 
     manage_sphinx == 'delete'"
-  static: no
 
 ####
 ######## /configure monitoring 

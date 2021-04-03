@@ -1,0 +1,33 @@
+---
+#- fail:
+# upgrade php package from 7.3 version to 7.4
+- name: disable remi php74 repository
+  ini_file: 
+    dest: /etc/yum.repos.d/remi-php74.repo
+    section: remi-php74 
+    option: enabled 
+    value: 0
+  tags: remi
+
+- name: enable remi php80 repository
+  ini_file: 
+    dest: /etc/yum.repos.d/remi-php80.repo
+    section: remi-php80 
+    option: enabled 
+    value: 1
+  tags: remi
+
+- name: update system by remi repository
+  yum: 
+    name: php* 
+    state: latest
+    update_cache: yes
+    update_only: yes
+  tags: php80
+
+- include: php_ext_dublicates.yml
+
+- name: restart httpd
+  service: name=httpd state=restarted
+  tags: php80
+

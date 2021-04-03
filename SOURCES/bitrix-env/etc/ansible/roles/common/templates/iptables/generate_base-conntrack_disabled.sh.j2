@@ -76,8 +76,10 @@ if [[ ( $is_bx_public -eq 0 ) || ( $is_bx_trusted -eq 0 ) || ( $is_bx_sports -eq
     log2file "Create empty {{ public_chain }} and {{ trusted_chain }} chains"
 else
     # clear custom chains
-    iptables -F {{ public_chain  }}
-    iptables -F {{ trusted_chain  }}
+    iptables -F {{ public_chain }}
+    iptables -F {{ trusted_chain }}
+    iptables -F {{ service_chain }}
+
     log2file "Truncate {{ public_chain  }} and {{ trusted_chain  }} chains"
 fi
 

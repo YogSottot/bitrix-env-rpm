@@ -241,6 +241,7 @@ get_client_settings() {
     CLIENT_NAME=$(echo "$host_data"   | grep '^hostname '       | awk -F'=' '{print $2}' | \
      sed -e 's/^\s\+//;s/\s\+$//')      # master name
     IS_MASTER=$(echo "$host_data"     | grep '^groups' | grep -cwi 'bitrix-mgmt')
+    IS_PUSH=$(echo "$host_data"     | grep '^groups' | grep -cwi 'bitrix-push')
     IN_POOL=1
   fi
 }
@@ -436,15 +437,16 @@ print_pool_info(){
         # 3 - mgmt,mysql_master_1,web:
         # 4 - 1503919366_V37FzFyfwD:
         # 5 - vm04.ksh.bx:
-        # 6 - Y
-        # 7 - 7.1-0:
-        # 8 - ok:
-        # 9 - enp0s3=10.0.2.15,enp0s8=172.17.10.104,enp0s9=192.168.100.36:
-        # 10 - 600:
-        # 11 - 7:
-        # 12 - 5.7.18
-        # 13 - 7.0.19:
-        # 14 - not_installed
+        # 6 - tranformer options
+        # 7 - Y
+        # 8 - 7.1-0:
+        # 9 - ok:
+        # 10 - enp0s3=10.0.2.15,enp0s8=172.17.10.104,enp0s9=192.168.100.36:
+        # 11 - 600:
+        # 12 - 7:
+        # 13 - 5.7.18
+        # 14 - 7.0.19:
+        # 15 - not_installed
         srv_name=$(echo "$srv_info" | awk -F':' '{print $1}') # server identifier in ansible inventory
         srv_neta=$(echo "$srv_info" | awk -F':' '{print $2}') # netaddress
         srv_rols=$(echo "$srv_info" | awk -F':' '{print $3}') # server roles
@@ -452,12 +454,12 @@ print_pool_info(){
         srv_date=$(date -d @$srv_time +"%d-%m-%Y")
         hostname=$(echo "$srv_info" | awk -F':' '{print $5}') # server name 
 
-        srv_conn=$(echo "$srv_info" | awk -F':' '{print $6}') # server connected to pool or not
-        srv_bver=$(echo "$srv_info" | awk -F':' '{print $7}') # version virt env on server
-        srv_bpwd=$(echo "$srv_info" | awk -F':' '{print $8}') # bitrix user password status
-        srv_bips=$(echo "$srv_info" | awk -F':' '{print $9}') # host interfaces and ip address
-        srv_buid=$(echo "$srv_info" | awk -F':' '{print $10}') # uid for bitrix user
-        srv_base_ver=$(echo "$srv_info" | awk -F':' '{print $11}') # version of bitrix-env
+        srv_conn=$(echo "$srv_info" | awk -F':' '{print $7}') # server connected to pool or not
+        srv_bver=$(echo "$srv_info" | awk -F':' '{print $8}') # version virt env on server
+        srv_bpwd=$(echo "$srv_info" | awk -F':' '{print $9}') # bitrix user password status
+        srv_bips=$(echo "$srv_info" | awk -F':' '{print $10}') # host interfaces and ip address
+        srv_buid=$(echo "$srv_info" | awk -F':' '{print $11}') # uid for bitrix user
+        srv_base_ver=$(echo "$srv_info" | awk -F':' '{print $12}') # version of bitrix-env
         is_printed=0
         if [[ -n "$srv_rols_exclude" ]]; then
       
@@ -1007,7 +1009,15 @@ test_hostname() {
         # alil test passed
         # if limit size defined, check it
         if [[ ${q_size} -gt 0 ]] 2>/dev/null; then
-            len_hostname=$(echo "${q_host}" | wc -c)
+            len_hostname=$(echo -n "${q_host}" | wc -c)
+
+
+            # hostname `test` 
+            # len 4
+            if [[ $DEBUG -gt 0 ]]; then
+                echo "Len Hostname: ${len_hostname}"
+                echo "Limit: ${q_size}"
+            fi
             # all ok
             if [[ ${len_hostname} -le ${q_size} ]]; then
                     test_hostname=1
@@ -1109,9 +1119,17 @@ get_mysql_package(){
     if [[ $(echo "$PACKAGES_LIST" | grep -c '^mysql-community-server') -gt 0 ]]; then
         MYSQL_PACKAGE=mysql-community-server
         MYSQL_SERVICE=mysqld
+    
+    # Percona 5.6 && 5.7
     elif [[ $(echo "$PACKAGES_LIST" | grep -c '^Percona-Server-server') -gt 0 ]]; then
         MYSQL_PACKAGE=Percona-Server-server
         MYSQL_SERVICE=mysqld
+
+    # Percona 8.0
+    elif [[ $(echo "$PACKAGES_LIST" | grep -c '^percona-server-server') -gt 0  ]]; then
+        MYSQL_PACKAGE=percona-server-server
+        MYSQL_SERVICE=mysqld
+
     elif [[ $(echo "$PACKAGES_LIST" | grep -c '^MariaDB-server') -gt 0 ]]; then
         MYSQL_PACKAGE=MariaDB-server
         MYSQL_SERVICE=mariadb
@@ -1128,6 +1146,7 @@ get_mysql_package(){
     MYSQL_VERSION=$(rpm -qa --queryformat '%{version}' ${MYSQL_PACKAGE}* | \
         head -1 | awk -F'.' '{printf "%d.%d", $1,$2}' )
     MYSQL_MID_VERSION=$(echo "$MYSQL_VERSION" | awk -F'.' '{print $2}')
+    MYSQL_UNI_VERSION=$(echo "$MYSQL_VERSION" | awk -F'.' '{printf "%s%s", $1,$2}')
 
     # mysql status
     [[ -z $OS_VERSION ]] && get_os_type
@@ -1136,7 +1155,14 @@ get_mysql_package(){
         systemctl is-active $MYSQL_SERVICE >/dev/null 2>&1
         status_rtn=$?
     else
-        /etc/init.d/mysqld status | grep -wc running >/dev/null 2>&1
+		MYSQL_INIT_SCRIPT=/etc/init.d/mysqld
+        MYSQL_SERVICE_NAME=mysqld
+
+        if [[ -f /etc/init.d/mysql ]]; then
+            MYSQL_INIT_SCRIPT=/etc/init.d/mysql
+            MYSQL_SERVICE_NAME=mysql
+        fi
+        $MYSQL_INIT_SCRIPT status | grep -wc running >/dev/null 2>&1
         status_rtn=$?
     fi
     if [[ $status_rtn -gt 0 ]]; then
@@ -1667,81 +1693,245 @@ get_php_settings(){
     IS_OPCACHE_PHP=$($PHP_CMD -m 2>/dev/null | grep -wc OPcache)
 }
 
+# bx_trusted
 public_firewalld(){
+    if [[ $(systemctl is-active firewalld | grep -wc active) -eq 0 ]]; then
+        # http://jabber.bx/view.php?id=89409
+        rpm -qi firewalld >/dev/null 2>&1
+        if [[ $? -gt 0 ]]; then
+            log_to_file "$BU0061"
+            yum -y install  firewalld >/dev/null 2>&1
+            if [[ $? -gt 0 ]]; then
+                log_to_file "$BU2032"
+                return 2
+            fi
+        fi
+        systemctl enable firewalld >/dev/null 2>&1
+        systemctl start firewalld
+        if [[ $? -gt 0 ]]; then
+            log_to_file "$BU2033"
+            return 2
+        fi
+    fi
+
     log_to_file "$BU0059"
+    is_bx_trusted=$(firewall-cmd --get-zones | grep "bx_trusted" -wc)
+    if [[ $is_bx_trusted -eq 0 ]]; then
+        firewall-cmd --permanent --new-zone=bx_trusted >/dev/null 2>&1
+    fi
+
+    firewall-cmd --zone=bx_trusted --permanent --add-port=1-65535/tcp >/dev/null 2>&1
+    firewall-cmd --zone=bx_trusted --permanent --add-port=1-65535/udp >/dev/null 2>&1
+
     firewall-cmd --zone=public --list-interfaces 1>/dev/null 2>&1
     if [[ $? -gt 0 ]]; then
         log_to_file "$BU2030"
         return 2
     fi
-    firewall-cmd --permanent --zone=public --add-service=http && \
-        firewall-cmd --permanent --zone=public --add-service=https 
+    firewall-cmd --permanent --zone=public --add-service=http >/dev/null 2>&1 && \
+        firewall-cmd --permanent --zone=public --add-service=https  >/dev/null 2>&1
     if [[ $? -gt 0 ]]; then
         log_to_file "$BU2031"
         return 2
     fi
     log_to_file "$BU0060"
-    firewall-cmd --reload
+    firewall-cmd --reload >/dev/null 2>&1
     return 0
 }
 
-configure_iptables(){
-    [[ -z $OS_VERSION ]] && get_os_type
-    if [[ $OS_VERSION -eq 7 ]]; then
-        if [[ $(systemctl is-active firewalld | grep -wc active) -eq 0 ]]; then
-            # http://jabber.bx/view.php?id=89409
-            rpm -qi firewalld >/dev/null 2>&1
-            if [[ $? -gt 0 ]]; then
-                log_to_file "$BU0061"
-                yum -y install  firewalld >/dev/null 2>&1
-                if [[ $? -gt 0 ]]; then
-                    log_to_file "$BU2032"
-                    return 2
-                fi
-            fi
-            systemctl enable firewalld
-            systemctl start firewalld
-            if [[ $? -gt 0 ]]; then
-                log_to_file "$BU2033"
-                return 2
-            fi
-        fi
-        public_firewalld
-        public_firewalld_rtn=$?
+check_iptables_status() {
+    iptables_status='disabled'
+    iptables_tmp=$(mktemp $TMP_DIR/bx_iptables.XXXXX)
+    iptables_test_port=2222
+    iptables_test_port_is_good=0
 
-    else
-        # openvz
-        iptables -L INPUT -n 1>/dev/null 2>&1
+    # test if port is close (nobody listen)
+    while [[ $iptables_test_port_is_good -eq 0 ]]; do
+        ss -lnp | egrep ":80\s+$iptables_test_port" > $iptables_tmp 2>&1
         if [[ $? -gt 0 ]]; then
-            log_to_file "$BU2034"
-            return 2
+            iptables_test_port_is_good=1
+        else
+            iptables_test_port=$(( $iptables_test_port + 1 ))
+        fi
+    done
+
+    # iptables working (stateless)
+    iptables -I INPUT -p tcp \
+        --dport $iptables_test_port -j ACCEPT > $iptables_tmp 2>&1
+    if [[ $? -eq 0 ]]; then
+        iptables_status='stateless'
+        iptables -D INPUT -p tcp \
+            --dport $iptables_test_port -j ACCEPT > $iptables_tmp 2>&1
+    fi
+
+    # iptables working (stateful)
+    if [[ $iptables_status == "stateless" ]]; then
+        iptables -I INPUT -m state --state NEW \
+            -p tcp --dport $iptables_test_port -j ACCEPT > $iptables_tmp 2>&1
+        if [[ $? -eq 0 ]]; then
+            iptables_status='stateful'
+            iptables -D INPUT -m state --state NEW \
+                -p tcp --dport $iptables_test_port -j ACCEPT > $iptables_tmp 2>&1
+        fi
+    fi
+    rm -f $iptables_tmp
+}
+
+check_firewalld_status(){
+    firewalld_package="not_installed"
+    firewalld_status="not_running"
+    firewalld_bx_type="not_installed"
+    firewalld_tolerance="non_compatible"
+
+    firewalld_tmp=$(mktemp $TMP_DIR/firewalld.XXXXX)
+    rpm -qi firewalld > $firewalld_tmp 2>&1
+    if [[ $? -gt 0 ]]; then
+        rm -f $firewalld_tmp
+        return 0
+    fi
+    firewalld_package="installed"
+
+    firewall-cmd --state > $firewalld_tmp 2>&1
+    if [[ $? -gt 0 ]]; then
+        rm -f $firewalld_tmp
+        return 0
+    fi
+
+    if [[ $(grep -c '^running$' $firewalld_tmp) -gt 0 ]]; then
+        firewalld_status="running"
+        if [[ $(firewall-cmd --get-active-zones | grep bx_trusted -c) -gt 0 ]]; then
+            firewalld_bx_type="installed"
         fi
 
-        if [[ $IS_OPENVZ -gt 0 ]]; then
-            iptables -I INPUT -m tcp -p tcp --dport 80 -j ACCEPT 1>/dev/null 2>&1 && \
-                iptables -I INPUT -m tcp -p tcp --dport 443 -j ACCEPT 1>/dev/null 2>&1
-            if [[ $? -gt 0 ]]; then
-                log_to_file "$BU2035"
-                return 2
+		systemctl status firewalld > $firewalld_tmp 2>&1
+        if [[ $(grep -c "ERROR:" $firewalld_tmp) -eq 0 ]]; then
+            firewalld_tolerance="compatible"
+        fi
+
+    fi
+    rm -f $firewalld_tmp
+}
+
+replace_firewalld_by_iptables(){
+    [[ -z $OS_VERSION ]] && get_os_type
+
+    if [[ $OS_VERSION -eq 7 ]]; then
+        check_firewalld_status
+        if [[ $firewalld_package == "installed" ]]; then
+            yum -y remove firewalld >/dev/null 2>&1
+            yum -y install iptables-services >/dev/null 2>&1
+            systemctl enable iptables
+            systemctl start iptables
+        fi
+
+        if [[ $(systemctl is-active iptables | grep -c "active") -eq 0 ]]; then
+            echo '*filter
+:INPUT ACCEPT [0:0]
+:FORWARD ACCEPT [0:0]
+:OUTPUT ACCEPT [0:0]
+-A INPUT -p icmp -j ACCEPT
+-A INPUT -i lo -j ACCEPT
+-A INPUT -p tcp -m tcp --dport 22 -j ACCEPT
+-A INPUT -j REJECT --reject-with icmp-host-prohibited
+-A FORWARD -j REJECT --reject-with icmp-host-prohibited
+COMMIT' > /etc/sysconfig/iptables
+            systemctl start iptables
+
+        fi
+    else
+        chkconfig iptables on
+        /etc/init.d/iptables restart >/dev/null 2>&1
+    fi
+}
+
+public_stateless_iptables(){
+    replace_firewalld_by_iptables
+
+    is_incorrect_rules=$(grep -c "state NEW" /etc/sysconfig/iptables)
+    if [[ $is_incorrect_rules -gt 0 ]]; then
+        echo '*filter
+:INPUT ACCEPT [0:0]
+:FORWARD ACCEPT [0:0]
+:OUTPUT ACCEPT [0:0]
+-A INPUT -p icmp -j ACCEPT
+-A INPUT -i lo -j ACCEPT
+-A INPUT -p tcp -m tcp --dport 22 -j ACCEPT
+-A INPUT -j REJECT --reject-with icmp-host-prohibited
+-A FORWARD -j REJECT --reject-with icmp-host-prohibited
+COMMIT' > /etc/sysconfig/iptables
+    fi
+
+    if [[ -f /etc/sysconfig/iptables-config ]]; then
+        sed -i "/IPTABLES_MODULES_UNLOAD/d" /etc/sysconfig/iptables-config
+        echo 'IPTABLES_MODULES_UNLOAD="no"' >> /etc/sysconfig/iptables-config
+    fi
+
+    iptables -I INPUT -m tcp -p tcp --dport 80 -j ACCEPT 1>/dev/null 2>&1 && \
+    iptables -I INPUT -m tcp -p tcp --dport 443 -j ACCEPT 1>/dev/null 2>&1 && \
+    iptables -I INPUT -p tcp -m tcp --sport 443 -j ACCEPT 1>/dev/null 2>&1 && \
+    iptables -I INPUT -p tcp -m tcp --sport 80 -j ACCEPT 1>/dev/null 2>&1 &&\
+    iptables -I INPUT -p udp -m udp --sport 53 -j ACCEPT 1>/dev/null 2>&1
+
+    if [[ $? -gt 0 ]]; then
+        log_to_file "$BU2035"
+        return 2
+    fi
+    iptables-save > /etc/sysconfig/iptables
+}
+
+public_stateful_iptables(){
+    replace_firewalld_by_iptables
+
+    iptables -I INPUT -m tcp -p tcp \
+        -m state --state NEW --dport 80 -j ACCEPT 1>/dev/null 2>&1 && \
+    iptables -I INPUT -m tcp -p tcp \
+        -m state --state NEW --dport 443 -j ACCEPT 1>/dev/null 2>&1
+    if [[ $? -gt 0 ]]; then
+        log_to_file "$BU2035"
+        return 2
+    fi
+ 
+    iptables-save > /etc/sysconfig/iptables
+}
+
+configure_firewall_daemon(){
+    CONFIGURE_IPTABLES=${1:-1}
+    CONFIGURE_FIREWALLD=${2:-0}
+
+    # configure iptables_status
+    check_iptables_status
+    log_to_file "testing iptables status return $iptables_status"
+
+    if [[ $iptables_status != 'stateful' ]]; then
+        if [[ $iptables_status == "disabled" ]]; then
+            log_to_file "$BU2036"
+            return 255
+        else
+            public_stateless_iptables
+        fi
+    # support statefull
+    else
+        if [[ $OS_VERSION == "7" ]]; then
+            if [[ $CONFIGURE_FIREWALLD -eq 1 ]]; then
+                public_firewalld
+				check_firewalld_status 
+				if [[ $firewalld_tolerance == "non_compatible" ]]; then
+					log_to_file "$BU2037"
+					public_stateful_iptables
+				fi	
+            else
+                public_stateful_iptables
             fi
         else
-            iptables -I INPUT -m tcp -p tcp \
-                -m state --state NEW --dport 80 -j ACCEPT 1>/dev/null 2>&1 && \
-                iptables -I INPUT -m tcp -p tcp \
-                -m state --state NEW --dport 443 -j ACCEPT 1>/dev/null 2>&1
-            if [[ $? -gt 0 ]]; then
-                log_to_file "$BU2035"
-                return 2
-            fi
+            public_stateful_iptables
         fi
-        log_to_file "$BU0062"
-        iptables-save > /etc/sysconfig/iptables
-        return 0
     fi
 }
 
 get_server_id(){
     local h="${1}"
+
+    [[ -z ${h} ]] && return 3
     cache_pool_info
 
     IFS_BAK=$IFS
@@ -1951,13 +2141,13 @@ bx_enable_beta_version(){
     echo "[bitrix-beta]
 name=Bitrix Env Beta - CentOS-$OS_VERSION - \$basearch
 failovermethod=priority
-baseurl=http://repos.1c-bitrix.ru/yum-beta/el/$OS_VERSION/\$basearch
+baseurl=https://repos.1c-bitrix.ru/yum-beta/el/$OS_VERSION/\$basearch
 enabled=1
 gpgcheck=1
-gpgkey=http://repos.1c-bitrix.ru/yum/RPM-GPG-KEY-BitrixEnv
+gpgkey=https://repos.1c-bitrix.ru/yum/RPM-GPG-KEY-BitrixEnv
 " > /etc/yum.repos.d/bitrix.repo
 
-    yum clean all >dev/null 2>&1
+    yum clean all >/dev/null 2>&1
 }
 
 bx_disable_beta_version(){
@@ -1966,11 +2156,129 @@ bx_disable_beta_version(){
     echo "[bitrix]
 name=Bitrix Env - CentOS-$OS_VERSION - \$basearch
 failovermethod=priority
-baseurl=http://repos.1c-bitrix.ru/yum/el/$OS_VERSION/\$basearch
+baseurl=https://repos.1c-bitrix.ru/yum/el/$OS_VERSION/\$basearch
 enabled=1
 gpgcheck=1
-gpgkey=http://repos.1c-bitrix.ru/yum/RPM-GPG-KEY-BitrixEnv
+gpgkey=https://repos.1c-bitrix.ru/yum/RPM-GPG-KEY-BitrixEnv
 " > /etc/yum.repos.d/bitrix.repo
 
-    yum clean all >dev/null 2>&1
+    yum clean all >/dev/null 2>&1
+}
+
+bx_update_master_network(){
+    current=${1}
+    saved=${2}
+    host=${3}
+    is_push=${4}
+
+
+
+    ANSIBLE_CHANGED="/etc/ansible/hosts
+/etc/ansible/host_vars/$host
+/etc/ansible/group_vars/bitrix-hosts.yml
+/etc/ansible/group_vars/bitrix-mysql.yml
+/etc/ansible/group_vars/bitrix-web.yml
+/etc/ansible/ansible-roles
+/etc/hosts
+/etc/sysconfig/iptables"
+
+    for file in $ANSIBLE_CHANGED; do
+        if [[ -f $file && $(grep -c "$saved" $file) -gt 0 ]]; then
+            sed -i "s/$saved/$current/g" $file
+            log_to_file "Replace IP $current to $saved in $file"
+            if [[ $file == "/etc/sysconfig/iptables" ]]; then
+                iptables-restore < /etc/sysconfig/iptables
+            fi
+        fi
+    done
+
+    [[ $is_push -eq 0 ]] && return 0
+
+    PUSH_CHANGED="/etc/sysconfig/push-server-multi"
+    for file in $PUSH_CHANGED; do
+        if [[ -f $file && $(grep -c "$saved" $file) -gt 0 ]]; then
+            sed -i "s/$saved/$current/g" $file
+            log_to_file "Replace NET $current to $saved in $file"
+        fi
+    done
+
+    pushd /etc/push-server >/dev/null 2>&1
+    for file in *.json; do
+        if [[ -f $file && $(grep -c "$saved" $file) -gt 0 ]]; then
+            sed -i "s/$saved/$current/g" $file
+            log_to_file "Replace NET $current to $saved in $file"
+        fi
+    done
+    popd >/dev/null 2>&1
+    # push service will be started by autostart option
+}
+
+
+bx_ansible_network(){
+    get_client_settings
+
+    if [[ $IS_MASTER -eq 0 ]]; then 
+        return 1
+    fi
+
+    # CLIENT_INT - interface
+    # CLIENT_IP - ip address
+    # IS_PUSH - bitrix-push
+    # CLIENT_NAME
+    VISIBLE_INTS=$(ip link  |  grep '^[0-9]\+:' | grep -v lo | \
+        awk '{print $2}' | sed -e 's/://')
+
+    IS_EXISTEN_INT=$(echo "$VISIBLE_INTS" | grep -cw "^$CLIENT_INT$")
+    IF_MISMATCH_IP=0
+    IS_NET_CHANGED=0
+    if [[ $IS_EXISTEN_INT -gt 0 ]];then
+        CURRENT_IP=$(ip addr show $CLIENT_INT | \
+            egrep "inet\s+[0-9\.]+" | awk '{print $2}' | awk -F'/' '{print $1}')
+        [[ $CURRENT_IP != "$CLIENT_IP" ]] && IF_MISMATCH_IP=1
+    fi
+
+    # case 01
+    # interface doesn't change and ip doesn't change
+    if [[ $IS_EXISTEN_INT -gt 0 && $IF_MISMATCH_IP -eq 0 ]]; then
+        return 0
+    fi
+
+    # case 02
+    # interface doesn't change but IP is changed
+    # we need
+    # 1. change IP address in ansible configs
+    # 2. change IP address in push-server configs
+    # 3. update /etc/hosts
+    # 4. if there is other hosts in the pool run common task
+    if [[ $IS_EXISTEN_INT -gt 0 && $IF_MISMATCH_IP -eq 1 ]]; then
+        bx_update_master_network "$CURRENT_IP" "$CLIENT_IP" "$CLIENT_NAME" "$IS_PUSH"
+    fi
+
+    if [[ $IS_EXISTEN_INT -eq 0 ]]; then
+        CURRENT_INTS=$(ip link list | grep '^[0-9]\+:' | grep -v lo | \
+            awk '{print $2}' | sed -e 's/://')
+        CURRENT_INT=
+        CURRENT_IP=
+        for int in $CURRENT_INTS; do
+            [[ -n $CURRENT_IP && -n $CURRENT_INT ]] && continue
+
+            ipv4=$(ip addr show $int | \
+                egrep "inet\s+[0-9\.]+" | awk '{print $2}' | awk -F'/' '{print $1}')
+            if [[ -n $ipv4 ]]; then
+                CURRENT_IP=$ipv4
+                CURRENT_INT=$int
+            fi
+        done
+
+        if [[ -z $CURRENT_IP && -z $CURRENT_INT ]]; then
+            log_to_file "There are no active network interfaces"
+            return 1
+        fi
+        bx_update_master_network "$CURRENT_IP" "$CLIENT_IP" "$CLIENT_NAME" "$IS_PUSH"
+        bx_update_master_network "$CURRENT_INT" "$CLIENT_INT" "$CLIENT_NAME" 0
+        IS_NET_CHANGED=1
+    fi
+
+    rm -f /opt/webdir/tmp/*
+    return 0
 }

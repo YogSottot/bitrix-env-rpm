@@ -1,0 +1,36 @@
+---
+- name: create temporary file
+  shell: mktemp /tmp/XXXXXX_configure.sh
+  register: tmp_file
+  tags: iptables
+
+- name: stateless sh-script to temporary file
+  template:
+    src: templates/iptables/generate_base-conntrack_disabled.sh.j2
+    dest: "{{ tmp_file.stdout }}"
+    mode: 0700
+    owner: root
+    group: root
+  tags: iptables
+  when: iptables_status == 'stateless'
+
+- name: statefull sh-script to temporary file
+  template:
+    src: templates/iptables/generate_base-conntrack_enabled.sh.j2
+    dest: "{{ tmp_file.stdout }}"
+    mode: 0700
+    owner: root
+    group: root
+  tags: iptables
+  when: iptables_status == 'stateful'
+
+- name: configure iptables
+  shell: "bash {{ tmp_file.stdout  }}"
+  tags: iptables
+
+- name: delete temporary file
+  file:
+    path: "{{ tmp_file.stdout }}"
+    state: absent
+  tags: iptables
+

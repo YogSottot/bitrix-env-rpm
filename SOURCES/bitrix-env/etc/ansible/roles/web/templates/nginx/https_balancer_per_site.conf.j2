@@ -45,6 +45,17 @@ server {
     proxy_set_header X-Forwarded-Scheme $scheme;
     proxy_set_header HTTPS              YES;
 
+
+    # proxy push-service request to nodejs 
+    include bx/conf/im_subscrider.conf;
+    
+    # LE request to http://bx_local
+    location ^~ ^/\.well-known/acme-challenge {
+       proxy_pass http://bx_local; 
+    }
+
+
+
 	# Redirect requests to server pool
 	location / {
 		proxy_pass  http://bx_cluster;

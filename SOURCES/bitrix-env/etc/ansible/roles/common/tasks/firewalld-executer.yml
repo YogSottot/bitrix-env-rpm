@@ -1,0 +1,27 @@
+---
+- name: install firewalld
+  yum:
+    pkg: firewalld
+    state: latest
+    update_cache: yes
+
+- name: create temporary file
+  shell: mktemp /tmp/XXXXXX_configure.sh
+  register: tmp_file
+
+- name: stateless sh-script to temporary file
+  template:
+    src: templates/iptables/generate_base-centos7.sh.j2
+    dest: "{{ tmp_file.stdout }}"
+    mode: 0700
+    owner: root
+    group: root
+
+- name: configure firewalld
+  shell: "bash {{ tmp_file.stdout  }}"
+
+- name: delete temporary file
+  file:
+    path: "{{ tmp_file.stdout }}"
+    state: absent
+

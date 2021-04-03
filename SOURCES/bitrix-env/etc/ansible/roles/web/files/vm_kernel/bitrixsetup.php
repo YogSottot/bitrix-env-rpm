@@ -34,6 +34,7 @@ if (!in_array($lang,array('ru','en','de')))
 	$lang = 'en';
 
 define("LANG", $lang);
+define('UPDATE_FLAG', dirname(__FILE__).'/bitrixsetup.update');
 
 $this_script_name = basename(__FILE__);
 
@@ -98,7 +99,6 @@ else
 				'NAME' => '1С-Битрикс: Управление сайтом',
 				'LIST' => array(
 					"business"=>"Бизнес",
-					"expert"=>"Эксперт",
 					"small_business"=>"Малый бизнес",
 					"standard"=>"Стандарт",
 					"start"=>"Старт",
@@ -376,9 +376,10 @@ if (!$strAction)
 		die(ShowError(LoaderGetMessage('LOADER_NOT_EMPTY')));
 	$strAction = "LIST";
 
-	if (!$debug && !$proxyAddr && !$_REQUEST['lang'])
+	// Check for updates
+	if ((!file_exists(UPDATE_FLAG) || time() - filemtime(UPDATE_FLAG) > 3600) && !$debug && !$proxyAddr)
 	{
-		// Check for updates
+		file_put_contents(UPDATE_FLAG, time());
 		$res = @fsockopen($bx_host, 80, $errno, $errstr, 3);
 
 		if($res)
@@ -576,10 +577,11 @@ elseif ($strAction=="LOAD")
 	{
 		@unlink($_SERVER['DOCUMENT_ROOT'].'/bitrix/license_key.php');
 		$path = 'download/';
-		if(version_compare(phpversion(), '5.0.0') == -1)
-			$suffix = '_encode_php4.tar.gz';
-		else
+
+		if ($edition == 2) // отраслевые
 			$suffix = '_encode_php5.tar.gz';
+		else
+			$suffix = '_encode.tar.gz';
 	}
 
 	$ED = $arEditions[LANG][$edition];
@@ -650,6 +652,7 @@ elseif ($strAction=="UNPACK")
 		else // finish
 		{
 			$res = unlink($_SERVER["DOCUMENT_ROOT"]."/".$_REQUEST["filename"]) && unlink(__FILE__);
+			@unlink(UPDATE_FLAG);
 			@unlink($_SERVER["DOCUMENT_ROOT"]."/".$_REQUEST["filename"].'.log');
 			@unlink($_SERVER["DOCUMENT_ROOT"]."/".$_REQUEST["filename"].'.tmp');
 

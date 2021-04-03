@@ -58,14 +58,13 @@
   set_fact:
    bitrix_site_encoding: cp1251
    bitrix_site_collation: cp1251_general_ci
-   bitrix_site_php_overload: "php_admin_value mbstring.func_overload 0"
-   bitrix_site_php_internal: "php_admin_value mbstring.internal_encoding latin"
+   bitrix_site_php_internal: "php_admin_value mbstring.internal_encoding cp1251"
   when: "bitrix_site_charset == 'windows-1251'"
 
-#- name: set charset options for new site
-#set_fact:
-# bitrix_site_php_internal: "php_admin_value default_charset latin"
-#when: "bitrix_site_charset == 'windows-1251' and php_older_version == 1"
+- name: set charset options for new site
+  set_fact:
+    bitrix_site_php_internal: "php_admin_value default_charset cp1251"
+  when: "bitrix_site_charset == 'windows-1251' and php_older_version == 1"
 
 
 ####

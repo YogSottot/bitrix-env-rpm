@@ -1,98 +1,102 @@
 ---
-- include: /etc/ansible/inc_vars.yml
+- include_tasks: /etc/ansible/inc_vars.yml
 
 - name: additional gathering facts
   bx_vat: 
 
 # manage sites
-- include: create_link.yml
-  when: "manage_web == 'create_site' and web_site_type == 'link'"
-  static: no
+- include_tasks: create_link.yml
+  when: manage_web == 'create_site'
+    and web_site_type == 'link'
 
-- include: create_kernel.yml
-  when: "manage_web == 'create_site' and web_site_type == 'kernel'"
-  static: no
+- include_tasks: create_kernel.yml
+  when: manage_web == 'create_site'
+    and web_site_type == 'kernel'
 
-- include: create_ext_kernel.yml
-  when: "manage_web == 'create_site' and web_site_type == 'ext_kernel'"
-  static: no
+- include_tasks: create_ext_kernel.yml
+  when: manage_web == 'create_site'
+    and web_site_type == 'ext_kernel'
 
-- include: delete_site.yml
-  when: "manage_web == 'delete_site'"
-  static: no
+- include_tasks: delete_site.yml
+  when: manage_web == 'delete_site'
 
 # php7 tasks
-- include: upgrade_php7.yml
-  when: "manage_web == 'upgrade_php7'"
-  static: no
+- set_fact:
+    updated_hostname: all
+  when: updated_hostname is not defined
 
-- include: upgrade_php71.yml
-  when: "manage_web == 'upgrade_php71'"
-  static: no
+# update one host
+- include_tasks: upgrade_php_version.yml
+  when: manage_web == 'upgrade_php'
+    and inventory_hostname == updated_hostname
 
-- include: upgrade_php72.yml
-  when: "manage_web == 'upgrade_php72'"
-  static: no
+- include_tasks: downgrade_php_version.yml
+  when: manage_web == 'downgrade_php'
+    and inventory_hostname == updated_hostname
 
-- include: rollback_php7.yml
-  when: "manage_web == 'rollback_php7'"
-  static: no
+# default all web servers
+- include_tasks: upgrade_php_version.yml
+  when: manage_web == 'upgrade_php'
+    and updated_hostname == 'all'
+    and 'bitrix-web' in group_names
 
-- include: rollback_php70.yml
-  when: "manage_web == 'rollback_php70'"
-  static: no
 
-- include: rollback_php71.yml
-  when: "manage_web == 'rollback_php71'"
-  static: no
+- include_tasks: downgrade_php_version.yml
+  when: manage_web == 'downgrade_php'
+    and updated_hostname == 'all'
+    and 'bitrix-web' in group_names
 
 # web cluster configuration
-- include: delete_web.yml
-  when: "manage_web == 'delete_web'"
-  static: no
+- include_tasks: delete_web.yml
+  when: manage_web == 'delete_web'
 
-- include: web1.yml
-  when: "manage_web == 'web1' or manage_web == 'create_web'"
-  static: no
+- include_tasks: web1.yml
+  when: manage_web == 'web1'
+    or manage_web == 'create_web'
 
-- include: web2.yml
-  when: "manage_web == 'web2' or manage_web == 'create_web'"
-  static: no
+- include_tasks: web2.yml
+  when: manage_web == 'web2'
+    or manage_web == 'create_web'
 
 # certificates
-- include: configure_le.yml
-  when: "manage_web == 'configure_le' and inventory_hostname == cluster_web_server"
-  static: no
+- include_tasks: configure_le.yml
+  when: manage_web == 'configure_le'
+    and inventory_hostname == cluster_web_server
 
-- include: configure_cert.yml
-  when: "manage_web == 'configure_cert' and inventory_hostname == cluster_web_server"
-  static: no
+- include_tasks: configure_cert.yml
+  when: manage_web == 'configure_cert'
+    and inventory_hostname == cluster_web_server
 
-- include: reset_cert.yml
-  when: "manage_web == 'reset_cert' and inventory_hostname == cluster_web_server"
-  static: no
+- include_tasks: reset_cert.yml
+  when: manage_web == 'reset_cert'
+    and inventory_hostname == cluster_web_server
 
 # other
-- include: web_composite_configs.yml
-  when: "manage_web == 'enable_composite' or manage_web == 'disable_composite'"
-  static: no
+- include_tasks: web_composite_configs.yml
+  when: manage_web == 'enable_composite'
+    or manage_web == 'disable_composite'
 
-- include: create_ntlm.yml
-  when: "manage_web == 'ntlm_on' and inventory_hostname == cluster_web_server"
-  static: no
+- include_tasks: create_ntlm.yml
+  when: manage_web == 'ntlm_on'
+    and inventory_hostname == cluster_web_server
 
-- include: restart_web.yml
-  when: "manage_web == 'restart_web'"
-  static: no
+- include_tasks: restart_web.yml
+  when: manage_web == 'restart_web'
 
-- include: php_ext.yml
-  when: "manage_web == 'php_extension' and 'bitrix-web' in group_names"
-  static: no
+- include_tasks: php_ext.yml
+  when: manage_web == 'php_extension'
+    and 'bitrix-web' in group_names
 
-- include: site_options.yml
-  when: "manage_web == 'site_options' and 'bitrix-web' in group_names"
-  static: no
+- include_tasks: site_options.yml
+  when: manage_web == 'site_options'
+    and 'bitrix-web' in group_names
+
+
+- include_tasks: custom_configs.yml
+  when: manage_web == 'custom_configs'
+    and 'bitrix-web' in group_names
+
 
 - name: delete temporary config
   file: path="{{ ansible_playbook_file }}" state=absent
-  when: "ansible_playbook_file != 'NOT_DEFINED'"
+  when: ansible_playbook_file != 'NOT_DEFINED'

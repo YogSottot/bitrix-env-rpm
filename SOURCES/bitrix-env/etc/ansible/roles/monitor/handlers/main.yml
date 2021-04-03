@@ -5,7 +5,10 @@
 
 # handler for nagios
 - name: restart nagios
-  service: state=restarted name=nagios
+  service:
+    state: restarted
+    name: nagios
+  delegate_to: "{{ monitoring_server }}"
 
 # handler for nrpe
 - name: restart nrpe

@@ -1,0 +1,15 @@
+---
+# create and delete transformer role
+- include_tasks: /etc/ansible/inc_vars.yml
+
+- include_tasks: create_transformer.yml
+  when: is_create | bool
+
+- include_tasks: remove_transformer.yml
+  when: is_remove | bool and inventory_hostname == transformer_host
+
+- name: delete temporary config
+  file:
+    path: "{{ ansible_playbook_file }}"
+    state: absent
+  when: ansible_playbook_file != 'NOT_DEFINED' and inventory_hostname == transformer_host

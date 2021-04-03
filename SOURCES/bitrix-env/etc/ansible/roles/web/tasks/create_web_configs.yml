@@ -16,13 +16,11 @@
     apache_config_name: "default.conf"
   when: "web_site_name == 'default'"
 
-- include: create_nginx_configs_general.yml
+- include_tasks: create_nginx_configs_general.yml
   when: cluster_web_configure != 'enable'
-  static: no
 
-- include: create_nginx_configs_cluster.yml
+- include_tasks: create_nginx_configs_cluster.yml
   when: "cluster_web_configure == 'enable' and inventory_hostname == cluster_web_server"
-  static: no
 
 - name: additional apache port
   template: 

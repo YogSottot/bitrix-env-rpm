@@ -19,10 +19,10 @@
 %define bitrix_type     general
 %define bitrix_conflicts bitrix-env-crm
 
-%define bitrix_rel    11
+%define bitrix_rel    0
 
 Name:       bitrix-env
-Version:    7.3
+Version:    7.5
 Release:    %{bitrix_rel}%{?dist}
 Summary:    Bitrix application web environment
 
@@ -52,7 +52,8 @@ Requires: krb5-workstation, pam_krb5, graphviz
 Requires: mercurial,etckeeper
 
 # Configuration mgmt
-Requires: bx-ansible,ethtool
+Requires: ethtool
+Requires: bx-ansible >= 2.7.9
 requires: python-passlib,MySQL-python,libselinux-python,python-setuptools,python-keyczar
 
 # parse files and manage ssh keys
@@ -62,15 +63,18 @@ Requires: perl-JSON,perl-Moose,perl-Proc-Daemon,perl-Net-DNS,perl-YAML-Tiny,perl
 # Mysql
 Requires: mysql >= 5.1, mysql-server >= 5.1
 
+# nginx
+Requires: bx-nginx >= 1.16.1
+
 # Php
 Requires: php, php-common, php-cli, php-gd, php-mbstring, php-mcrypt, php-mysqlnd
 Requires: php-ldap, php-pspell, php-pecl-xdebug
-Requires: php-zipstream, php-pecl-geoip
+Requires: php-zipstream,php-pecl-geoip,php-pecl-zip,php-xml
 Requires: php-pear, php-pecl-memcache, php-pecl-rrd
 
 Requires: httpd-tools
 Requires: cronie, cronie-anacron, crontabs, yum-plugin-merge-conf
-Requires: perl-IO-Interface,mod_rpaf,bx-nginx,authbind
+Requires: perl-IO-Interface,mod_rpaf,authbind
 
 %endif
 
@@ -78,15 +82,17 @@ Requires: perl-IO-Interface,mod_rpaf,bx-nginx,authbind
 # Mysql => mariadb
 Requires: mysql, mysql-server
 
+# nginx
+Requires: bx-nginx >= 1.16.1
+
 # Php
 Requires: php, php-common, php-cli, php-gd, php-mbstring, php-mcrypt, php-mysqlnd
 Requires: php-ldap, php-pspell, php-pecl-xdebug
-Requires: php-zipstream, php-pecl-geoip
+Requires: php-zipstream,php-pecl-geoip,php-pecl-zip,php-xml
 Requires: php-pear, php-pecl-memcache, php-pecl-rrd
 
 Requires: httpd-tools
 Requires: cronie, cronie-anacron, crontabs, yum-plugin-merge-conf
-Requires: bx-nginx
 
 %endif
 
@@ -185,6 +191,7 @@ rm -rf %{buildroot}
 /etc/my.cnf.bx
 /etc/my.cnf.bx_mysql56
 /etc/my.cnf.bx_mysql57
+/etc/my.cnf.bx_mysql80
 /etc/mysql/conf.d/z_bx_custom.cnf.bx
 /etc/nginx/*
 /etc/stunnel/stunnel.conf.bx

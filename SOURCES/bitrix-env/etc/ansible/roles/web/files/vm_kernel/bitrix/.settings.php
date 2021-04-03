@@ -59,7 +59,7 @@ return array (
       array (
         'className' => '\\Bitrix\\Main\\DB\\MysqlConnection',
         'host' => 'localhost',
-        'database' => 'sitemanager',
+        'database' => '__DBNAME__',
         'login' => '__LOGIN__',
         'password' => '__PASSWORD__',
         'options' => 2,

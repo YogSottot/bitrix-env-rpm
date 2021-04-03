@@ -9,6 +9,33 @@ site_menu_fnc=$site_menu_dir/functions.sh
 
 logo=$(get_logo)
 
+sites_related_by_cert(){
+    https_cert="${1}"
+    [[ -z $https_cert ]] && return 255
+
+    # get related status
+    SITES_LINKED_BY_CERT=
+
+    sites_https_info=$($bx_sites_script -a list | \
+        grep ':https:' | grep -v ":$site_name:" | sed -e 's/^bxSite:https://' | \
+        grep ":$https_cert:")
+    if [[ -n $sites_https_info ]]; then
+        SITES_LINKED_BY_CERT=$(echo "$sites_https_info" | awk -F':' '{printf "%s,", $1}')
+    fi
+
+    # push-server
+    if [[ -z $PUSH_SSL ]]; then
+        cache_push_servers_status
+    fi
+    if [[ $PUSH_SSL == "$https_cert" ]]; then
+        SITES_LINKED_BY_CERT=$SITES_LINKED_BY_CERT"push-server,"
+    fi
+
+    if [[ $DEBUG -gt 0 ]]; then
+        echo "Related sites: $SITES_LINKED_BY_CERT"
+    fi
+}
+
 # return 
 # 1     - LE
 # 2     - Own
@@ -23,11 +50,11 @@ site_https_status() {
 
     POOL_SITES_LIST="$POOL_SITES_KERNEL_LIST
 $POOL_SITES_LINK_LIST"
-
     if [[ $(echo "$POOL_SITES_LIST" | grep -c "^$site_name:") -eq 0 ]]; then
         return 255
     fi
 
+    # get site status
     site_root=$(echo "$POOL_SITES_LIST" | grep "^$site_name:" | awk -F':' '{print $6}')
     site_https_info=$($bx_sites_script -a status --site $site_name -r $site_root | \
         grep ':https:' | sed -e 's/^bxSite:https://')
@@ -42,12 +69,14 @@ $POOL_SITES_LINK_LIST"
         echo "Key:   $https_key"
     fi
 
+
     if [[ ( $https_cert == "$https_key" ) && ( $https_cert == 'ssl/cert.pem' ) ]]; then
         return 3
     fi
 
     if [[ $(echo "$https_cert" | grep -wc "dehydrated") -gt 0 ]]; then
-        return 1
+       sites_related_by_cert "$https_cert"
+       return 1
     fi
 
     if [[ ( -n $https_cert ) && ( -n $https_key ) ]]; then
@@ -57,18 +86,39 @@ $POOL_SITES_LINK_LIST"
     return 0
 }
 
+certs_status(){
+    cert_path="${1}"
+    [[ -z $cert_path ]] && return 255
+    SITES_LIST=
+
+    cert_info=$($bx_sites_script -a cert_status --certificate "$cert_path")
+    site_certs_count=$(echo "$cert_info" | grep 'site_certs_count:' | awk -F':' '{print $2}')
+    if [[ $site_certs_count -eq 0 ]]; then
+        return 1
+    fi
+    SITES_LIST=$(echo "$cert_info" | grep 'site_certs:' | \
+        awk -F':' '{print $3}')
+    return 0
+ 
+}
+
 sites_https_status() {
     site_list="${1:-default}"
     sites_https_status_rtn=0
+    sites_https_cnt=0
 
     IFS_BAK=$IFS
     IFS=','
     for sn in $site_list; do
         sn=$(echo "$sn" | sed -e "s/\s\+//g")
+        if [[ $sn == "push-server" ]]; then
+            continue
+        fi
         site_https_status "$sn"
         site_https_status_rtn=$?
         [[ $site_https_status_rtn -gt $sites_https_status_rtn ]] && \
             sites_https_status_rtn=$site_https_status_rtn
+        sites_https_cnt=$(( $sites_https_cnt + 1 ))
     done
     IFS=$IFS_BAK
     IFS_BAK=
@@ -112,6 +162,12 @@ configure_le() {
     if [[ $site_https_status_rtn -eq 255 ]]; then
         print_message "$WEB0200" \
             "$WEB0044 $SITE_NAME" \
+            "" any_key
+        return 1
+    fi
+
+    if [[ $(echo "$SITE_NAME" | grep -c "push-server" ) && $sites_https_cnt -eq 0  ]]; then
+        print_message  "$WEB0068" "$WEB0069" \
             "" any_key
         return 1
     fi
@@ -218,9 +274,23 @@ configure_own_cert() {
 
 reset_cert() {
     NGINX_CERT_DIR=/etc/nginx/certs
-    print_message "$WEB0037" \
-        "$WEB0038" \
-        '' SITE_NAME "default"
+    print_message "$WEB0070" \
+        "" "" CERT_PATH
+
+    certs_status "$CERT_PATH"
+    if [[ $? -gt 0 ]]; then
+        print_message "$WEB0200" \
+            "$(get_text "$WEB0072" "$CERT_PATH")"
+        return 1
+    fi
+
+    if [[ $CERT_PATH == "/etc/nginx/ssl/cert.pem" ]]; then
+        print_message "$WEB0200" \
+            "$(get_text "$WEB0073" "$SITES_LIST")"
+        return 1
+    fi
+
+    SITE_NAME="$SITES_LIST"
 
     sites_https_status "$SITE_NAME"
     site_https_status_rtn=$?
@@ -235,7 +305,13 @@ reset_cert() {
         return 1
     fi
 
-    if [[ ( $site_https_status_rtn -eq 1 ) || ( $site_https_status_rtn -eq 2 ) ]]; then
+    if [[ $(echo "$SITE_NAME" | grep -wc "push-server") -gt 0 && \
+        -n "$PUSH_TYPE" && $PUSH_TYPE == "Custom" ]]; then
+        site_https_status_rtn=1
+    fi
+
+    if [[ ( $site_https_status_rtn -eq 1 ) || \
+        ( $site_https_status_rtn -eq 2 ) ]]; then
         print_message "$WEB0057" \
             "Sites: $SITE_NAME" "" any_key "n"
     else
@@ -269,6 +345,7 @@ sub_menu(){
         print_menu_header
 
         # print sites 
+        #set -x
         print_site_list_point_https
 
         # task info

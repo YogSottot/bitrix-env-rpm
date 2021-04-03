@@ -104,6 +104,7 @@ update_site_settings(){
 
     [[ -z $BX_PASSWORD ]] && return 2
     [[ -z $BX_USER ]] && return 2
+    [[ -z $BX_DB ]] && return 2
 
     [[ ! -f $path ]] && return 1 
     #cp -f $path $path.bak
@@ -125,6 +126,8 @@ update_site_settings(){
         tail -n +$(( $login_line+2 )) $path
     } > $tmp_path
     mv -f $tmp_path $path
+    sed -i "s/__DBNAME__/$BX_DB/g" $path
+
     chown bitrix:bitrix $path
     chmod 640 $path
     log_to_file "Update login and password options in file=$path"
@@ -136,6 +139,7 @@ update_site_dbconn(){
 
     [[ -z $BX_PASSWORD ]] && return 2
     [[ -z $BX_USER ]] && return 2
+    [[ -z $BX_DB ]] && return 2
 
     [[ ! -f $path ]] && return 1 
     #cp -f $path $path.bak
@@ -154,9 +158,12 @@ update_site_dbconn(){
         tail -n +$(( $login_line+2 )) $path
     } > $tmp_path
     mv -f $tmp_path $path
+
+    sed -i "s/__DBNAME__/$BX_DB/g" $path
     chown bitrix:bitrix $path
     chmod 640 $path
     log_to_file "Update login and password options in file=$path"
+
 }
 
 
@@ -298,13 +305,21 @@ package_mysql(){
         MYSQL_PACKAGE=mysql-server
         MYSQL_SERVICE=mysqld
         MYSQL_SYSTEMD=/usr/lib/systemd/system/mysql.service
+    elif [[ $(echo "$PACKAGES_LIST" | grep -c '^percona-server-server') -gt 0 ]]; then
+        MYSQL_PACKAGE=percona-server-server
+        MYSQL_SERVICE=mysqld
+        MYSQL_SYSTEMD=/usr/lib/systemd/system/mysqld.service
     else
         log_to_file "Cannot define mysql-server package" "ERROR"
         return 1
     fi
     MYSQL_VERSION=$(rpm -qa --queryformat '%{version}' ${MYSQL_PACKAGE}* | \
         head -1 | awk -F'.' '{printf "%d.%d", $1,$2}' )
+
+    MYSQL_MAIN_VERSION=$(echo "$MYSQL_VERSION" | awk -F'.' '{print $1}')
     MYSQL_MID_VERSION=$(echo "$MYSQL_VERSION" | awk -F'.' '{print $2}')
+
+    MYSQL_UNI_VERSION=${MYSQL_MAIN_VERSION}${MYSQL_MID_VERSION}
 
     log_to_file "Found package for mysql-server=$MYSQL_PACKAGE version=$MYSQL_VERSION"
 }
@@ -323,18 +338,38 @@ service_mysql(){
         elif [[ $action == "enable" ]]; then
             systemctl enable $MYSQL_SERVICE >> $LOGS_FILE 2>&1
             restart_rtn=$?
+        elif [[ ( $action == "stop" ) || ( $action == "restart" ) ]]; then
+            if [[ ( ${MYSQL_UNI_VERSION} -eq 57 ) && ( -f /root/.my.cnf ) ]]; then
+                mysql --defaults-file=/root/.my.cnf mysql \
+                    -e "set global innodb_max_dirty_pages_pct = 0;" >> $LOGS_FILE 2>&1
+                if [[ $? -gt 0 ]]; then
+                    log_to_file "Cannot set innodb_max_dirty_pages_pct to 0"
+                else
+                    log_to_file "Temporary set innodb_max_dirty_pages_pct to 0"
+                fi
+            fi
+            systemctl $action $MYSQL_SERVICE >> $LOGS_FILE 2>&1
+            restart_rtn=$?
         else
             systemctl $action $MYSQL_SERVICE >> $LOGS_FILE 2>&1
             restart_rtn=$?
-       fi
+        fi
     else
+        MYSQL_INIT_SCRIPT=/etc/init.d/mysqld
+        MYSQL_SERVICE_NAME=mysqld
+
+        if [[ -f /etc/init.d/mysql ]]; then
+            MYSQL_INIT_SCRIPT=/etc/init.d/mysql
+            MYSQL_SERVICE_NAME=mysql
+        fi
+
         if [[ $action == "status" ]]; then
-            /etc/init.d/mysqld status | grep -wc running >/dev/null 2>&1
+            $MYSQL_INIT_SCRIPT status | grep -wc running >/dev/null 2>&1
             return $?
         elif [[ "$action" == "enable" ]]; then
-            chkconfig mysqld on >/dev/null 2>&1
+            chkconfig $MYSQL_SERVICE_NAME on >/dev/null 2>&1
         else
-            service mysqld $action >> $LOGS_FILE 2>&1
+            service $MYSQL_SERVICE_NAME $action >> $LOGS_FILE 2>&1
             restart_rtn=$?
         fi
     fi
@@ -388,10 +423,10 @@ service_web(){
 create_mysql_config() {
     MYSQL_LOG_FILE=${1:-/var/log/mysqld.log}
     MYSQL_BX_LOG_FILE=${2:-/var/log/mysql/error.log}
-    log_to_file "Processing log file=$MYSQL_LOG_FILE mysql_version=$MYSQL_MID_VERSION"
+    log_to_file "Processing log file=$MYSQL_LOG_FILE mysql_version=$MYSQL_UNI_VERSION"
 
     MYSQL_TMP_FILE=$(mktemp /tmp/XXXXXX_mysql)
-    if [[ $MYSQL_MID_VERSION -eq 7 ]]; then
+    if [[ $MYSQL_UNI_VERSION -eq 57 || $MYSQL_UNI_VERSION -eq 80 ]]; then
 
         if [[ -s $MYSQL_LOG_FILE ]]; then
             MYSQL_ROOTPW=$(grep 'temporary password' $MYSQL_LOG_FILE | awk '{print $NF}')
@@ -535,10 +570,12 @@ EOF
 
     # create base configs
     MYSQL_MAIN_RPM_CFG=${MYSQL_MAIN_CFG}.bx             # cnf.bx config to avoid conflicts with mysql/mariadb rpm
-    [[ $MYSQL_MID_VERSION -eq 6 ]] && \
+    [[ $MYSQL_UNI_VERSION -eq 56 ]] && \
         MYSQL_MAIN_RPM_CFG=${MYSQL_MAIN_CFG}.bx_mysql56
-    [[ $MYSQL_MID_VERSION -eq 7 ]] && \
+    [[ $MYSQL_UNI_VERSION -eq 57 ]] && \
         MYSQL_MAIN_RPM_CFG=${MYSQL_MAIN_CFG}.bx_mysql57
+    [[ $MYSQL_UNI_VERSION -eq 80 ]] &&
+        MYSQL_MAIN_RPM_CFG=${MYSQL_MAIN_CFG}.bx_mysql80
  
     log_to_file "MYSQL_MAIN_RPM_CFG=$MYSQL_MAIN_RPM_CFG"
 
@@ -576,7 +613,7 @@ EOF
             service_mysql stop
             MYSQL_INIT_LOG=$(mktemp /tmp/MYSQL_INIT_LOG.XXXXXX)
 
-            if [[ $MYSQL_MID_VERSION -lt 7 ]]; then
+            if [[ $MYSQL_UNI_VERSION -lt 57 ]]; then
                 mysql_install_db --datadir=$MYSQL_BASE_DIR \
                  --defaults-file=$MYSQL_MAIN_CFG \
                  --user=mysql >$MYSQL_INIT_LOG 2>&1
@@ -623,6 +660,49 @@ EOF
     create_mysql_config $MYSQL_INIT_LOG
 }
 
+create_default_bx_temp(){
+    local default_db=${1}
+    [[ -z $default_db ]] && return 255
+
+    # create bx temporary folders 
+    [[ ! -d /home/bitrix/.bx_temp ]] && \
+        mkdir -m 700 /home/bitrix/.bx_temp
+    [[ ! -d /home/bitrix/.bx_temp/$default_db ]] && \
+        mkdir -m 700 /home/bitrix/.bx_temp/$default_db && \
+        log_to_file "Create /home/bitrix/.bx_temp/$default_db"
+    chown bitrix:bitrix -R /home/bitrix/.bx_temp && \
+        log_to_file "Update access rights to /home/bitrix/.bx_temp"
+
+    BXTEMP_FILE=/etc/nginx/bx/site_settings/default/bx_temp.conf
+    if [[ ! -f $BXTEMP_FILE ]]; then
+        [[ ! -d /etc/nginx/bx/site_settings ]] && \
+            mkdir /etc/nginx/bx/site_settings
+        [[ ! -d /etc/nginx/bx/site_settings/default ]] && \
+            mkdir /etc/nginx/bx/site_settings/default && \
+        log_to_file "Create /etc/nginx/bx/site_settings/default"
+
+        cat /etc/ansible/roles/web/files/bx_temp.conf | \
+            sed -e "s/__DBNAME__/$default_db/g" > $BXTEMP_FILE
+        log_to_file "Create $BXTEMP_FILE"
+    fi
+
+    BXTEMP_FILE_INCLUDE="include bx/site_settings/default"
+    FILES="/etc/nginx/bx/site_avaliable/s1.conf /etc/nginx/bx/site_avaliable/ssl.s1.conf"
+    for conf in $FILES; do
+        if [[ $(grep -c "$BXTEMP_FILE_INCLUDE" $conf) -eq 0 ]]; then
+            log_to_file "Update $conf; add $BXTEMP_FILE_INCLUDE"
+
+            sed -i "/Include parameters common to all websites/i # custom options for sites; doesn't changes on update" \
+                $conf
+ 
+            sed -i "/# custom options for sites/a include bx\/site_settings\/default\/*.conf;" \
+                $conf
+ 
+        fi
+    done
+
+}
+
 # create DB  for default site
 # create DB user and use his credentials in site's configs
 # create sites directories
@@ -660,13 +740,16 @@ create_site_settings(){
         SETTINGS_CFG=$SITE_DIR/bitrix/.settings.php
         update_site_settings $SETTINGS_CFG
         update_site_dbconn $DBCONN_CFG
- 
+
+        # create bx_temp folder and nginx config
+        create_default_bx_temp "$BX_DB"
 
         # update access rights for document root
         find $SITE_DIR -type f -exec chmod 0660 '{}' ';'
         find $SITE_DIR -type d -exec chmod 0770 '{}' ';'
         chown -R bitrix:bitrix $SITE_DIR
         log_to_file "Update access rights for directory=$SITE_DIR"
+
 
         # create additional directories
         [[ ! -d $PHP_LOGS_DIR ]] && mkdir -p $PHP_LOGS_DIR
@@ -698,6 +781,7 @@ create_site_settings(){
                 BVAT_TMPF_CONF_MD5=$(md5sum $BVAT_TMPF_CONF | awk '{print $1}')
             fi
             BVAT_TMPF_TEMP_MD5=$(md5sum $BVAT_TMPF_TEMP | awk '{print $1}')
+
             if [[ $BVAT_TMPF_TEMP_MD5 != "$BVAT_TMPF_CONF_MD5" ]]; then
                 mv -f $BVAT_TMPF_TEMP $BVAT_TMPF_CONF
                 log_to_file "Update $BVAT_TMPF_CONF config"
@@ -810,9 +894,17 @@ SetEnv AUTHBIND_UNAVAILABLE yes" > $HTTPD_SCALE_DIR/conf/00-environment.conf
     log_to_file "Update file=$HTTPD_SCALE_DIR/conf/00-environment.conf"
 
     if [[ ! -f /etc/sysconfig/httpd-scale ]] ; then
-        cp -f $HTTPD_SCALE_DIR/httpd-scale /etc/sysconfig/httpd-scale && \
+        mv -f $HTTPD_SCALE_DIR/httpd-scale /etc/sysconfig/httpd-scale && \
             log_to_file "Copy $HTTPD_SCALE_DIR/httpd-scale to /etc/sysconfig/httpd-scale"
+    else
+        rm -f $HTTPD_SCALE_DIR/httpd-scale
     fi
+
+	# Update /etc/sysconfig/httpd-scale
+    sed -i "/BITRIX_VA_VER/d;/BITRIX_ENV_TYPE/d" \
+        /etc/sysconfig/httpd-scale
+    echo "BITRIX_VA_VER=$BITRIX_ENV_VER" >> /etc/sysconfig/httpd-scale
+    echo "BITRIX_ENV_TYPE=$BITRIX_ENV_TYPE" >> /etc/sysconfig/httpd-scale
 
     if [[ ! -f /etc/systemd/system/httpd-scale.service ]]; then
         cp -f $HTTPD_SCALE_DIR/httpd-scale.service \
@@ -829,6 +921,17 @@ SetEnv AUTHBIND_UNAVAILABLE yes" > $HTTPD_SCALE_DIR/conf/00-environment.conf
     mv -f $HTTPD_SCALE_DIR/httpd-scale.conf \
         /etc/httpd/conf/httpd-scale.conf && \
     log_to_file "Update file=/etc/httpd/conf/httpd-scale.conf"
+
+    # http://jabber.bx/view.php?id=80385
+    if [[ ! -d /home/bitrix/www ]]; then
+        for conf in /etc/httpd/conf/httpd.conf /etc/httpd/conf/httpd-scale.conf; do
+            sed -i "/DocumentRoot/d;/Listen/d" $conf
+            echo "DocumentRoot '/var/www/html'" >> $conf
+        done
+
+        echo "Listen 127.0.0.1:8888" >> /etc/httpd/conf/httpd.conf
+        echo "Listen 127.0.0.1:9887" >> /etc/httpd/conf/httpd-scale.conf
+    fi
 
     systemctl daemon-reload
     systemctl enable httpd-scale
@@ -948,7 +1051,7 @@ configure_nginx(){
         if [[ ( $nginx_up -ge 1 ) && \
             ( ( ( $nginx_mid -ge 10 ) && ( $nginx_end -ge 2 ) ) || \
             ( $nginx_mid -ge 11 ) ) ]]; then
-            sed -i 's/default_server ssl/default_server http2/g' \
+            sed -i 's/default_server ssl/default_server http2 ssl/g' \
                 $NGINX_CONF_DIR/$NGINX_CONF_DEFAULT_SSL
         fi
     fi
@@ -963,12 +1066,22 @@ configure_nginx(){
                 log_to_file "Create directory=$NGINX_CONF_DIR/$to_dir"
 
             from=$(echo "$def" | awk -F'=' '{print $2}')
+            is_replace=$(echo "$def" | awk -F'=' '{print $3}')
+            [[ -z $is_replace ]] && is_replace=1
+            is_link=1
+
             if [[  -f $NGINX_CONF_DIR/$to ]]; then
-                rm -f $NGINX_CONF_DIR/$to 1>/dev/null 2>&1
-                log_to_file "Delete file=$NGINX_CONF_DIR/$to"
+                if [[ $is_replace -eq 1 ]]; then
+                    rm -f $NGINX_CONF_DIR/$to 1>/dev/null 2>&1
+                    log_to_file "Delete file=$NGINX_CONF_DIR/$to"
+                else
+                    is_link=0
+                fi
             fi
-            ln -s $NGINX_CONF_DIR/$from $NGINX_CONF_DIR/$to
-            log_to_file "Create link=$NGINX_CONF_DIR/$to from=$NGINX_CONF_DIR/$from"
+            if [[ $is_link -eq 1 ]]; then
+                ln -s $NGINX_CONF_DIR/$from $NGINX_CONF_DIR/$to
+                log_to_file "Create link=$NGINX_CONF_DIR/$to from=$NGINX_CONF_DIR/$from"
+            fi
         done
     fi
 
@@ -1081,6 +1194,8 @@ configure_php(){
     if [[ -n "$PHP_MODULES_ENABLE" ]]; then
         for mod in $PHP_MODULES_ENABLE; do
             mod_f=$(find $PHP_CONF_DIR/ -name "*${mod}.ini" -type f)
+            mod_f_disabled=$(find $PHP_CONF_DIR/ -name "*${mod}.ini.disabled" -type f)
+            
             if [[ -z "$mod_f" ]]; then
                 log_to_file "Not found config file for php module=$mod. Create new one"
                 mod_f=$PHP_CONF_DIR/$mod.ini
@@ -1089,14 +1204,20 @@ configure_php(){
 
             is_mod=$(php -m 2>/dev/null | grep -wc $mod)
             if [[ $is_mod -eq 0 ]]; then
-                log_to_file "Update config file for php module=$mod_f"
-                echo "extension=$mod.so" > $mod_f
+                if [[ -n "$mod_f_disabled" && -s "$mod_f_disabled" ]]; then
+                    mod_f=$(echo "$mod_f_disabled" | sed -e "s:\.disabled$::")
+                    mv -f $mod_f_disabled $mod_f
+                    log_to_file "Rename $mod_f_disabled to $mod_f"
+                else
+                    log_to_file "Update config file for php module=$mod_f"
+                    echo "extension=$mod.so" > $mod_f
+                fi
             fi
         done
     fi
 
     # update php settings for php7
-    if [[ $PHP_VERSION -eq 7 ]]; then
+    if [[ ( $PHP_VERSION -eq 7 ) && ( -d $SITE_DIR ) ]]; then
         # site configuration
         DBCON=$SITE_DIR/bitrix/php_interface/dbconn.php
         is_use_mysqli_enabled=$(grep -v '^#' $DBCON | grep -w 'BX_USE_MYSQLI' | grep -wc true )
@@ -1187,7 +1308,8 @@ configure_bvat(){
             sed -i 's/After=mariadb.service/After=mysqld.service/' $BVAT_SERVICE
 
         systemctl enable bvat
-        systemctl start bvat
+        systemctl restart bvat
+		log_to_file "There must be a restart bvat-service; $?"
 
     else
         chkconfig --add bvat
@@ -1231,7 +1353,7 @@ configure_ntp(){
     fi
 
     if [[ $OS_VERSION -eq 7 ]]; then
-        systemctl disable chronyd.service
+        systemctl disable chronyd.service >/dev/null 2>&1
         systemctl enable ntpd
         systemctl restart ntpd
     else
@@ -1298,7 +1420,7 @@ restart_services(){
     service_mysql stop
     service_mysql start
 
-    for srv in nginx httpd; do
+    for srv in nginx httpd crond; do
         service_web $srv enable
         service_web $srv stop
         service_web $srv start
@@ -1346,8 +1468,8 @@ configure_bitrix_env_var(){
     # configure apache for Centos7
     if [[ $OS_VERSION -eq 7 ]]; then
         HTTPD_ENV_CONF=/etc/httpd/bx/conf/00-environment.conf
-        if [[ -s $HTTPD_CONF ]]; then
-            sed -i '/BITRIX_VA_VER/d;/BITRIX_ENV_TYPE/d;/AUTHBIND_UNAVAILABLE/d' \
+        if [[ -s $HTTPD_ENV_CONF ]]; then
+            sed -i '/# bitrix-env/d;/BITRIX_VA_VER/d;/BITRIX_ENV_TYPE/d;/AUTHBIND_UNAVAILABLE/d' \
                 $HTTPD_ENV_CONF
         fi
         echo -e "# bitrix-env\nSetEnv BITRIX_VA_VER $BITRIX_ENV_VER" >> \
@@ -1360,27 +1482,127 @@ configure_bitrix_env_var(){
 }
 
 bx_alternatives_for_mycnf(){
-    is_mycnf_alters=$(alternatives --list | grep "^my\.cnf\s\+" -c)
-    is_percona_alternatives=$(alternatives --list  | \
-        grep "^my\.cnf\s\+" | grep -cv '/etc/bitrix-my.cnf')
-    [[ $is_mycnf_alters -eq 0 ]] && return 0            # doesn't use alternatives; skip
-    [[ $is_percona_alternatives -eq 0 ]] && return 0    # already created bitrix alternatives; skip
-
     BACKUP_CFG_DIR=/etc/ansible/roles/mysql/files
     package_mysql
 
     BACKUP_CFG_FILE=$BACKUP_CFG_DIR/my.cnf.bx
-    [[ $MYSQL_MID_VERSION -eq 6 ]] && \
+    [[ $MYSQL_UNI_VERSION -eq 56 ]] && \
         BACKUP_CFG_FILE=$BACKUP_CFG_DIR/my.cnf.bx_mysql56
-    [[ $MYSQL_MID_VERSION -eq 7 ]] && \
+    [[ $MYSQL_UNI_VERSION -eq 57 ]] && \
         BACKUP_CFG_FILE=$BACKUP_CFG_DIR/my.cnf.bx_mysql57
+    [[ $MYSQL_UNI_VERSION -eq 80 ]] && \
+        BACKUP_CFG_FILE=$BACKUP_CFG_DIR/my.cnf.bx_mysql80
 
-    cp -f $BACKUP_CFG_FILE /etc/bitrix-my.cnf
-    rm -f /etc/my.cnf
-    update-alternatives --install /etc/my.cnf my.cnf "/etc/bitrix-my.cnf" 300
-	log_to_file "Create /etc/bitrix-my.cnf alternatives"
+    is_mycnf_alters=$(alternatives --list | grep "^my\.cnf\s\+" -c)
+    is_percona_alternatives=$(alternatives --list  | \
+        grep "^my\.cnf\s\+" | grep -cv '/etc/bitrix-my.cnf')
+
+    # doesn't use alternatives; replace /etc/my.cnf
+    if [[ $is_mycnf_alters -eq 0 ]]; then
+        DEST_CONF=/etc/my.cnf
+    else
+        # already created bitrix alternatives; replace /etc/bitrix-my.cnf
+        if [[ $is_percona_alternatives -eq 0 ]]; then
+            DEST_CONF=/etc/bitrix-my.cnf
+        fi
+    fi
+
+    log_to_file "Update $DEST_CONF file"
+    cp -f $BACKUP_CFG_FILE $DEST_CONF
+
+    if [[ $is_mycnf_alters -gt 0 && $is_percona_alternatives -gt 0 ]]; then
+        rm -f /etc/my.cnf
+        update-alternatives --install /etc/my.cnf my.cnf "/etc/bitrix-my.cnf" 300
+        log_to_file "Create /etc/bitrix-my.cnf alternatives"
+    fi
 }
 
+bx_push_server(){
+    [[ $OS_VERSION != "7" ]] && return 0
+
+    tmp_push=$(mktemp /tmp/push_XXXXX)
+    systemctl is-enabled push-server >$tmp_push 2>&1
+    is_enabled=$?
+    if [[ $is_enabled -gt 0 ]];then
+        rm -f $tmp_push
+        return 0
+    fi
+
+    ps -ef | grep "^bitrix" | grep "node server.js" | awk '{print $2}' > $tmp_push 2>&1
+    if [[ $(cat $tmp_push | wc -l) -lt 8  ]]; then
+        if [[ $(cat $tmp_push | wc -l) -gt 0 ]]; then
+            cat $tmp_path | xargs kill
+        fi
+        systemctl stop push-server
+        systemctl start push-server
+    fi
+    rm -f $tmp_push
+}
+
+get_nginx_version(){
+    NGINX_VERSION=$(nginx -v 2>&1 | egrep -o 'nginx/[0-9\.]+' | awk -F'/' '{print $2}')
+    NGINX_VERSION_UP=0
+    NGINX_VERSION_MID=0
+    NGINX_VERSION_END=0
+    NGINX_DEPRECATED_SSL_ON=0
+
+    if [[ -n $NGINX_VERSION ]]; then
+        NGINX_VERSION_UP=$(echo $NGINX_VERSION | awk -F'.' '{print $1}')
+        NGINX_VERSION_MID=$(echo $NGINX_VERSION | awk -F'.' '{print $2}')
+        NGINX_VERSION_END=$(echo $NGINX_VERSION | awk -F'.' '{print $3}')
+    else
+        NGINX_VERSION=not_installed
+    fi
+
+    NGINX_DEPRECATED_SSL_ON=$(nginx -t 2>&1 | grep -c '"ssl" directive is deprecated')
+}
+
+replace_nginx_listen(){
+    file=$1
+    sedfile="$file"
+    if [[ -L $file ]]; then
+        sedfile=$(file "$file" | \
+            egrep -o 'symbolic link to .+' | \
+            awk -F'`' '{print $2}' | sed -e "s/'$//")
+        # relative path
+        if [[ $(echo "$sedfile" | grep -c '^/') -eq 0 ]]; then
+            file_dir=$(dirname "$file")
+            sedfile="$file_dir/$sedfile"
+        fi
+        log_to_file "Change $file to $sedfile"
+    fi
+
+    if [[ $file == "/etc/nginx/bx/site_enabled/push.conf" ]]; then
+        if [[ $(grep -v '^$\|^#' $file| grep -c 'listen\s\+8894;') -gt 0 ]]; then
+            sed -i 's/listen\s\+8894;/listen 8894 ssl;/' $sedfile
+            log_to_file "Set listen to ssl in $sedfile"
+        fi
+    else
+        if [[ $(grep -v '^$\|^#' $file| grep -c 'listen\s\+443\s\+http2;') -gt 0 ]]; then
+            sed -i 's/listen\s\+443\s\+http2;/listen 443 ssl http2;/' $sedfile
+            log_to_file "Set listen to ssl http2 in $sedfile"
+        fi
+        if [[ $(grep -v '^$\|^#' $file| grep -c 'listen\s\+443\s\+default_server\s\+http2;') -gt 0 ]]; then
+            sed -i 's/listen\s\+443\s\+default_server\s\+http2;/listen 443 default_server ssl http2;/' \
+                $sedfile
+            log_to_file "Set listen to default_server ssl http2 in $sedfile"
+        fi
+ 
+    fi
+}
+
+secure_fixes(){
+    # http://jabber.bx/view.php?id=124947
+    # 
+    if [[ $OS_VERSION -eq 7 ]]; then
+        if [[ $(cat /etc/ssh/sshd_config | grep -c 'GSSAPIAuthentication\s\+yes') -gt 0 ]]; then
+            sed -i 's/GSSAPIAuthentication\s\+yes/GSSAPIAuthentication no/' /etc/ssh/sshd_config
+            systemctl restart sshd
+            log_to_file "Disable GSSAPIAuthentication"
+        fi
+    fi
+
+}
 
 upgrade_fixes(){
     ################################### FIXES
@@ -1540,22 +1762,22 @@ upgrade_fixes(){
     fi
 
     # http://jabber.bx/view.php?id=92994; remove mbstring.internal_encoding for php >= 5.6
-    #if [[ ( $PHP_VERSION -ge 5 && $PHP_VERSION_MID -ge 6 ) || \
-    #    $PHP_VERSION -ge 7 ]]; then
-    #    OLD_VALUE="php_admin_value mbstring.internal_encoding"
-    #    NEW_VALUE="php_admin_value default_charset"
-    #    HTTPD_CONF_DIRS="/etc/httpd/bx/conf /etc/httpd/bx-scale/conf"
-    #    for dir in $HTTPD_CONF_DIRS; do
-    #        if [[ -d $dir ]]; then
-    #            for file in $(find $dir/ -type f -name "*.conf"); do
-    #                if [[ $(grep -c "mbstring.internal_encoding" $file) -gt 0 ]]; then
-    #                    sed -i "s/$OLD_VALUE/$NEW_VALUE/" $file
-    #                    log_to_file "Replace mbstring.internal_encoding in $file"
-    #                fi
-    #            done
-    #        fi
-    #    done
-    #fi
+    if [[ ( $PHP_VERSION -ge 5 && $PHP_VERSION_MID -ge 6 ) || \
+        $PHP_VERSION -ge 7 ]]; then
+        OLD_VALUE="php_admin_value mbstring.internal_encoding"
+        NEW_VALUE="php_admin_value default_charset"
+        HTTPD_CONF_DIRS="/etc/httpd/bx/conf /etc/httpd/bx-scale/conf"
+        for dir in $HTTPD_CONF_DIRS; do
+            if [[ -d $dir ]]; then
+                for file in $(find $dir/ -type f -name "*.conf"); do
+                    if [[ $(grep -c "mbstring.internal_encoding" $file) -gt 0 ]]; then
+                        sed -i "s/$OLD_VALUE/$NEW_VALUE/" $file
+                        log_to_file "Replace mbstring.internal_encoding in $file"
+                    fi
+                done
+            fi
+        done
+    fi
 
     # http://jabber.bx/view.php?id=96220; LE certificates and nginx restart
     # replace 
@@ -1564,21 +1786,25 @@ upgrade_fixes(){
     # "0 12 1 * * /opt/webdir/bin/bx-dehydrated"
     is_clean_dehydrated=$(cat /etc/crontab | grep -c "bitrix /home/bitrix/dehydrated/dehydrated")
     is_incorrect_crontab=$(cat /etc/crontab | grep -c '* /opt/webdir/bin/bx-dehydrated')
+    # http://jabber.bx/view.php?id=104187
+    is_old_crontab=$(cat /etc/crontab | grep -c '^0 12 1.\+root /opt/webdir/bin/bx-dehydrated')
 
-    if [[ $is_clean_dehydrated -gt 0 || $is_incorrect_crontab -gt 0 ]]; then
+    if [[ $is_clean_dehydrated -gt 0 || \
+        $is_incorrect_crontab -gt 0 || \
+        $is_old_crontab -gt 0 ]]; then
         sed -i "/\/home\/bitrix\/dehydrated\/dehydrated/d" /etc/crontab
         sed -i "/\/opt\/webdir\/bin\/bx-dehydrated/d" /etc/crontab
         sed -i "/\/home\/bitrix\/dehydrated\/certs/d" /etc/crontab
 
-        echo '0 12 1 * * root /opt/webdir/bin/bx-dehydrated' >> /etc/crontab
-        echo '0 12 2 * * bitrix find /home/bitrix/dehydrated/certs -type f -mtime +120 -delete >>/home/bitrix/dehydrated_update.log 2>&1' >> /etc/crontab
+        echo '0 12 * * 6 root /opt/webdir/bin/bx-dehydrated' >> /etc/crontab
         log_to_file "Replace /home/bitrix/dehydrated/dehydrated by /opt/webdir/bin/bx-dehydrated"
     fi
+
+
 
 	# fixes for my.cnf alternatives
 	# http://jabber.bx/view.php?id=99083
 	bx_alternatives_for_mycnf
-
 
     # http://jabber.bx/view.php?id=96811
     /opt/webdir/bin/update_network.sh
@@ -1594,16 +1820,276 @@ upgrade_fixes(){
         fi
     fi
 
-    # http://jabber.bx/view.php?id=80385
-    if [[ ! -d /home/bitrix/www ]]; then
-        for conf in /etc/httpd/conf/httpd.conf /etc/httpd/conf/httpd-scale.conf; do
-            sed -i "/DocumentRoot/d" $conf
-            echo "DocumentRoot '/var/www/html'" >> $conf
-        done
+	# http://jabber.bx/view_all_bug_page.php
+	bx_push_server
 
-        echo "Listen 127.0.0.1:8888" >> /etc/httpd/conf/httpd.conf
-        echo "Listen 127.0.0.1:9887" >> /etc/httpd/conf/httpd-scale.conf
+    # http://jabber.bx/view.php?id=107836
+    if [[ ( $OS_VERSION  -eq 7 ) && \
+        ( -f /etc/cron.d/munin ) && \
+        ( ! -f /etc/tmpfiles.d/munin.conf ) ]]; then
+        echo 'd /var/run/munin 0770 root bitrix -' > /etc/tmpfiles.d/munin.conf
+        systemd-tmpfiles --create /etc/tmpfiles.d/munin.conf
+        log_to_file "Create /etc/tmpfiles.d/munin.conf config"
     fi
+
+
+    # http://jabber.bx/view.php?id=112483
+    # nginx/1.16 deprecated ssl on
+    get_nginx_version
+    log_to_file "NGINX_VERSION_UP=$NGINX_VERSION_UP NGINX_VERSION_MID=$NGINX_VERSION_MID"
+    log_to_file "NGINX_DEPRECATED_SSL_ON=$NGINX_DEPRECATED_SSL_ON"
+    if [[ ( $NGINX_VERSION_UP -ge 1 && $NGINX_VERSION_MID -ge 16 ) || 
+        $NGINX_DEPRECATED_SSL_ON -gt 0 ]]; then
+        log_to_file "Update nginx configs - ssl on is deprecated."
+
+        # find sites with default config
+        DEFAULT_SSL_CONFS=$(grep -RH 'bx/conf/ssl.conf' /etc/nginx/bx/site_enabled/ | \
+            awk -F':' '{print $1}' | sort | uniq)
+        CUSTOMS_SSL_CONFS=$(grep -RH 'bx/conf/ssl_options.conf' /etc/nginx/bx/site_enabled/ | \
+            awk -F':' '{print $1}' | sort | uniq)
+
+        if [[ -n $DEFAULT_SSL_CONFS ]]; then
+            log_to_file "There are sites with default ssl config"
+            for file in $DEFAULT_SSL_CONFS; do
+                replace_nginx_listen "$file"
+            done
+        fi
+
+        if [[ -n $CUSTOMS_SSL_CONFS ]]; then
+            log_to_file "There are sites with custom ssl config"
+
+            for file in $CUSTOMS_SSL_CONFS; do
+                replace_nginx_listen "$file"
+            done
+        fi
+
+        if [[ -f /etc/nginx/bx/site_avaliable/pool_manager.conf ]]; then
+            sed -i "/ssl\s\+on/d" /etc/nginx/bx/site_avaliable/pool_manager.conf
+            log_to_file "Delete ssl on in pool_manager.conf"
+        fi
+
+        # http://jabber.bx/view.php?id=114960
+        CUSTOM_SSL_FILE=/etc/nginx/bx/conf/ssl_options.conf
+        if [[ -f $CUSTOM_SSL_FILE && \
+            ( $(grep -v '^$\|^#' $CUSTOM_SSL_FILE | grep -c "ssl\s\+on" ) -gt 0  ) ]]; then
+            sed -i "/ssl\s\+on/d" $CUSTOM_SSL_FILE
+            log_to_file "Delete ssl on in ssl_options.conf"
+        fi
+    fi
+
+    # replace include in the /etc/nginx/bx/site_avaliable/push.conf
+    BASIC_PUSH_CONF=/etc/nginx/bx/site_avaliable/push.conf
+    if [[ -f $BASIC_PUSH_CONF ]]; then
+        if [[ $(grep -v '^$\|^#' $BASIC_PUSH_CONF | \
+            grep -c "include\s\+bx/conf/ssl.conf;") ]]; then
+            sed -i "s:include\s\+bx/conf/ssl.conf;:include bx/conf/ssl-push.conf;:" \
+            $BASIC_PUSH_CONF
+            log_to_file "Update $BASIC_PUSH_CONF"
+        fi
+    fi
+
+    # update dbconn.php for default site
+    # /home/bitrix/www/bitrix/php_interface/dbconn.php
+    DBCONN_FILE=/home/bitrix/www/bitrix/php_interface/dbconn.php
+    if [[ -f $DBCONN_FILE ]]; then
+        bx_dbname=$(cat $DBCONN_FILE | \
+            grep -v '^$\|^;' | grep 'DBName\s*=\s*' | \
+            awk -F'=' '{print $2}' | \
+            sed -e 's/"//g;s/;//;s/\s\+//g' | sed -e "s/'//g")
+
+        # create folder and nginx config
+        create_default_bx_temp "$bx_dbname"
+
+        if [[ $(grep -v '^$\|^;' $DBCONN_FILE | \
+            grep -c BX_TEMPORARY_FILES_DIRECTORY ) -eq 0 ]]; then
+
+            sed -i '/^?>/d' $DBCONN_FILE
+            echo -e "\ndefine(\"BX_TEMPORARY_FILES_DIRECTORY\", \"/home/bitrix/.bx_temp/$bx_dbname/\");" \
+                >> $DBCONN_FILE
+            echo -e '\n?>' >> $DBCONN_FILE
+
+        fi
+    fi
+
+    #
+    # acme-v01.api.letsencrypt.org      => acme-v02.api.letsencrypt.org
+    # acme-staging.api.letsencrypt.org  => acme-staging-v02.api.letsencrypt.org
+    DCONFIG=/home/bitrix/dehydrated/config
+    if [[ -f $DCONFIG && \
+         $(grep -v "^$\|^#" $DCONFIG | grep -c 'acme-v01.api.letsencrypt.org' ) -gt 0 ]]; then
+        sed -i 's/acme-v01.api.letsencrypt.org/acme-v02.api.letsencrypt.org/' \
+            $DCONFIG
+        log_to_file "Update from acme-v01.api.letsencrypt.org to acme-v02.api.letsencrypt.org"
+    fi
+
+    if [[ -f $DCONFIG && \
+         $(grep -v "^$\|^#" $DCONFIG | grep -c 'acme-staging.api.letsencrypt.org' ) -gt 0 ]]; then
+        sed -i 's/acme-staging.api.letsencrypt.org/acme-staging-v02.api.letsencrypt.org/' \
+            $DCONFIG
+        log_to_file "Update from acme-staging.api.letsencrypt.org to acme-staging-v02.api.letsencrypt.org"
+    fi
+
+    # Update HTTP to HTTPS
+    REPO_FILE=/etc/yum.repos.d/bitrix.repo
+    if [[ $(cat $REPO_FILE | grep -c "http://") -gt 0 ]]; then
+        sed -i 's|http://|https://|g' $REPO_FILE
+        log_to_file "Change repository URL from HTTP to HTTPS"
+    fi
+
+    # http://jabber.bx/view.php?id=131400
+    # remove mbstring.func_overload = 2
+    # http://jabber.bx/view.php?id=133715
+    PHPCONFIG=/etc/php.d/bitrixenv.ini
+    if [[ $PHP_VERSION -ge 7 ]]; then
+        if [[ -f $PHPCONFIG  ]];then
+            IS_OVERLOAD=$(grep 'mbstring.func_overload\s*=\s*2' $PHPCONFIG -c)
+            if [[ $IS_OVERLOAD -gt 0 ]]; then
+                sed -i '/mbstring.func_overload/d' $PHPCONFIG
+                log_to_file "Update $PHPCONFIG; delete mbstring.func_overload"
+            fi
+
+            # http://jabber.bx/view.php?id=133233
+            # add configuration
+            # mail.add_x_header and expose_php
+            IS_MAIL_HEADER=$(grep 'mail.add_x_header\s*=\s*Off' $PHPCONFIG -ci)
+            if [[  $IS_MAIL_HEADER -eq 0 ]]; then
+                echo 'mail.add_x_header = Off' >> $PHPCONFIG
+                log_to_file "Update $PHPCONFIG; update mail.add_x_header setting."
+            fi
+
+            IS_EXPOSE_PHP=$(grep 'expose_php\s*=\s*Off' $PHPCONFIG -ci)
+            if [[ $IS_EXPOSE_PHP -eq 0 ]]; then
+                echo 'expose_php = Off' >> $PHPCONFIG
+                log_to_file "Update $PHPCONFIG; update expose_php setting."
+            fi
+
+            IS_DISPLAY_ERR=$(grep 'display_errors\s*=\s*On' $PHPCONFIG -ci)
+            if [[ $IS_DISPLAY_ERR -gt 0 ]]; then
+                sed -i '/display_errors/d' $PHPCONFIG
+                echo "display_errors = Off" >> $PHPCONFIG
+                log_to_file "Update $PHPCONFIG; update display_errors setiing."
+            fi
+        fi
+    fi
+    # http://jabber.bx/view.php?id=135771
+    # Disable option indexes
+    HTTPD_CONFIGS=$(find /etc/httpd/bx/conf/ -type f -name "*.conf" \
+        -exec grep -H -m 1 'VirtualHost' '{}' ';' | awk -F ':' '{print $1}')
+    if [[ -n $HTTPD_CONFIGS ]]; then
+        IFS_BAK=$IFS
+        IFS=$'\n'
+        for file in $HTTPD_CONFIGS; do
+            if [[ $(grep -c 'Options\s\+Indexes' $file) -gt 0 ]]; then
+                sed -i "s/Options\s\+Indexes/Options/g" $file
+                log_to_file "Update $file; disable Options Indexes."
+            fi
+        done
+    fi
+}
+
+get_current_timezone_from_clock() {
+    TZ_CLOCK=""
+    if [[ ( -n $CFG_SYSCLOCK ) && ( -f $CFG_SYSCLOCK ) ]]; then
+        TZ_CLOCK=$(grep -v '^#\|^$' $CFG_SYSCLOCK | \
+            awk -F'=' '/ZONE=/{print $2}' | sed -e "s:[\"\' ]::g" )
+    fi
+    [[ -z $TZ_CLOCK ]] && return 1
+    return 0
+}
+
+# get current timezone from localtime
+get_current_timzone() {
+
+    TZ_TIME=""
+
+    # link
+    if [[ -L $CFG_LOCALTIME ]]; then
+        TZ_TIME=$(readlink -f $CFG_LOCALTIME | sed -e "s:^$TZ_DB/::")
+    else
+        # file
+        if [[ -f $CFG_LOCALTIME ]]; then
+            MD5_LOCALTIME="$(md5sum $CFG_LOCALTIME | awk '{print $1}')"
+
+            # check the md5sum of all files in a directory
+            while read LINE; do
+                MD5_FOUND="$(md5sum "${LINE}" | awk '{print $1}')"
+                #echo ${LINE} ${MD5_FOUND}
+
+                if [[ "${MD5_LOCALTIME}" == "${MD5_FOUND}" ]]; then
+                    TZ_TIME=$(echo "${LINE}" | sed -e "s:^$TZ_DB/::" )
+                fi
+
+            done < <( find $TZ_DB -type f )
+        fi
+    fi
+
+    [[ -z $TZ_TIME ]] && return 1
+    return 0
+}
+
+# get tz from bitrixenv
+get_php_tz() {
+    PHP_TZ=""
+    if [[ -f $CFG_PHP ]]; then
+        PHP_TZ=$(grep '^date.timezone' $CFG_PHP | \
+            awk -F'=' '{print $2}' | sed -s 's/^\s\+//;s/\s\+$//;s/"//g')
+    fi
+    [[ -n $PHP_TZ ]] && return 1
+    return 0
+}
+
+
+
+localtime_sync(){
+    CFG_SYSCLOCK="/etc/sysconfig/clock"
+    CFG_LOCALTIME="/etc/localtime"    
+    TZ_DB="/usr/share/zoneinfo"
+    TZ_DEFAULT="Europe/Moscow"
+    CFG_PHP="/etc/php.d/bitrixenv.ini"
+
+    # TZ_CLOCK  - /etc/sysconfig/clock
+    get_current_timezone_from_clock
+    
+    # TZ_TIME - /etc/localtime
+    get_current_timzone
+
+    # PHP_TZ - /etc/php.d/bitrixenv.ini
+    get_php_tz
+
+    if [[ -z $PHP_TZ ]]; then
+        log_to_file "Not found date.timezone in PHP config file: /etc/php.d/bitrixenv.ini. This is very odd issue."
+        return 1
+    else
+        if [[ -n ${TZ_TIME} ]]; then
+            if [[ ${TZ_TIME} != ${PHP_TZ} ]]; then
+                sed -i "/date.timezone/d" $CFG_PHP
+                echo "date.timezone = ${TZ_TIME}" >> $CFG_PHP
+                log_to_file "Set PHP date.timezone to ${TZ_TIME}"
+            fi
+            if [[ ${TZ_TIME} != ${TZ_CLOCK} ]]; then
+                [[ -f $CFG_SYSCLOCK ]] && \
+                    sed -i "/ZONE=/d" $CFG_SYSCLOCK
+                echo "ZONE=\"$TZ_TIME\"" >> $CFG_SYSCLOCK
+                log_to_file "Update ZONE=$TZ_TIME at $CFG_SYSCLOCK"
+            fi
+        else
+            if [[ -n ${TZ_CLOCK} ]]; then
+                if [[ ${TZ_CLOCK} != ${PHP_TZ} ]]; then
+                    sed -i "/date.timezone/d" $CFG_PHP
+                    echo "date.timezone = ${TZ_CLOCK}" >> $CFG_PHP
+                    log_to_file "Set PHP date.timezone to ${TZ_CLOCK}"
+                fi
+
+                ln -sf $TZ_DB/${TZ_CLOCK} $CFG_LOCALTIME
+                log_to_file "Create $CFG_LOCALTIME by $TZ_DB/${TZ_CLOCK}"
+            else
+                ln -sf $TZ_DB/$PHP_TZ $CFG_LOCALTIME
+                echo "ZONE=\"$PHP_TZ\"" >> $CFG_SYSCLOCK
+                log_to_file "Update $CFG_LOCALTIME and $CFG_SYSCLOCK by ZONE=$PHP_TZ"
+            fi
+        fi
+    fi
+    
 
 }
 
@@ -1615,6 +2101,10 @@ install_fixes(){
         log_to_file "Disable mod_auth_digest.so at /etc/httpd/conf.modules.d/00-base.conf"
         sed -i "/mod_auth_digest.so/d" /etc/httpd/conf.modules.d/00-base.conf
     fi
+
+    localtime_sync
+
+    secure_fixes
 }
 
 # post installation action for install process; no previous installation bitrix-env
@@ -1636,6 +2126,7 @@ install() {
             log_to_file "User bitrix was created"
         fi
     fi
+
 
     # disable SELinux
     [[ -d /selinux ]] && echo 0 > /selinux/enforce
@@ -1715,7 +2206,8 @@ install() {
     NGINX_CONF_LINKS="bx/conf/http-add_header.conf=bx/conf/general-add_header.conf
     bx/server_monitor.conf=bx/conf/blank.conf 
     bx/settings/im_settings.conf=bx/conf/push-im_settings.conf
-    bx/conf/im_subscrider.conf=bx/conf/push-im_subscrider.conf"
+    bx/conf/im_subscrider.conf=bx/conf/push-im_subscrider.conf
+    bx/conf/ssl-push.conf=bx/conf/ssl.conf=0"
     NGINX_CONF_DEFAULT_SSL="bx/site_avaliable/ssl.s1.conf"
     configure_nginx
 
@@ -1723,12 +2215,12 @@ install() {
     PHP_CONF_FILE="/etc/php.ini"
     PHP_CONF_DIR=/etc/php.d
     PHP_MODULES_DISABLE="xdebug xhprof mssql
-    phar xmlwriter xmlreader dom
+    phar xmlwriter xmlreader
     sqlite3 pdo pdo_dblib pdo_mysql
     pdo_sqlite imap xsl soap
     curl gmp posix sybase_ct sysvmsg
     sysvsem sysvshm wddx xsl ftp"
-    PHP_MODULES_ENABLE="json mysqli" 
+    PHP_MODULES_ENABLE="json mysqli dom xml zip" 
     configure_php
 
     # configure stunnel
@@ -1807,11 +2299,13 @@ upgrade(){
     bx/conf/ssl.conf
     bx/conf/general-add_header.conf
     bx/conf/bitrix_scale.conf
+    bx/conf/errors.conf
     nginx.conf"
     NGINX_CONF_SSL_CNF=$NGINX_CONF_DIR/openssl.cnf
     NGINX_CONF_LINKS="bx/conf/http-add_header.conf=bx/conf/general-add_header.conf
     bx/server_monitor.conf=bx/conf/blank.conf
-    bx/settings/im_settings.conf=bx/conf/push-im_settings.conf"
+    bx/settings/im_settings.conf=bx/conf/push-im_settings.conf
+    bx/conf/ssl-push.conf=bx/conf/ssl.conf=0"
  
     configure_nginx
 
@@ -1819,7 +2313,7 @@ upgrade(){
     PHP_CONF_FILE="/etc/php.ini"
     PHP_CONF_DIR=/etc/php.d
     PHP_MODULES_DISABLE=
-    PHP_MODULES_ENABLE="mysqli"
+    PHP_MODULES_ENABLE="mysqli dom zip xml"
     SITE_DIR=/home/bitrix/www
     configure_php
 

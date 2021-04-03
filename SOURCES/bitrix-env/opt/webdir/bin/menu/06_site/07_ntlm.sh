@@ -26,6 +26,21 @@ get_ntlm_options(){
     NTLM_HOST_SETTINGS=N
     NETBIOS_NAME_LIMIT=15                  # bytes
     NETBIOS_NAME_DEFAULT=$(hostname | awk -F'.' '{print $1}')       # netbios hostname
+
+    IS_FIRST_RUN=1
+    DEFAULT_NTLM_DOMAIN=
+    DEFAULT_NTLM_FQDN=
+    [[ -n $_ntlm_domain ]] && DEFAULT_NTLM_FQDN="$_ntlm_domain"
+    DEFAULT_NTLM_DC=
+    [[ -n $_ntlm_ldap ]] && \
+        DEFAULT_NTLM_DC="$(echo "$_ntlm_ldap" | awk -F':' '{print $1}')"
+
+    DEFAULT_NTLM_HOST=
+    DEFAULT_NTLM_ADMIN=Administrator
+ 
+    EX_NTLM_DOMAIN=TEST
+    EX_NTLM_FQDN=TEST.LOCAL
+    EX_NTLM_DC=TEST-DC-SP.TEST.LOCAL
  
     # https://technet.microsoft.com/en-us/library/cc731383.aspx
     until [[ "$NTLM_HOST_SETTINGS" == "Y" ]]; do
@@ -36,42 +51,91 @@ get_ntlm_options(){
         NTLM_ADMIN=
         NTLM_PWD=
 
-        print_message "$SM0072" "" "" NTLM_DOMAIN
+        if [[ -z $DEFAULT_NTLM_DOMAIN ]]; then
+            print_message "$( get_text "$SM0072" "ex. $EX_NTLM_DOMAIN" )" \
+                "" "" NTLM_DOMAIN
+        else
+            print_message "$( get_text "$SM0072" "default $DEFAULT_NTLM_DOMAIN" )" \
+                "" "" NTLM_DOMAIN "$DEFAULT_NTLM_DOMAIN"
+        fi
+ 
         if [[ -z "$NTLM_DOMAIN" ]]; then
             print_color_text "$SM0073" red
             continue
+        else
+            DEFAULT_NTLM_DOMAIN="$NTLM_DOMAIN"
         fi
 
-        print_message "$(get_text "$SM0074" "$NETBIOS_NAME_DEFAULT")" \
-            "" "" NTLM_HOST "$NETBIOS_NAME_DEFAULT"
+        
+        if [[ -z $DEFAULT_NTLM_HOST ]]; then
+            print_message "$(get_text "$SM0074" "default $NETBIOS_NAME_DEFAULT")" \
+                "" "" NTLM_HOST "$NETBIOS_NAME_DEFAULT"
+        else
+            print_message "$(get_text "$SM0074" "default $NETBIOS_NAME_DEFAULT")" \
+                "" "" NTLM_HOST "$DEFAULT_NTLM_HOST"
+        fi
         test_hostname "$NTLM_HOST" 15
-        [[ $test_hostname -eq 0 ]] && continue
+        if [[ $test_hostname -eq 0 ]]; then
+            continue
+        else
+            DEFAULT_NTLM_HOST="$NTLM_HOST"
+        fi
 
-        print_message "$SM0075" "" "" NTLM_FQDN
+        if [[ -z $DEFAULT_NTLM_FQDN ]]; then
+            print_message  "$(get_text "$SM0075" "ex. $EX_NTLM_FQDN")" \
+                "" "" NTLM_FQDN
+        else
+            print_message  "$(get_text "$SM0075" "default $DEFAULT_NTLM_FQDN")" \
+                "" "" NTLM_FQDN "$DEFAULT_NTLM_FQDN"
+        fi
+
         if [[ -z "$NTLM_FQDN" ]]; then
             print_color_text "$SM0076" red
             continue
+        else
+            DEFAULT_NTLM_FQDN="$NTLM_FQDN"
         fi
 
-        print_message "$SM0077" "" "" NTLM_DC
+        if [[ -z $DEFAULT_NTLM_DC ]]; then
+            print_message "$(get_text "$SM0077" "ex. $EX_NTLM_DC")" \
+                "" "" NTLM_DC
+        else
+            print_message "$(get_text "$SM0077" "default $DEFAULT_NTLM_DC")" \
+                "" "" NTLM_DC
+        fi
+
         if [[ -z "$NTLM_DC" ]]; then
             print_color_text "$SM0078" red
             continue
+        else
+            DEFAULT_NTLM_DC="$NTLM_DC"
         fi
     
-        print_message "$SM0079" "" "" \
-            NTLM_ADMIN Administrator
+        if [[ -z "$DEFAULT_NTLM_ADMIN" ]]; then
+            print_message "$(get_text "$SM0079" "default Administrator")" "" "" \
+                NTLM_ADMIN Administrator
+        else
+            print_message "$(get_text "$SM0079" "default $DEFAULT_NTLM_ADMIN")" "" "" \
+                NTLM_ADMIN "$DEFAULT_NTLM_ADMIN"
+        fi
+
         if [[ -z "$NTLM_ADMIN" ]]; then
             print_color_text "$SM0080" red
             continue
+        else
+            DEFAULT_NTLM_ADMIN=$NTLM_ADMIN
         fi
 
         print_message "$SM0081" "" "-s" NTLM_PWD
         if [[ -n $NTLM_PWD ]]; then
             NTLM_PWD_FILE=$(mktemp $CACHE_DIR/.ntlmXXXXXXXX)
             echo "$NTLM_PWD" > $NTLM_PWD_FILE
+        else
+            print_color_text "$SM9990" red
+            continue
         fi
         NTLM_HOST_SETTINGS=Y
+
     done
 
     print_color_text "$SM0082" green
@@ -119,7 +183,7 @@ ntlm_site_name(){
     # site exist in the list; NTLM is enabled on the site
     if [[ ( $if_ntlm_empty_setting -eq 0 ) && ( $if_ntlm_exist_setting -eq 1 ) ]]; then
         print_message "$SM0096" \
-            "$SM0095" "" any_key n
+            "$(get_text "$SM0095" "$NTLM_SITE")" "" any_key n
 
         [[ $(echo "$any_key" | grep -wic "Y") -gt 0 ]] && start_ntlm_config=1
         # get additional site info

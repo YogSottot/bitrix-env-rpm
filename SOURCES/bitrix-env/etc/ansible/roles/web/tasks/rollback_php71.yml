@@ -6,7 +6,6 @@
 - shell: rsync -a --delete /etc/php.d/ /opt/webdir/tmp/php.d/
   args:
     creates: /opt/webdir/tmp/php.d/bitrixenv.ini
-  when: "'bitrix-web' in group_names"
 
 - name: enable remi php71 repository
   ini_file: 
@@ -15,7 +14,6 @@
     option: enabled
     value: 1
   tags: remi
-  when: "'bitrix-web' in group_names"
 
 - name: disable remi php72 repository
   ini_file: 
@@ -24,56 +22,17 @@
     option: enabled
     value: 0
   tags: remi
-  when: "'bitrix-web' in group_names"
 
-- name: save list php-packages
-  shell: rpm -qa --queryformat '%{name}\n' | grep '^php' | grep -v 'php-pecl-mcrypt'
-  args:
-    executable: /bin/bash
-  register: php70_packages
-  when: "'bitrix-web' in group_names"
+- include_tasks: reinstall_php.yml
+  vars:
+    is_php71: true
+    is_php56: false
 
-
-- name: remove package without deps
-  shell: rpm -qi {{ item }} && rpm -e --nodeps {{ item }} || true
-  with_items: 
-    - "{{ php70_packages.stdout_lines }}"
-    - php-pecl-mcrypt
-  when: "'bitrix-web' in group_names"
-
-- name: reinstall php71 
-  yum: name={{ item }} state=latest
-  with_items: 
-    - "{{ php70_packages.stdout_lines }}"
-    - php-mcrypt
-  when: "'bitrix-web' in group_names"
-
-- name: restore php.d settings
-  shell: rsync -a --delete /opt/webdir/tmp/php.d/ /etc/php.d/
-  when: "'bitrix-web' in group_names"
-
-- name: get rpmsave file list
-  find:
-    paths: "/etc/php.d"
-    patterns: "*.rpmsave,*.rpmnew"
-    file_type: file
-  register: rpmsave
-
-- name: delete rpmsave files
-  file:
-    path: "{{ item.path }}"
-    state: absent
-  with_items: "{{ rpmsave.files }}"
-
-- name: delete php.d
-  file:
-    path: /opt/webdir/tmp/php.d
-    state: absent
+- include: php_ext_dublicates.yml
 
 - name: convert extension names
   shell: /opt/webdir/bin/convert_phpd_files.sh
 
 - name: restart httpd
   service: name=httpd state=restarted
-  when: "inventory_hostname == cluster_web_server"
 

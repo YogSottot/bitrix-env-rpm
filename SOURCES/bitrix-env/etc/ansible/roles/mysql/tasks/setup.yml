@@ -4,7 +4,17 @@
   set_fact:
     bx_system: "{{ hostvars[inventory_hostname]['bx_system_type'] }}"
     mysql_service: "{{ hostvars[inventory_hostname]['mysql_service'] }}"
+    mysql_uni_version: "{{ hostvars[inventory_hostname]['mysql_uni_version'] }}"
+    mysql_cnf: "my.cnf.j2"
+    bvat_cnf: "bvat/bx_perf-bvat.cnf.j2"
   tags: vars
+
+- name: redefine mysql 80 variables
+  set_fact:
+    mysql_cnf: "my80.cnf.j2"
+    bvat_cnf: "bvat/bx_perf-bvat80.cnf.j2"
+  when: mysql_uni_version == '80'
+
 
 - name: get performance options
   bx_perf: state=performance
@@ -19,13 +29,21 @@
   tags: configs
 
 - name: main config /etc/my.cnf
-  template: src=my.cnf.j2 dest=/etc/my.cnf
-    owner=root group=mysql mode=0644
+  template:
+    src: "{{ mysql_cnf }}"
+    dest: /etc/my.cnf
+    owner: root
+    group: mysql
+    mode: 0644
   tags: configs
 
 - name: bvat config /etc/mysql/conf.d/bvat.cnf
-  template: src="bvat/bx_perf-bvat.cnf.j2" dest=/etc/mysql/conf.d/bvat.cnf
-    owner=root group=mysql mode=0644
+  template:
+    src: "{{ bvat_cnf }}"
+    dest: /etc/mysql/conf.d/bvat.cnf
+    owner: root
+    group: mysql
+    mode: 0644
   tags: configs
 
 - name: replica config bx_replica.cnf

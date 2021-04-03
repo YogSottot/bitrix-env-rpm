@@ -19,8 +19,6 @@ debug(){
     [[ $DEBUG -gt 0 ]] && echo "$(date +%s) $mess" >> $LOG_FILE
 }
 
-
-
 get_memory() {
 
     is_vps=1
@@ -254,8 +252,13 @@ get_mysql_package(){
     if [[ $(echo "$PACKAGES_LIST" | grep -c '^mysql-community-server') -gt 0 ]]; then
         MYSQL_PACKAGE=mysql-community-server
         MYSQL_SERVICE=mysqld
+    # Percona 5.6 && 5.7
     elif [[ $(echo "$PACKAGES_LIST" | grep -c '^Percona-Server-server') -gt 0 ]]; then
         MYSQL_PACKAGE=Percona-Server-server
+        MYSQL_SERVICE=mysqld
+    # Percona 8.0
+    elif [[ $(echo "$PACKAGES_LIST" | grep -c '^percona-server-server') -gt 0  ]]; then
+        MYSQL_PACKAGE=percona-server-server
         MYSQL_SERVICE=mysqld
     elif [[ $(echo "$PACKAGES_LIST" | grep -c '^MariaDB-server') -gt 0 ]]; then
         MYSQL_PACKAGE=MariaDB-server
@@ -271,7 +274,7 @@ get_mysql_package(){
     fi
     MYSQL_VERSION=$(rpm -qa --queryformat '%{version}' ${MYSQL_PACKAGE}* | head -1 )
     MYSQL_MID_VERSION=$(echo "$MYSQL_VERSION" | awk -F'.' '{print $2}')
-
+    MYSQL_UNI_VERSION=$(echo "$MYSQL_VERSION" | awk -F'.' '{printf "%s%s", $1,$2}')
 }
 
 get_sw_versions(){
@@ -290,10 +293,10 @@ get_sw_versions(){
     NGINX_SSL=ssl
     [[ ( $NGINX_VERSION_UP -ge 1 ) && \
         ( $NGINX_VERSION_MID -ge 10 ) && \
-        ( $NGINX_VERSION_END -ge 2 )  ]] && NGINX_SSL=http2
+        ( $NGINX_VERSION_END -ge 2 )  ]] && NGINX_SSL="ssl http2"
 
     [[ ( $NGINX_VERSION_UP -ge 1 ) && \
-        ( $NGINX_VERSION_MID -ge 12 ) ]] && NGINX_SSL=http2
+        ( $NGINX_VERSION_MID -ge 12 ) ]] && NGINX_SSL="ssl http2"
 
 
     SPHINX_VERSION=$(rpm -qa --queryformat '%{version}' sphinx 2>/dev/null | head -1 )
@@ -318,6 +321,7 @@ get_sw_versions(){
 get_push_server_info(){
     PUSH_CONFIG=/etc/sysconfig/push-server-multi
     PUSH_NGINX_CONFIG=/etc/nginx/bx/conf/im_subscrider.conf
+    PUSH_NGINX_SITE_CONFIG=/etc/nginx/bx/site_enabled/push.conf
 
     PUSH_SECURITY_KEY=
     PUSH_STATUS=not_installed
@@ -328,6 +332,8 @@ get_push_server_info(){
     PUSH_SUBWS='/bitrix/subws/'
     PUSH_REST='/bitrix/rest/'
     PUSH_PORT=
+    PUSH_CERT=
+    PUSH_KEY=
 
     # get PushStreamModule status 
     is_push_installed=$(nginx -V 2>&1 | grep nginx-push-stream-module -c)
@@ -364,6 +370,10 @@ get_push_server_info(){
         fi
     fi
 
+    if [[ -f $PUSH_NGINX_SITE_CONFIG ]]; then
+        true
+    fi
+
 }
 
 
@@ -381,7 +391,15 @@ get_mysql_service_status(){
         systemctl is-active $MYSQL_SERVICE >/dev/null 2>&1
         return $?
     else
-        /etc/init.d/mysqld status | grep -wc running >/dev/null 2>&1
+		MYSQL_INIT_SCRIPT=/etc/init.d/mysqld
+        MYSQL_SERVICE_NAME=mysqld
+
+        if [[ -f /etc/init.d/mysql ]]; then
+            MYSQL_INIT_SCRIPT=/etc/init.d/mysql
+            MYSQL_SERVICE_NAME=mysql
+        fi
+        $MYSQL_INIT_SCRIPT status | grep -wc running >/dev/null 2>&1
+
         return $?
     fi
 }
@@ -435,6 +453,8 @@ test_mysql_root_password(){
 get_bx_packages(){
     rpm_bin=$(which rpm 2>/dev/null)
 
+    get_os_version
+
     [[ -z "$rpm_bin" ]] && return 1
 
     if [[ -n $rpm_bin ]]; then
@@ -444,6 +464,7 @@ get_bx_packages(){
         mysql_service=$MYSQL_SERVICE
         mysql_version=$MYSQL_VERSION
         mysql_mid_version=$MYSQL_MID_VERSION
+        mysql_uni_version=$MYSQL_UNI_VERSION
 
         php_version=$($rpm_bin -qa --queryformat '%{name} %{version} \n' php | awk '{print $2}')
     fi
@@ -465,6 +486,45 @@ get_bx_packages(){
 
     fi
 
+    php_union_version=${php_version_up}${php_version_mid}
+    php_supported_versions=(56 70 71 72 73)
+    if [[ $OS_VERSION -eq 7 ]]; then
+        php_supported_versions=(56 70 71 72 73 74 80)
+    fi
+
+    php_upgraded_versions=()
+    php_rollback_versions=()
+    index_upgrade=0
+    index_rollback=0
+    for item in ${php_supported_versions[*]}; do
+        if [[ $php_union_version -lt $item ]]; then
+            php_upgraded_versions[$index_upgrade]=$item
+            index_upgrade=$(( $index_upgrade + 1 ))
+        fi
+
+        if [[ $php_union_version -gt $item ]]; then
+            php_rollback_versions[$index_rollback]=$item
+            index_rollback=$(( $index_rollback + 1 ))
+        fi
+    done
+
+    php_upgraded_version_str="["
+    for item in ${php_upgraded_versions[*]}; do
+        if [[ $php_upgraded_version_str != "[" ]]; then
+            php_upgraded_version_str=${php_upgraded_version_str}","
+        fi
+        php_upgraded_version_str=${php_upgraded_version_str}$item
+    done
+    php_upgraded_version_str=${php_upgraded_version_str}"]"
+
+    php_rollback_versions_str="["
+    for item in ${php_rollback_versions[*]}; do
+        if [[ $php_rollback_versions_str != "[" ]]; then
+            php_rollback_versions_str=${php_rollback_versions_str}","
+        fi
+        php_rollback_versions_str=${php_rollback_versions_str}$item
+    done
+    php_rollback_versions_str=${php_rollback_versions_str}"]"
 
     # nodejs version
     nodejs_version=$(rpm -qa --queryformat '%{name} %{version} \n' nodejs | awk '{print $2}')
@@ -474,6 +534,17 @@ get_bx_packages(){
         nodejs_version=not_installed
         nodejs_major_version=not_installed
     fi
+
+    # redis version
+    redis_version=$(rpm -qa --queryformat '%{name} %{version} \n' redis | awk '{print $2}')
+    if [[ -n $redis_version ]]; then
+        redis_uni_version=$(echo "$redis_version" | awk -F'.' '{printf "%s%s", $1, $2}')
+    else
+        redis_version=not_installed
+        redis_uni_version=not_installed
+    fi
+
+
 
     # push-server
     push_server_version=$(rpm -qa --queryformat '%{name} %{version} \n' push-server | \
@@ -513,6 +584,79 @@ get_bx_systemtype_mem(){
     done
 }
 
+check_iptables_status() {
+    iptables_status='disabled'
+    iptables_tmp=$(mktemp $TMP_DIR/bx_iptables.XXXXX)
+    iptables_test_port=2222
+    iptables_test_port_is_good=0
+
+    # test if port is close (nobody listen)
+    while [[ $iptables_test_port_is_good -eq 0 ]]; do
+        ss -lnp | egrep ":80\s+$iptables_test_port" > $iptables_tmp 2>&1
+        if [[ $? -gt 0 ]]; then
+            iptables_test_port_is_good=1
+        else
+            iptables_test_port=$(( $iptables_test_port + 1 ))
+        fi
+    done
+
+    # iptables working (stateless)
+    iptables -I INPUT -p tcp \
+        --dport $iptables_test_port -j ACCEPT > $iptables_tmp 2>&1
+    if [[ $? -eq 0 ]]; then
+        iptables_status='stateless'
+        iptables -D INPUT -p tcp \
+            --dport $iptables_test_port -j ACCEPT > $iptables_tmp 2>&1
+    fi
+
+    # iptables working (stateful)
+    if [[ $iptables_status == "stateless" ]]; then
+        iptables -I INPUT -m state --state NEW \
+            -p tcp --dport $iptables_test_port -j ACCEPT > $iptables_tmp 2>&1
+        if [[ $? -eq 0 ]]; then
+            iptables_status='stateful'
+            iptables -D INPUT -m state --state NEW \
+                -p tcp --dport $iptables_test_port -j ACCEPT > $iptables_tmp 2>&1
+        fi
+    fi
+    rm -f $iptables_tmp
+}
+
+check_firewalld_status(){
+    firewalld_package="not_installed"
+    firewalld_status="not_running"
+    firewalld_bx_type="not_installed"
+    firewalld_tolerance="non_compatible"
+
+    firewalld_tmp=$(mktemp $TMP_DIR/firewalld.XXXXX)
+    rpm -qi firewalld > $firewalld_tmp 2>&1
+    if [[ $? -gt 0 ]]; then
+        rm -f $firewalld_tmp
+        return 0
+    fi
+    firewalld_package="installed"
+
+    firewall-cmd --state > $firewalld_tmp 2>&1
+    if [[ $? -gt 0 ]]; then
+        rm -f $firewalld_tmp
+        return 0
+    fi
+
+    if [[ $(grep -c '^running$' $firewalld_tmp) -gt 0 ]]; then
+        firewalld_status="running"
+        if [[ $(firewall-cmd --get-zones | grep bx_trusted -c) -gt 0 ]]; then
+            firewalld_bx_type="installed"
+        fi
+
+        systemctl status firewalld > $firewalld_tmp 2>&1
+        if [[ $(grep -c "ERROR:" $firewalld_tmp) -eq 0 ]]; then
+            firewalld_tolerance="compatible"
+        fi
+    fi
+    rm -f $firewalld_tmp
+}
+
+
 debug "start get_bx_version"
 get_bx_version
 
@@ -543,6 +687,12 @@ get_sw_versions
 debug "get push server info"
 get_push_server_info
 
+debug "get iptables status"
+check_iptables_status
+
+debug "get firewalld status"
+check_firewalld_status
+
 ANSIBLE_OUTPUT='{"ansible_facts":{'
 ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"bx_system_type":"'$system_type'",'
 ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"os_version":"'$OS_VERSION'",'
@@ -572,18 +722,28 @@ ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"push_server_major_version":"'$push_server_major_
 ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"nginx_push_module":"'$PUSH_STREAM_MODULE'",'
 ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"sphinx_version":"'$SPHINX_VERSION'",'
 ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"sphinx_type":"'$SPHINX_TYPE'",'
+ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"redis_uni_version":"'$redis_uni_version'",'
 ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"mysql_version":"'$mysql_version'",'
 ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"mysql_mid_version":"'$mysql_mid_version'",'
+ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"mysql_uni_version":"'$mysql_uni_version'",'
 ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"mysql_package":"'$mysql_package'",'
 ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"mysql_service":"'$mysql_service'",'
 ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"mysql_root_config":"'$mysql_root_config'",'
 ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"mysql_root_password":"'$mysql_root_password'",'
 ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"mysql_service_status":"'$mysql_service_status'",'
 ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"php_version":"'$php_version'",'
+ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"php_union_version":'$php_union_version','
+ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"php_upgraded_versions":'$php_upgraded_version_str','
+ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"php_rollback_versions":'$php_rollback_versions_str','
 ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"php_older_version":'$is_older_version_php','
 ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"php_mysql_ext":"'$php_mysql_ext'",'
 ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"bx_root_last_password_change":"'$root_Last_password_change'",'
-ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"bx_last_password_change":"'$Last_password_change'"'
+ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"bx_last_password_change":"'$Last_password_change'",'
+ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"firewalld_package":"'$firewalld_package'",'
+ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"firewalld_status":"'$firewalld_status'",'
+ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"firewalld_bx_type":"'$firewalld_bx_type'",'
+ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"firewalld_tolerance":"'$firewalld_tolerance'",'
+ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"iptables_status":"'$iptables_status'"'
 ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'}}'
 
 echo -n $ANSIBLE_OUTPUT
