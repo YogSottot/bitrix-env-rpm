@@ -1,6 +1,7 @@
-#### Исходникик bitrix-env
+#### Исходные коды bitrix-env
 
-
+Один коммит — одно обновление.  
+Репозиторий создан для удобства отслеживания изменений в новых версиях пакета.  
 
 * **Способ получения оригинального пакета с исходным кодом.**  
 
@@ -22,14 +23,14 @@ rpm -Uvh  bitrix-env-7.3-11.src.rpm
 # распаковано в /root/rpmbuild
 ```
 
-* **Собираем модифицированный bitrix-env**  
+* **Сборка из исходных кодов**  
 
 ```bash
 dnf install mock dnf-utils -y
 # или
 yum install yum-utils mock -y
 ```
-Настройте mock по инструкции
+Настроить mock по инструкции
 https://github.com/rpm-software-management/mock/wiki#setup
 
 ```bash
