@@ -18,10 +18,17 @@
 - include_tasks: mysql-check-slave80.yml
   when: mysql_uni_version|int >= 80
 
+- name: master options
+  mysql_replication: mode=getmaster login_unix_socket={{ mysql_socket }}
+  delegate_to: "{{ master_server }}"
+  register: master_status
+  tags: mysqld_master
+
 - name: replication variables on the slave-server
   set_fact: 
     mysql_replication_role: slave 
     mysql_serverid: "{{ mysql_last_id+1 }}"
+    disable_log: '0'
   when: "inventory_hostname == slave_server"
   tags: vars
 
@@ -48,7 +55,14 @@
   when: "inventory_hostname == slave_server or inventory_hostname == master_server"
 
 - include_tasks: setup.yml
-  when: "slave_server == inventory_hostname or master_server == inventory_hostname"
+  vars:
+    type: slave
+  when: "slave_server == inventory_hostname"
+
+- include_tasks: setup.yml
+  vars:
+    type: master
+  when: "master_server == inventory_hostname"
 
 - include_tasks: mysql_uuid.yml
   when: "slave_server == inventory_hostname"

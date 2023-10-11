@@ -1,0 +1,38 @@
+---
+#- fail:
+# upgrade php package from 80 to 81
+- name: update remi-release
+  yum:
+    name: remi-release
+    state: latest
+
+- name: disable remi php80 repository
+  ini_file: 
+    dest: /etc/yum.repos.d/remi-php80.repo
+    section: remi-php80
+    option: enabled 
+    value: 0
+  tags: remi
+
+- name: enable remi php81 repository
+  ini_file: 
+    dest: /etc/yum.repos.d/remi-php81.repo
+    section: remi-php81
+    option: enabled 
+    value: 1
+  tags: remi
+
+- name: update system by remi repository
+  yum: 
+    name: php* 
+    state: latest
+    update_cache: yes
+    update_only: yes
+  tags: php81
+
+- include: php_ext_dublicates.yml
+
+- name: restart httpd
+  service: name=httpd state=restarted
+  tags: php81
+

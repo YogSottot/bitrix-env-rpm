@@ -1,5 +1,8 @@
 ---
 # get system type, which will be used in config choice
+# type:
+#     slave - disable binlog
+#     master - enable binlog
 - name: defined bx_system variable
   set_fact:
     bx_system: "{{ hostvars[inventory_hostname]['bx_system_type'] }}"
@@ -7,6 +10,7 @@
     mysql_uni_version: "{{ hostvars[inventory_hostname]['mysql_uni_version'] }}"
     mysql_cnf: "my.cnf.j2"
     bvat_cnf: "bvat/bx_perf-bvat.cnf.j2"
+    setup_type: "{{ type|default('slave') }}"
   tags: vars
 
 - name: redefine mysql 80 variables
@@ -47,8 +51,12 @@
   tags: configs
 
 - name: replica config bx_replica.cnf
-  template: src=bx_replica.cnf.j2 dest={{ mysql_configs }}/bx_replica.cnf
-    owner=root group=root mode=0644
+  template:
+    src: bx_replica.cnf.j2
+    dest: "{{ mysql_configs }}/bx_replica.cnf"
+    owner: root
+    group: root
+    mode: 0644
   tags: configs
 
 - name: logrotate config 

@@ -31,6 +31,286 @@ has 'pref',          is => 'ro', default => 'bx_ext_';
 has 'debug',         is => 'ro', default => 0;
 has 'logfile',       is => 'ro', default => '/opt/webdir/logs/bxKernel.debug';
 
+
+sub bx_site_type {
+    my ( $self, $site_kernel_dir, $bx_options ) = @_;
+
+    my $message_p = ( caller(0) )[3];
+    my $message_t = __PACKAGE__;
+    my $site_root = $self->site_dir;
+
+    my $logOutput = Output->new(
+        error   => 0,
+        logfile => $self->logfile,
+        debug   => $self->debug
+    );
+
+
+    my $site_conf = $self->site_conf;
+
+    # LINK - status of the install
+    if ( -l $site_kernel_dir ) {
+
+        # link file can contain own index.php => not found file, not found data
+        my $basic_kernel_dir = readlink($site_kernel_dir);
+        my $kernel_dir       = dirname($basic_kernel_dir);
+ 
+        $bx_options->{'SiteInstall'} = 'link';
+        $bx_options->{'SiteKernelDir'} = $kernel_dir;
+        $bx_options->{'SiteStatus'} = 'not_installed';
+
+        my $bx_index_file = catfile( $site_root, 'index.php' );
+        if ( -f $bx_index_file ) {
+            $bx_options->{'SiteStatus'} = 'finished';
+        }
+    }
+    else {
+        # if folder contains bitrixsetup => suspect that finished installation doesn't contain it
+        $bx_options->{'SiteInstall'} = 'kernel';
+        if ( $site_conf !~ /^found$/ ) {
+            $bx_options->{'SiteInstall'} = 'ext_kernel';
+        }
+
+        my $bx_setup_file = catfile( $site_root, 'bitrixsetup.php' );
+        $bx_options->{'SiteStatus'} = 'not_installed';
+
+        if ( ! -f $bx_setup_file ) {
+            $bx_options->{'SiteStatus'} = 'finished';
+        }
+    }
+}
+
+sub bx_test_mysql_opts {
+    my ( $self, $bx_options ) = @_;
+
+    my $message_p = ( caller(0) )[3];
+    my $message_t = __PACKAGE__;
+    my $site_root = $self->site_dir;
+
+    my $logOutput = Output->new(
+        error   => 0,
+        logfile => $self->logfile,
+        debug   => $self->debug
+    );
+
+
+    # test found options or create error message
+    my $test_options = '';
+    foreach my $opt ( 'DBName', 'DBHost', 'DBLogin', 'DBPassword' ) {
+        if ( not defined $bx_options ) {
+            $test_options .= "$opt=not_defined ";
+        }
+    }
+
+    # some options is missing
+    if ( $test_options !~ /^$/ ) {
+        $logOutput->log_data(
+            "$message_p: not found some mandatory options in config file."
+        );
+        
+        $logOutput->log_data("$message_p: $test_options");
+        $bx_options->{'error'} = 3;
+        $bx_options->{'message'} =
+        "$message_p: in config $test_options";
+
+        return $bx_options->{'error'};
+    }
+
+    # define DBtype if not dfeined in config
+    if ( not defined $bx_options->{'DBType'} ) {
+        $bx_options->{'DBType'} = 'mysql';
+    }
+
+    if ( $bx_options->{'DBType'} !~ /^mysql$/ ) {
+        $bx_options->{'error'} = 3;
+        $bx_options->{'message'} =
+        "$message_p: not supported DBType="
+        . $bx_options->{'DBType'};
+        return $bx_options->{'error'};
+    }
+
+    my $dbi_str =
+        "DBI:mysql:"
+        . $bx_options->{'DBName'}
+        . ";host="
+        . $bx_options->{'DBHost'}
+        . ";port=3306";
+
+    # add socket option for mysql
+    if ( $bx_options->{'DBHost'} =~
+        /^(localhost|localhost\.localdomain|127\.0\.0\.1)$/ )
+    {
+        $dbi_str .= ":mysql_socket=/var/lib/mysqld/mysqld.sock";
+    }
+
+    #print $dbi_str,"\n";
+    #print "login: ", $bx_options->{'DBLogin'}, "\n";
+    #print "pass ", $bx_options->{'DBPassword'}, "\n";
+
+    my $dbh = DBI->connect(
+        "$dbi_str",
+        $bx_options->{'DBLogin'},
+        $bx_options->{'DBPassword'},
+        { PrintError => 0 },
+        );
+    if ( !$dbh ) {
+        my $mess = "$message_p: Could not connect to database: $DBI::errstr";
+        $bx_options->{'error'} = 3;
+        $bx_options->{'message'} = $mess;
+        $logOutput->log_data( $mess );
+        $bx_options->{'DBConn'} = 'N';
+        return $bx_options->{'error'};
+    }
+    my $sql = 'show create database `'
+        . $bx_options->{'DBName'} . '`';
+    my $sth = $dbh->prepare($sql);
+    if ( $sth->execute ) {
+        while ( my $row = $sth->fetchrow_hashref() ) {
+            my $create_db_str = $row->{'Create Database'};
+            if ( $create_db_str =~ /\s+cp1251\s+/ ) {
+                $bx_options->{'SiteCharset'} =
+                    'windows-1251';
+                }
+            elsif ( $create_db_str =~ /\s+utf8\s+/ ) {
+                $bx_options->{'SiteCharset'} = 'utf-8';
+            }
+            else {
+                if ( $create_db_str =~
+                    /CHARACTER SET\s+(\S+)\s+/ )
+                {
+                    $bx_options->{'SiteCharset'} = $1;
+                }
+            }
+        }
+    }else{
+        my $mess = "$message_p: Cannot show database status";
+        $bx_options->{'error'} = 3;
+        $bx_options->{'message'} = $mess;
+        $logOutput->log_data( $mess );
+        $bx_options->{'DBConn'} = 'N';
+        return $bx_options->{'error'};
+    }
+    $sth->finish;
+    $dbh->disconnect;
+    $logOutput->log_data(
+        "$message_p: Successfully connect to database: $dbi_str"
+    );
+    $bx_options->{'DBConn'} = 'Y';
+}
+
+sub bx_rand {
+
+    my @set = ('0' ..'9', 'A' .. 'F');
+    my $str = join '' => map $set[rand @set], 1 .. 10;
+    return "$str";
+}
+
+sub bx_error {
+    my ($f, $m) = @_;
+    unlink $f;
+    die $m;
+}
+
+sub bx_settings {
+    my ($self, $settings_config, $bx_options) = @_;
+
+    my $message_p = ( caller(0) )[3];
+    my $message_t = __PACKAGE__;
+    my $site_root = $self->site_dir;
+
+    my $logOutput = Output->new(
+        error   => 0,
+        logfile => $self->logfile,
+        debug   => $self->debug
+    );
+
+    my $rand_name = bx_rand();
+    my $rand_file = catfile($site_root, $rand_name);
+    my $cp_cmd = qq(cp /opt/webdir/lib/settings2json.php $rand_file);
+    system ($cp_cmd) == 0
+        or die "Cannot copy temporary file to $rand_file";
+    
+    my $cmd = qq(cd $site_root && php $rand_name);
+    open( my $ch, "$cmd |"  ) 
+        or bx_error($rand_file, "Cannot run temporary file in $site_root");
+
+    my $cmd_out;
+    while (<$ch>){
+        $cmd_out .= $_;
+    }
+    close $ch;
+    unlink $rand_file;
+
+    my $cmd_json = from_json($cmd_out);
+
+    $bx_options->{DBName} = $cmd_json->{connections}->{value}->{default}->{database};
+    $bx_options->{DBLogin} = $cmd_json->{connections}->{value}->{default}->{login};
+    $bx_options->{DBPassword} = $cmd_json->{connections}->{value}->{default}->{password};
+    $bx_options->{DBHost} = $cmd_json->{connections}->{value}->{default}->{host};
+    if ($cmd_json->{connections}->{value}->{default}->{className} =~ /Mysql/){
+        $bx_options->{DBType} = "mysql";
+    }
+}
+
+sub bx_dbconn {
+    my ($self, $dbconn_config, $bx_options) = @_;
+
+    my $message_p = ( caller(0) )[3];
+    my $message_t = __PACKAGE__;
+    my $site_root = $self->site_dir;
+
+    my $logOutput = Output->new(
+        error   => 0,
+        logfile => $self->logfile,
+        debug   => $self->debug
+    );
+
+
+    # Get DB options from dbconn and test it
+    my $desired_options = 'DBName|DBType|DBLogin|DBPassword|DBHost';
+    my $defined_options = 'BX_TEMPORARY_FILES_DIRECTORY';
+
+    open( my $dh, '<', $dbconn_config )
+        or die "$message_p: Cannot open $dbconn_config: $!";
+    while ( my $line = <$dh> ) {
+        next if ( $line =~ /^$/ );
+        next if ( $line =~ /^#/ );
+        next if ( $line =~ /^;/ );
+        $line =~ s/^\s+//;
+        $line =~ s/\s+$//;
+        $line =~ s/\s*;$//;
+
+        if ( $line =~ /^\$($desired_options)\s*=(.+)$/ ) {
+            my $php_key   = $1;
+            my $php_value = $2;
+            $php_value =~ s/^\s+//;
+            $php_value =~ s/\s+$//;
+            if ( $php_value =~ /^'(.*)'$/ ) {
+                $php_value = $1;
+            }
+            if ( $php_value =~ /^"(.*)"$/ ) {
+                $php_value = $1;
+            }
+
+            # replace escaped string from php
+            $php_value =~ s/\\([^\d\w\s])/$1/g;
+
+            $bx_options->{$php_key} = $php_value;
+        }
+
+        # define("BX_TEMPORARY_FILES_DIRECTORY", "/home/bitrix/.bx_temp/dbksh770/")
+        if ( $line =~ /define\(\"($defined_options)\",\s*\"([^\"]+)\"/ )
+        {
+            my $dbconn_key   = $1;
+            my $dbconn_value = $2;
+
+            #print "$dbconn_key, $dbconn_value\n";
+
+            $bx_options->{ 'dbconn_' . $dbconn_key } = $dbconn_value;
+        }
+    }
+    close $dh;
+}
 sub bx_install_options {
     my $self = shift;
 
@@ -59,6 +339,7 @@ sub bx_install_options {
         DBConn                              => '',
         SiteKernelDir                       => '',
         dbconn_BX_TEMPORARY_FILES_DIRECTORY => '',
+        config_file                         => 'dbconn',
     };
 
     $logOutput->log_data(
@@ -75,201 +356,50 @@ sub bx_install_options {
     else {
         # test if configuration file exists
         my $dbconn_config = catfile( $site_kernel_dir, $self->file_dbconn );
-        if ( !-f $dbconn_config ) {
-            $bx_options->{'error'} = 3;
-            $bx_options->{'message'} =
-              "$message_p: Not found config file $dbconn_config on the host";
-            $logOutput->log_data(
-                "$message_p: Not found config file $dbconn_config");
 
-            # config found try get:
-            # 1. finished or not installation
-            # 2. DB options
+        # dbconn_config doesn't exists in new configuration
+        my $settings_config = catfile( $site_kernel_dir, $self->file_settings );
+
+        if ( !-f $dbconn_config ) {
+
+            if ( !-f $settings_config ) {
+                my $msg = "$message_p: There are no config files: "
+                  . $self->file_dbconn 
+                  . ", "
+                  . $self->file_settings;
+  
+                $bx_options->{'error'} = 3;
+                $bx_options->{'message'} = $msg;
+                $logOutput->log_data( $msg );
+            } else {
+                $bx_options->{config_file} = 'settings';
+                $self->bx_site_type($site_kernel_dir, $bx_options);
+            }
+
+        # config found try get:
+        # 1. finished or not installation
+        # 2. DB options
         }
         else {
-            # LINK - status of the install
-            if ( -l $site_kernel_dir ) {
-
-         # link file can contain own index.php => not found file, not found data
-                $bx_options->{'SiteInstall'} = 'link';
-                my $basic_kernel_dir = readlink($site_kernel_dir);
-                my $kernel_dir       = dirname($basic_kernel_dir);
-                $bx_options->{'SiteKernelDir'} = $kernel_dir;
-
-                my $bx_index_file = catfile( $site_root, 'index.php' );
-                if ( !-f $bx_index_file ) {
-                    $bx_options->{'SiteStatus'} = 'not_installed';
-                }
-                else {
-                    $bx_options->{'SiteStatus'} = 'finished';
-                }
-
-                # KERNEL- status of the install
-            }
-            else {
-# if folder contains bitrixsetup => suspect that finished installation doesn't contain it
-                $bx_options->{'SiteInstall'} = 'kernel';
-                if ( $site_conf !~ /^found$/ ) {
-                    $bx_options->{'SiteInstall'} = 'ext_kernel';
-                }
-
-                my $bx_setup_file = catfile( $site_root, 'bitrixsetup.php' );
-                if ( -f $bx_setup_file ) {
-                    $bx_options->{'SiteStatus'} = 'not_installed';
-                }
-                else {
-                    $bx_options->{'SiteStatus'} = 'finished';
-                }
-            }
-            $logOutput->log_data( "$message_p: found next options site_type="
-                  . $bx_options->{'SiteInstall'} );
-            $logOutput->log_data( "$message_p: found next options status="
-                  . $bx_options->{'SiteStatus'} );
-
-            # Get DB options from dbconn and test it
-            my $desired_options = 'DBName|DBType|DBLogin|DBPassword|DBHost';
-            my $defined_options = 'BX_TEMPORARY_FILES_DIRECTORY';
-            open( my $dh, '<', $dbconn_config )
-              or die "$message_p: Cannot open $dbconn_config: $!";
-            while ( my $line = <$dh> ) {
-                next if ( $line =~ /^$/ );
-                next if ( $line =~ /^#/ );
-                next if ( $line =~ /^;/ );
-                $line =~ s/^\s+//;
-                $line =~ s/\s+$//;
-                $line =~ s/\s*;$//;
-
-                if ( $line =~ /^\$($desired_options)\s*=(.+)$/ ) {
-                    my $php_key   = $1;
-                    my $php_value = $2;
-                    $php_value =~ s/^\s+//;
-                    $php_value =~ s/\s+$//;
-                    if ( $php_value =~ /^'(.*)'$/ ) {
-                        $php_value = $1;
-                    }
-                    if ( $php_value =~ /^"(.*)"$/ ) {
-                        $php_value = $1;
-                    }
-
-                    # replace escaped string from php
-                    $php_value =~ s/\\([^\d\w\s])/$1/g;
-
-                    $bx_options->{$php_key} = $php_value;
-                }
-
-     # define("BX_TEMPORARY_FILES_DIRECTORY", "/home/bitrix/.bx_temp/dbksh770/")
-                if ( $line =~ /define\(\"($defined_options)\",\s*\"([^\"]+)\"/ )
-                {
-                    my $dbconn_key   = $1;
-                    my $dbconn_value = $2;
-
-                    #print "$dbconn_key, $dbconn_value\n";
-
-                    $bx_options->{ 'dbconn_' . $dbconn_key } = $dbconn_value;
-                }
-            }
-            close $dh;
-
-            # test found options or create error message
-            my $test_options = '';
-            foreach my $opt ( 'DBName', 'DBHost', 'DBLogin', 'DBPassword' ) {
-                if ( not defined $bx_options ) {
-                    $test_options .= "$opt=not_defined ";
-                }
-            }
-
-            # some options is missing
-            if ( $test_options !~ /^$/ ) {
-                $logOutput->log_data(
-"$message_p: not found some mandatory options in $dbconn_config"
-                );
-                $logOutput->log_data("$message_p: $test_options");
-                $bx_options->{'error'} = 3;
-                $bx_options->{'message'} =
-                  "$message_p: in $dbconn_config $test_options";
-
-                # all options found
-            }
-            else {
-                # define DBtype if not dfeined in config
-                if ( not defined $bx_options->{'DBType'} ) {
-                    $bx_options->{'DBType'} = 'mysql';
-                }
-                if ( $bx_options->{'DBType'} !~ /^mysql$/ ) {
-                    $bx_options->{'error'} = 3;
-                    $bx_options->{'message'} =
-                      "$message_p: not supported DBType="
-                      . $bx_options->{'DBType'};
-
-                    # test DB connect
-                }
-                else {
-                    my $dbi_str =
-                        "DBI:mysql:"
-                      . $bx_options->{'DBName'}
-                      . ";host="
-                      . $bx_options->{'DBHost'}
-                      . ";port=3306";
-
-                    # add socket option for mysql
-                    if ( $bx_options->{'DBHost'} =~
-                        /^(localhost|localhost\.localdomain|127\.0\.0\.1)$/ )
-                    {
-                        $dbi_str .= ":mysql_socket=/var/lib/mysqld/mysqld.sock";
-                    }
-
-                    #print $dbi_str,"\n";
-                    #print "login: ", $bx_options->{'DBLogin'}, "\n";
-                    #print "pass ", $bx_options->{'DBPassword'}, "\n";
-
-                    my $dbh = DBI->connect(
-                        "$dbi_str",
-                        $bx_options->{'DBLogin'},
-                        $bx_options->{'DBPassword'},
-                        { PrintError => 0 },
-                    );
-                    if ( !$dbh ) {
-                        $bx_options->{'error'} = 3;
-                        $bx_options->{'message'} =
-"$message_p: Could not connect to database: $DBI::errstr";
-                        $logOutput->log_data(
-"$message_p: $message_p: Could not connect to database: $DBI::errstr"
-                        );
-                        $bx_options->{'DBConn'} = 'N';
-                    }
-                    else {
-                        my $sql = 'show create database `'
-                          . $bx_options->{'DBName'} . '`';
-                        my $sth = $dbh->prepare($sql);
-                        if ( $sth->execute ) {
-                            while ( my $row = $sth->fetchrow_hashref() ) {
-                                my $create_db_str = $row->{'Create Database'};
-                                if ( $create_db_str =~ /\s+cp1251\s+/ ) {
-                                    $bx_options->{'SiteCharset'} =
-                                      'windows-1251';
-                                }
-                                elsif ( $create_db_str =~ /\s+utf8\s+/ ) {
-                                    $bx_options->{'SiteCharset'} = 'utf-8';
-                                }
-                                else {
-                                    if ( $create_db_str =~
-                                        /CHARACTER SET\s+(\S+)\s+/ )
-                                    {
-                                        $bx_options->{'SiteCharset'} = $1;
-                                    }
-                                }
-                            }
-                        }
-                        $sth->finish;
-                        $dbh->disconnect;
-                        $logOutput->log_data(
-"$message_p: $message_p: Successfully connect to database: $dbi_str"
-                        );
-                        $bx_options->{'DBConn'} = 'Y';
-                    }
-                }
-            }
+            $self->bx_site_type($site_kernel_dir, $bx_options);
         }
+        $logOutput->log_data( "$message_p: there is site_type="
+            . $bx_options->{'SiteInstall'} );
+        $logOutput->log_data( "$message_p: there is status="
+            . $bx_options->{'SiteStatus'} );
+        if ( $bx_options->{config_file} eq "dbconn" ){
+            $self->bx_dbconn($dbconn_config, $bx_options);
+
+            if ( $bx_options->{DBHost} eq "" ||
+            $bx_options->{DBLogin} eq "" ||
+            $bx_options->{DBPassword} eq "" || 
+            $bx_options->{DBName} eq ""){
+                $self->bx_settings($settings_config, $bx_options);
+            }
+        }else{
+            $self->bx_settings($settings_config, $bx_options);
+        }
+        $self->bx_test_mysql_opts($bx_options);
     }
 
     return $bx_options;
@@ -320,10 +450,10 @@ sub bx_modules_options {
               "$message_p: Cannot find version for main module";
         }
     }
+
     # upload directory
     my $upload_dir_select = qq(select VALUE from b_option 
     where MODULE_ID="main" and NAME="upload_dir");
-
 
     # test if b_options exists on site
     my @test_modules =
@@ -356,21 +486,21 @@ sub bx_modules_options {
 
     # get upload directory
     my $sth_u = $dbh->prepare("$upload_dir_select");
-    if ( ! $sth_u ){
+    if ( !$sth_u ) {
         $modules_options->{'error'} = 5;
         $modules_options->{'message'} =
           "$message_p: query $upload_dir_select return error " . $dbh->errstr;
         $logOutput->log_data(
-            "$message_p: query $upload_dir_select return error " . $dbh->errstr );
+            "$message_p: query $upload_dir_select return error "
+              . $dbh->errstr );
         return $modules_options;
     }
-    if ( $sth_u->execute ){
+    if ( $sth_u->execute ) {
         my $row = $sth_u->rows;
-        if ( $row> 0 ){
+        if ( $row > 0 ) {
             while ( my $data = $sth_u->fetchrow_hashref ) {
                 my $upload_dir = $data->{'VALUE'};
-                $modules_options->{ 'upload_dir' } =
-                    $upload_dir;
+                $modules_options->{'upload_dir'} = $upload_dir;
             }
         }
     }
@@ -395,8 +525,7 @@ sub bx_modules_options {
             # test all modules one by one
             while ( my $data = $sth_t->fetchrow_hashref ) {
                 my $module_name = $data->{'ID'};
-                $modules_options->{ 'module_' . $module_name } =
-                    'installed';
+                $modules_options->{ 'module_' . $module_name } = 'installed';
             }
         }
         else {

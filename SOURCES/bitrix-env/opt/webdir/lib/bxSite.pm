@@ -163,7 +163,7 @@ sub get_nginx_options {
         if (/^proxy_ignore_client_abort\s+on;$/) {
             $nginx_options->{'proxy_ignore_client_abort'} = 'on';
         }
-        # bx/site_settings/ksh770.office.bitrix.ru/
+        # bx/site_settings/<SiteName>
         if (/^include\s+(bx\/site_settings\/[^\/]+)\/\*\.conf;$/) {
             my $sub_dir = $1;
             my $settings_dir = catfile('/etc/nginx/', $sub_dir);

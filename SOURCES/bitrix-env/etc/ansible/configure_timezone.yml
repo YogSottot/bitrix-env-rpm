@@ -9,7 +9,7 @@
   hosts: bitrix-hosts
   vars:
     timezone_string: NOT_DEFINED
-    timezone_default: Europe/Moscow
+    timezone_default: UTC
     timezone_php_update: update
   handlers:
     - name: restart httpd

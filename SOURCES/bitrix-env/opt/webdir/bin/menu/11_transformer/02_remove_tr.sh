@@ -5,7 +5,7 @@ PROGPATH=$(dirname $0)
 . $PROGPATH/functions.sh || exit 1
 logo=$(get_logo)
 
-# /opt/webdir/bin/bx-sites -a configure_transformer --site ksh.office.bitrix.ru --root /home/bitrix/ext_www/ksh.office.bitrix.ru --hostname vm04
+# /opt/webdir/bin/bx-sites -a configure_transformer --site sitename --root /home/bitrix/ext_www/sitename --hostname vm04
 remove_tr(){
     if [[ -z $TR_SERVER ]]; then
         cache_transfomer_status

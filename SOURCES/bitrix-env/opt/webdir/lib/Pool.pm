@@ -1523,7 +1523,7 @@ sub reboot_server {
 
 sub timezone_in_the_pool {
     my $self   = shift;
-    my $tz     = shift;    # timezone, default: Europe/Moscow
+    my $tz     = shift;    # timezone, default: UTC
     my $tz_php = shift;    # update php settings or not
 
     my $message_p = ( caller(0) )[3];
@@ -1537,7 +1537,7 @@ sub timezone_in_the_pool {
     if ( $tz_php == 0 ) { $update_str = 'not_update'; }
 
     if ( not defined $tz ) {
-        $tz = 'Europe/Moscow';
+        $tz = 'UTC';
     }
 
     # initilize data

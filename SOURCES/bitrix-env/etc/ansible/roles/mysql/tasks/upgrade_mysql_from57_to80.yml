@@ -36,6 +36,19 @@
   bx_perf:
     state: performance
 
+- name: Create additional service config
+  file:
+    path: /etc/systemd/system/mysqld.service.d
+    state: directory
+    
+- name: Copy service config
+  copy:
+    src: mysql-limits.conf
+    dest: /etc/systemd/system/mysqld.service.d/limit.conf
+
+- name: reload systmd configuration
+  shell: systemctl daemon-reload
+
 - name: Restore my.cnf
   template:
     src: my80.cnf.j2

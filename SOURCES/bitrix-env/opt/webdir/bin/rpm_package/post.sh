@@ -15,8 +15,8 @@ OS_VERSION=$(cat /etc/redhat-release | \
     sed -e "s/CentOS Linux release//;s/CentOS release // " | cut -d'.' -f1 | \
     sed -e "s/\s\+//g")
 UPDATE_TM=$(date +'%Y%m%d%H%M')
-PHP_VERSION=$(php -v | grep ^PHP | awk '{print $2}' | awk -F'.' '{print $1}')
-PHP_VERSION_MID=$(php -v | grep ^PHP | awk '{print $2}' | awk -F'.' '{print $2}')
+PHP_VERSION=$(php -v 2>/dev/null | grep ^PHP | awk '{print $2}' | awk -F'.' '{print $1}')
+PHP_VERSION_MID=$(php -v 2>/dev/null | grep ^PHP | awk '{print $2}' | awk -F'.' '{print $2}')
 NGINX_VERSION=$(nginx -v 2>&1 | grep "^nginx version" | awk -F'/' '{print $2}')
 MYSQL_CNF=/root/.my.cnf
 MYSQL_USER_BASE=bitrix
@@ -528,6 +528,13 @@ install_mysql(){
         systemd-tmpfiles --create /etc/tmpfiles.d/$MYSQL_SERVICE.conf
         log_to_file "Create configuration for $MYSQL_SERVICE pid file"
 
+        if [[ $MYSQL_UNI_VERSION -ge 57  ]]; then
+            mkdir /etc/systemd/system/mysqld.service.d -p
+            echo -e "[Service]\nLimitNOFILE=65535" > \
+                /etc/systemd/system/mysqld.service.d/limit.conf
+            log_to_file "Create system/mysqld.service.d/limit.conf"
+        fi
+
         systemctl daemon-reload
     fi
 
@@ -689,6 +696,11 @@ create_default_bx_temp(){
     BXTEMP_FILE_INCLUDE="include bx/site_settings/default"
     FILES="/etc/nginx/bx/site_avaliable/s1.conf /etc/nginx/bx/site_avaliable/ssl.s1.conf"
     for conf in $FILES; do
+        if [[ ! -f $conf ]]; then
+            log_to_file "There is no file=$conf"
+            continue
+        fi
+
         if [[ $(grep -c "$BXTEMP_FILE_INCLUDE" $conf) -eq 0 ]]; then
             log_to_file "Update $conf; add $BXTEMP_FILE_INCLUDE"
 
@@ -728,8 +740,12 @@ create_site_settings(){
             mv -f ./bitrix/php_interface/dbconn.php.crm ./bitrix/php_interface/dbconn.php
         else
             log_to_file "Create settings from general files"
-            rm -f ./bitrix/.settings.php.crm
-            rm -f ./bitrix/php_interface/dbconn.php.crm
+            rm -f ./bitrix/.settings.php.crm \
+                ./bitrix/.settings.php.crm.orig \
+                ./bitrix/.settings.php.orig \
+                ./bitrix/php_interface/dbconn.php.crm \
+                ./bitrix/php_interface/dbconn.php.crm.orig \
+                ./bitrix/php_interface/dbconn.php.orig
         fi
         rm -f vm_kernel.tar.gz
         popd >/dev/null 2>&1
@@ -1217,7 +1233,7 @@ configure_php(){
     fi
 
     # update php settings for php7
-    if [[ ( $PHP_VERSION -eq 7 ) && ( -d $SITE_DIR ) ]]; then
+    if [[ ( $PHP_VERSION -ge 7 ) && ( -d $SITE_DIR ) ]]; then
         # site configuration
         DBCON=$SITE_DIR/bitrix/php_interface/dbconn.php
         is_use_mysqli_enabled=$(grep -v '^#' $DBCON | grep -w 'BX_USE_MYSQLI' | grep -wc true )
@@ -1931,6 +1947,16 @@ upgrade_fixes(){
 
     # Update HTTP to HTTPS
     REPO_FILE=/etc/yum.repos.d/bitrix.repo
+    if [[ $(cat $REPO_FILE | grep -c "repo.bitrix.info") -eq 0 ]]; then
+        if [[ $(cat $REPO_FILE | grep -c beta) -gt 0 ]]; then
+            cp -f /etc/ansible/bvat_conf/bitrix.repo.beta \
+                $REPO_FILE
+        else
+            cp -f /etc/ansible/bvat_conf/bitrix.repo.main \
+                $REPO_FILE
+        fi
+    fi
+
     if [[ $(cat $REPO_FILE | grep -c "http://") -gt 0 ]]; then
         sed -i 's|http://|https://|g' $REPO_FILE
         log_to_file "Change repository URL from HTTP to HTTPS"
@@ -1984,6 +2010,14 @@ upgrade_fixes(){
                 log_to_file "Update $file; disable Options Indexes."
             fi
         done
+    fi
+
+    # dehydrated
+    #
+    if [[ ! -f /home/bitrix/dehydrated/hook.sh ]]; then
+        cp -f /etc/ansible/roles/web/files/dehydrated/hook.sh \
+            /home/bitrix/dehydrated/hook.sh
+        log_to_file "Create /home/bitrix/dehydrated/hook.sh file."
     fi
 }
 
@@ -2044,7 +2078,7 @@ localtime_sync(){
     CFG_SYSCLOCK="/etc/sysconfig/clock"
     CFG_LOCALTIME="/etc/localtime"    
     TZ_DB="/usr/share/zoneinfo"
-    TZ_DEFAULT="Europe/Moscow"
+    TZ_DEFAULT="UTC"
     CFG_PHP="/etc/php.d/bitrixenv.ini"
 
     # TZ_CLOCK  - /etc/sysconfig/clock

@@ -107,7 +107,7 @@ get_transformer_status(){
         exit
     fi
 
-    # host:vm04:192.168.3.36:mgmt,mysql_master_1,transformer,web:1593762477_1HlCHyL4NS:vm04:ksh.office.bitrix.ru;/home/bitrix/ext_www/ksh.office.bitrix.ru
+    # host:vm04:192.168.3.36:mgmt,mysql_master_1,transformer,web:1593762477_1HlCHyL4NS:vm04:sitename;/home/bitrix/ext_www/sitename
     IFS_BAK=$IFS
     IFS=$'\n'
     for line in $info; do

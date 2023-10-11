@@ -786,7 +786,7 @@ print_site_list_point_options(){
                 grep 'bxSite:custom_options:' | sed -e 's/^bxSite:custom_options://')
  
             #default:s1.conf:ssl.s1.conf:/etc/nginx/bx/site_avaliable:/etc/nginx/bx/site_enabled:/etc/httpd/bx/conf/default.conf:/home/bitrix/www:/tmp/php_sessions/www:/tmp/php_upload/www:off
-            # bxSite:custom_options:ksh770.office.bitrix.ru:on:on:/home/bitrix/.bx_temp/dbksh770
+            # bxSite:custom_options:sitename.bitrix:on:on:/home/bitrix/.bx_temp/dbksh770
             _proxy_ignore_client_abort=$(echo "$_site_configs" | awk -F':' '{print $10}')
             _nginx_custom_settings=$(echo "$_site_custom" | awk -F':' '{print $2}')
             _nginx_bx_temp_files_dir_conf=$(echo "$_site_custom" | awk -F':' '{print $3}')

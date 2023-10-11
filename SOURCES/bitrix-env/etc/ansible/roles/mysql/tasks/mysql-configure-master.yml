@@ -1,9 +1,17 @@
 ---
 # remove replication from slave server
 # set read-only mode 
+- include_tasks: setup.yml
+  vars:
+    type: master
+
 - name: update replication settings in /etc/mysql/conf.d/bx_replica.cnf
-  template: src=bx_replica.cnf.j2 dest={{ mysql_configs }}/bx_replica.cnf
-    owner=root group=root mode=0644
+  template:
+    src: bx_replica.cnf.j2
+    dest: "{{ mysql_configs }}/bx_replica.cnf"
+    owner: root
+    group: root
+    mode: 0644
   tags: mysql
 
 - name: restart mysqld service 

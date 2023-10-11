@@ -489,7 +489,7 @@ get_bx_packages(){
     php_union_version=${php_version_up}${php_version_mid}
     php_supported_versions=(56 70 71 72 73)
     if [[ $OS_VERSION -eq 7 ]]; then
-        php_supported_versions=(56 70 71 72 73 74 80)
+        php_supported_versions=(56 70 71 72 73 74 80 81 82)
     fi
 
     php_upgraded_versions=()

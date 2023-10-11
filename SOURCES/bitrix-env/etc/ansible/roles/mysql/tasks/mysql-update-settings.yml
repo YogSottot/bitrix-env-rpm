@@ -8,6 +8,7 @@
 - name: replica password
   set_fact:
     replica_password: "{{ lookup('file', replica_password_file) }}"
+    disable_log: '0'
   when: replica_password_file is defined
   tags: vars
 

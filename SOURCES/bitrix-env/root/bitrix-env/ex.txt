@@ -1,8 +1,0 @@
-bitrix/cache
-bitrix/managed_cache
-bitrix/stack_cache
-bitrix/local_cache
-bitrix/backup
-bitrix/tmp
-upload/tmp
-upload/resize_cache

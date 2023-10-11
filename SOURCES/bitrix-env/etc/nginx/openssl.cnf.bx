@@ -106,13 +106,11 @@ emailAddress		= optional
  output_password        = mypass
 
  [ req_distinguished_name ]
- C                      = RU
- ST                     = Moscow
- L                      = Kaliningrad
- O                      = Bitrix
+ C                      = EU
+ O                      = Bitrix Inc.
  OU                     = Bitrix R&D
  CN                     = Bitrix
- emailAddress           = test@email.address
+ emailAddress           = support@bitrixsoft.com
 
 [ req_attributes ]
 challengePassword		= A challenge password

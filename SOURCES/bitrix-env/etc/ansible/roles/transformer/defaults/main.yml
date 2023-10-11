@@ -2,7 +2,7 @@
 libreoffice_version: 6.4.4
 libreoffice_name: "LibreOffice_{{ libreoffice_version   }}_Linux_x86-64_rpm"
 libreoffice_file: "{{ libreoffice_name }}.tar.gz"
-libreoffice_url: "https://repos.1c-bitrix.ru/sources/{{ libreoffice_file }}"
+libreoffice_url: "https://repo.bitrix.info/sources/{{ libreoffice_file }}"
 
 is_create: false
 is_remove: false

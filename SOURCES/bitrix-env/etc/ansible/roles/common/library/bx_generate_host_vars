@@ -13,7 +13,7 @@ use JSON;
 use Data::Dumper;
 
 
-# search="server_name www.bitrix.ru;" basedir=/etc/nginx/bx/site_avaliable regexp=\.conf$
+# search="server_name www.bitrix.info;" basedir=/etc/nginx/bx/site_avaliable regexp=\.conf$
 my $options_file  = $ARGV[0];
 
 # parse ansible argv file

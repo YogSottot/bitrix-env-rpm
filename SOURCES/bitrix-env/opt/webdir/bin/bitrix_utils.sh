@@ -2141,10 +2141,10 @@ bx_enable_beta_version(){
     echo "[bitrix-beta]
 name=Bitrix Env Beta - CentOS-$OS_VERSION - \$basearch
 failovermethod=priority
-baseurl=https://repos.1c-bitrix.ru/yum-beta/el/$OS_VERSION/\$basearch
+baseurl=https://repo.bitrix.info/yum-beta/el/$OS_VERSION/\$basearch
 enabled=1
 gpgcheck=1
-gpgkey=https://repos.1c-bitrix.ru/yum/RPM-GPG-KEY-BitrixEnv
+gpgkey=https://repo.bitrix.info/yum/RPM-GPG-KEY-BitrixEnv
 " > /etc/yum.repos.d/bitrix.repo
 
     yum clean all >/dev/null 2>&1
@@ -2156,10 +2156,10 @@ bx_disable_beta_version(){
     echo "[bitrix]
 name=Bitrix Env - CentOS-$OS_VERSION - \$basearch
 failovermethod=priority
-baseurl=https://repos.1c-bitrix.ru/yum/el/$OS_VERSION/\$basearch
+baseurl=https://repo.bitrix.info/yum/el/$OS_VERSION/\$basearch
 enabled=1
 gpgcheck=1
-gpgkey=https://repos.1c-bitrix.ru/yum/RPM-GPG-KEY-BitrixEnv
+gpgkey=https://repo.bitrix.info/yum/RPM-GPG-KEY-BitrixEnv
 " > /etc/yum.repos.d/bitrix.repo
 
     yum clean all >/dev/null 2>&1

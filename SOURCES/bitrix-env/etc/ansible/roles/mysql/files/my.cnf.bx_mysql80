@@ -15,6 +15,7 @@ socket = /var/lib/mysqld/mysqld.sock
 
 [mysqld]
 default-authentication-plugin=mysql_native_password
+innodb_redo_log_capacity=128M
 
 # Basic mysql server configuration
 user = mysql
@@ -50,7 +51,6 @@ tmp_table_size = 32M
 innodb_file_per_table
 innodb_buffer_pool_size	= 32M
 innodb_flush_log_at_trx_commit = 2
-innodb_log_file_size = 64M
 innodb_flush_method = O_DIRECT
 innodb_strict_mode = OFF
 

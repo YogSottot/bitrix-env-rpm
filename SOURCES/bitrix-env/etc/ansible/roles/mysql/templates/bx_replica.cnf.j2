@@ -1,12 +1,15 @@
 # {{ ansible_managed }}
 #
 {% set play_role = new_replication_role|default('slave') %}
+{% set mysql_version = mysql_uni_version|default('57') %}
+
 [mysqld]
- server-id = {{ mysql_serverid }}
+server-id = {{ mysql_serverid }}
 {% if mysql_enable_logs == 1 %}
  ## enable logging message
  log-error                       = {{ mysql_logs }}/error.log
 {% endif %}
+
 {% if mysql_enable_slow == 1 %}
 ## enable slow requests logging
  slow-query-log-file             = {{ mysql_logs }}/slow.log
@@ -14,10 +17,15 @@
  long-query-time                 = {{ mysql_time_slow }}
  log-slow-slave-statements
 {% endif %}
+
 {% if mysql_replication_role == 'master' or play_role == 'master'  %}
 ## define binlog options for master server
  binlog_cache_size = 128K
- expire_logs_days  = {{ mysql_expire_logs_days }}
+    {% if mysql_version == '80' %}
+    binlog_expire_logs_seconds = 864000
+    {% else %}
+    expire_logs_days  = {{ mysql_expire_logs_days }}
+    {% endif %}
  max_binlog_size   = {{ mysql_max_binlog_size }}
  binlog-format     = mixed
  log-bin           = mysql-bin

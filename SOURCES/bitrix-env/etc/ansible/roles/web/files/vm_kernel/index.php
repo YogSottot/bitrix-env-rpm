@@ -1,47 +1,65 @@
-<?
-error_reporting(E_ALL &~E_NOTICE);
+<?php
+error_reporting(E_ALL & ~E_NOTICE);
 header("Content-type: text/html; charset=utf-8");
 
-if (@preg_match('#ru#i',$_SERVER['HTTP_ACCEPT_LANGUAGE']))
-	$lang = 'ru';
-elseif (@preg_match('#de#i',$_SERVER['HTTP_ACCEPT_LANGUAGE']))
-	$lang = 'de';
-
-if ($_REQUEST['lang'])
+if (isset($_REQUEST['lang']))
+{
 	$lang = $_REQUEST['lang'];
 
-if (!in_array($lang,array('ru','en','de')))
+	if (!in_array($lang, ['ru','en','de']))
+	{
+		$lang = 'en';
+	}
+}
+elseif (@preg_match('#ru#i', $_SERVER['HTTP_ACCEPT_LANGUAGE'] ?? ''))
+{
+	$lang = 'ru';
+}
+elseif (@preg_match('#de#i', $_SERVER['HTTP_ACCEPT_LANGUAGE'] ?? ''))
+{
+	$lang = 'de';
+}
+else
+{
 	$lang = 'en';
+}
 
 define("LANG", $lang);
 
 if (LANG == 'ru')
 {
-	$msg['hello'] = "Добро пожаловать!";
-	$msg['title'] = "Добро пожаловать<br/>в виртуальную машину VMBitrix!";
-	$msg['desc'] = "Система оптимально сконфигурирована и готова к использованию<br/>\"1С-Битрикс: Управление сайтом\", \"1С-Битрикс: Энтерпрайз\" и \"1С-Битрикс24\".<br>";
-	$msg['setup'] = "Установить";
-	$msg['restore'] = "Восстановить копию";
-	$msg['crm_title'] = "Бизнес работает в ";
+	$msg = [
+		'hello' => "Добро пожаловать!",
+		'title' => "Добро пожаловать<br/>в виртуальную машину VMBitrix!",
+		'desc' => "Система оптимально сконфигурирована и готова к использованию<br/>\"1С-Битрикс: Управление сайтом\", \"1С-Битрикс: Энтерпрайз\" и \"1С-Битрикс24\".<br>",
+		'setup' => "Установить",
+		'restore' => "Восстановить копию",
+		'crm_title' => "Бизнес работает в ",
+	];
 }
-elseif(LANG == 'de')
+elseif (LANG == 'de')
 {	
-	$msg['hello'] = "Willkommen!";
-	$msg['title'] = "Herzlich willkommen<br/>bei der virtuellen Maschine VMBitrix!";
-	$msg['desc'] = "Das System ist für die Verwendung von<br/>\"Bitrix24\" und \"Bitrix Site Manager \" optimal konfiguriert und einsatzbereit\".<br>";
-	$msg['setup'] = "Installieren";
-	$msg['restore'] = "Aus dem Backup wiederherstellen";
-	$msg['crm_title'] = "Your company. United.";
+	$msg = [
+		'hello' => "Willkommen!",
+		'title' => "Herzlich willkommen<br/>bei der virtuellen Maschine VMBitrix!",
+		'desc' => "Das System ist für die Verwendung von<br/>\"Bitrix24\" und \"Bitrix Site Manager \" optimal konfiguriert und einsatzbereit\".<br>",
+		'setup' => "Installieren",
+		'restore' => "Aus dem Backup wiederherstellen",
+		'crm_title' => "Your company. United.",
+	];
 }
 else
 {
-	$msg['hello'] = "Welcome!";
-	$msg['title'] = "Welcome to<br>Bitrix Virtual Appliance!";
-	$msg['desc'] = "System is optimally configured and is ready<br/>to be used with \"Bitrix Site Manager\" and \"Bitrix24\".<br>";
-	$msg['setup'] = "Install";
-	$msg['restore'] = "Restore from the backup";
-	$msg['crm_title'] = "Your company. United.";
+	$msg = [
+		'hello' => "Welcome!",
+		'title' => "Welcome to<br>Bitrix Virtual Appliance!",
+		'desc' => "System is optimally configured and is ready<br/>to be used with \"Bitrix Site Manager\" and \"Bitrix24\".<br>",
+		'setup' => "Install",
+		'restore' => "Restore from the backup",
+		'crm_title' => "Your company. United.",
+	];
 }
+
 $isCrm = getenv('BITRIX_ENV_TYPE') == 'crm';
 ?>
 <html>
@@ -450,11 +468,11 @@ $isCrm = getenv('BITRIX_ENV_TYPE') == 'crm';
 	</style>
 	<div class="wrap <?=LANG?>">
 		<header class="header">
-			<?if ($isCrm):?>
+			<?php if ($isCrm):?>
 			<a href="" target="_blank" class="logo-link"><span class="logo <?=LANG?>"></span></a>
-			<?else:?>
+			<?php else:?>
 			<a href="" target="_blank" class="buslogo-link"><span class="buslogo <?=LANG?>"></span></a>
-			<?endif?>
+			<?php endif?>
 		</header>
 
 		<section class="content">
@@ -464,18 +482,18 @@ $isCrm = getenv('BITRIX_ENV_TYPE') == 'crm';
 					<div class="cloud cloud-8 cloud-border"></div>
 				</div>
 				<div class="content-block">
-					<?if ($isCrm):?>
-						<?if (LANG == "ru"):?>
+					<?php if ($isCrm):?>
+						<?php if (LANG == "ru"):?>
 							<h1 class="content-header"><?=$msg['crm_title']?></h1>
 							<div class="content-logo <?=LANG?>"></div>
-						<?else:?>
+						<?php else:?>
 							<div class="content-logo <?=LANG?>" style="margin-top:62px"></div>
 							<h1 class="content-header" style="margin-top:15px"><?=$msg['crm_title']?></h1>
-						<?endif?>
-					<?else:?>
+						<?php endif?>
+					<?php else:?>
 						<h2 class="content-header" style="color: #000;margin: 46px 0 30px;"><?=$msg['title']?></h2>
 						<p><?=$msg['desc']?></p>
-					<?endif?>
+					<?php endif?>
 					<hr>
 					<div style="padding-bottom: 10px;">
 						<a href="bitrixsetup.php?lang=<?=LANG?>" class="setup-btn"><?=$msg['setup']?></a>
@@ -487,14 +505,14 @@ $isCrm = getenv('BITRIX_ENV_TYPE') == 'crm';
 					<div class="select-container" onclick="document.getElementById('lang-popup').style.display = document.getElementById('lang-popup').style.display == 'block' ? 'none' : 'block'">
 						<label for="ss"><span class="selected-lang lang <?=$lang?>"></span></label>
 						<div class="select-popup" id="lang-popup">
-							<?
-							foreach(array('en','de','ru') as $l)
+							<?php
+							foreach (['en','de','ru'] as $l)
 							{
 								?>
 								<div class="select-lang-item">
 									<a href="?lang=<?=$l?>" class="lang <?=$l?>"><?=$l?></a>
 								</div>
-								<?
+								<?php
 							}
 							?>
 						</div>

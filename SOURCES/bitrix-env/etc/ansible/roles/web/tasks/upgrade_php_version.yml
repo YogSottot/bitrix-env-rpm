@@ -30,3 +30,11 @@
   when: to_php_version >= 80
     and 80 in php_upgraded_versions
 
+- include_tasks: upgrade_php81.yml
+  when: to_php_version >= 81
+    and 81 in php_upgraded_versions
+
+- include_tasks: upgrade_php82.yml
+  when: to_php_version >= 82
+    and 82 in php_upgraded_versions
+

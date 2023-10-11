@@ -14,7 +14,9 @@ nice = 0
 socket = /var/lib/mysqld/mysqld.sock
 
 [mysqld]
-default-authentication-plugin=mysql_native_password
+authentication_policy=mysql_native_password
+disable_log_bin
+innodb_redo_log_capacity=128M
 
 # Basic mysql server configuration
 user = mysql
@@ -29,7 +31,6 @@ transaction-isolation = READ-COMMITTED
 max_allowed_packet = 16M
 myisam-recover-options = BACKUP
 explicit_defaults_for_timestamp = 1
-expire_logs_days = 10
 max_binlog_size = 100M
 sql_mode = ""
 
@@ -50,7 +51,6 @@ tmp_table_size = 32M
 innodb_file_per_table
 innodb_buffer_pool_size	= 32M
 innodb_flush_log_at_trx_commit = 2
-innodb_log_file_size = 64M
 innodb_flush_method = O_DIRECT
 innodb_strict_mode = OFF
 

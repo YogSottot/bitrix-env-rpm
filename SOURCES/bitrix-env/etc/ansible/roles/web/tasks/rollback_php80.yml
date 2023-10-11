@@ -1,0 +1,39 @@
+---
+# 1. copy /etc/php.d files
+# 3. remove current version php
+# 4. install old version php
+# 5. restart httpd
+- shell: rsync -a --delete /etc/php.d/ /opt/webdir/tmp/php.d/
+  args:
+    creates: /opt/webdir/tmp/php.d/bitrixenv.ini
+
+- name: enable remi php80 repository
+  ini_file: 
+    dest: /etc/yum.repos.d/remi-php80.repo
+    section: remi-php80
+    option: enabled
+    value: 1
+  tags: remi
+
+- name: disable remi php81 repository
+  ini_file: 
+    dest: /etc/yum.repos.d/remi-php81.repo
+    section: remi-php81
+    option: enabled
+    value: 0
+  tags: remi
+
+- include_tasks: reinstall_php.yml
+  vars:
+    is_php71: false
+    is_php56: false
+    is_json_module: false
+
+- include: php_ext_dublicates.yml
+
+- name: convert extension names
+  shell: /opt/webdir/bin/convert_phpd_files.sh
+
+- name: restart httpd
+  service: name=httpd state=restarted
+

@@ -15,6 +15,9 @@
     bx_site_info: "{{ hostvars[inventory_hostname]['bx_sites'][0] }}"
   tags: configure_site
 
+- debug:
+    msg: "{{ web_site_name }} {{ web_site_dir }}"
+
 - name: set variables for deleted site
   set_fact:
     web_site_dir:       "{{ bx_site_info.DocumentRoot }}"
@@ -73,6 +76,18 @@
 
 ####
 ######## /delete site config data
+#
+# delete dehydrated settings
+- name: Delete dehydrated file
+  file:
+    path: "/home/bitrix/dehydrated/domains/{{ web_site_name }}.txt"
+    state: absent
+
+- name: Delete record in dehydrated domain.txt
+  lineinfile:
+    path: /home/bitrix/dehydrated/domains.txt
+    regexp: "{{ web_site_name }}"
+    state: absent
 
 ####
 ######## delete files data

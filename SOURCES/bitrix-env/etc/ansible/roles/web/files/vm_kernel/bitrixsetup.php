@@ -1,4 +1,4 @@
-<?
+<?php
 ########## Proxy config ######
 $proxyAddr = "";
 $proxyPort = "";
@@ -11,26 +11,27 @@ header("Cache-Control: must-revalidate, post-check=0, pre-check=0");
 header("Expires: 0");
 header("Pragma: public");
 
-error_reporting(E_ALL &~ E_NOTICE);
-if(version_compare(phpversion(), '5.3.0') == -1)
-	die('PHP 5.3.0 or higher is required!');
+error_reporting(E_ALL & ~E_NOTICE);
+if(version_compare(phpversion(), '7.3.0') == -1)
+	die('PHP 7.3.0 or higher is required!');
 
 if(!function_exists('gzopen'))
-	die('GZIP module is not installed!');
+	die('zlib module is not installed!');
 
 ob_implicit_flush(true);
 set_time_limit(1800);
 define('TIMEOUT',10);
 
+$lang = 'en';
 if (@preg_match('#ru#i',$_SERVER['HTTP_ACCEPT_LANGUAGE']))
 	$lang = 'ru';
 elseif (@preg_match('#de#i',$_SERVER['HTTP_ACCEPT_LANGUAGE']))
 	$lang = 'de';
 
-if ($_REQUEST['lang'])
+if (isset($_REQUEST['lang']))
 	$lang = $_REQUEST['lang'];
 
-if (!in_array($lang,array('ru','en','de')))
+if (!in_array($lang, array('ru','en','de')))
 	$lang = 'en';
 
 define("LANG", $lang);
@@ -50,8 +51,8 @@ if (!defined("BX_DIR_PERMISSIONS"))
 if (!defined("BX_FILE_PERMISSIONS"))
 	define("BX_FILE_PERMISSIONS", 0644);
 
-$strAction = $_REQUEST["action"];
-$edition = $_REQUEST['edition'];
+$strAction = $_REQUEST["action"] ?? '';
+$edition = $_REQUEST['edition'] ?? 0;
 
 if ($short = (getenv('BITRIX_ENV_TYPE') == 'crm'))
 {
@@ -107,6 +108,7 @@ else
 			array(
 				'NAME' => '1С-Битрикс24',
 				'LIST' => array(
+					'portal/bitrix24_shop' => 'Интернет-магазин плюс CRM',
 					'portal/bitrix24' => 'Корпоративный портал',
 					'portal/bitrix24_enterprise' => 'Энтерпрайз',
 				)
@@ -115,8 +117,6 @@ else
 				'NAME' => 'Отраслевые решения 1С-Битрикс',
 				'LIST' => array(
 					'edu/eduportal' => 'Внутренний портал учебного заведения',
-					'gossite_ua' => 'Офіційний сайт державної організації для України',
-					'conf/conference' => 'Сайт конференций',
 				),
 			),
 		),
@@ -168,7 +168,7 @@ if (LANG == "ru")
 	$MESS["LOADER_IS_DISTR"] = "На сайте найдены загруженые дистрибутивы. Нажмите на название любого из дистрибутивов для его распаковки:";
 	$MESS["LOADER_OVERWRITE"] = "<b>Внимание!</b> Существующие на сайте файлы могут быть перезаписаны файлами из дистрибутива.";
 	$MESS["LOADER_IS_DISTR_PART"] = "На сайте найдены недогруженные дистрибутивы. Нажмите на название любого из недогруженных дистрибутивов для полной загрузки:";
-	$MESS["LOADER_NEW_LOAD_TITLE"] = "Загрузка дистрибутива с сайта <a href=\"http://www.1c-bitrix.ru\" target=\"_blank\">http://www.1c-bitrix.ru</a>";
+	$MESS["LOADER_NEW_LOAD_TITLE"] = "Загрузка дистрибутива с сайта <a href=\"https://www.1c-bitrix.ru\" target=\"_blank\">https://www.1c-bitrix.ru</a>";
 	$MESS["LOADER_NEW_ED"] = "Выбор дистрибутива";
 	$MESS["LOADER_NEW_VERSION"] = "Доступна новая версия скрипта установки, но загрузить её не удалось";
 	$MESS["LOADER_NEW_AUTO"] = "Автоматически запустить распаковку после загрузки";
@@ -180,7 +180,7 @@ if (LANG == "ru")
 	$MESS["LOADER_NEW_STEPS180"] = "не более 180 секунд";
 	$MESS["LOADER_NEW_STEPS240"] = "не более 240 секунд";
 	$MESS["LOADER_NEW_LOAD"] = "Загрузить";
-	$MESS["LOADER_DESCR"] = "Этот скрипт предназначен для загрузки дистрибутивов \"1С-Битрикс\" с сайта <a href=\"http://www.1c-bitrix.ru/download/index.php\" target=\"_blank\">www.1c-bitrix.ru</a> непосредственно на ваш сайт, а так же для распаковки дистрибутива на вашем сайте.<br><br> Загрузите этот скрипт в корневую папку вашего сайта и откройте его в браузере (введите в адресной строке браузера <nobr>http://&lt;ваш сайт&gt;/".$this_script_name."</nobr>).";
+	$MESS["LOADER_DESCR"] = "Этот скрипт предназначен для загрузки дистрибутивов \"1С-Битрикс\" с сайта <a href=\"https://www.1c-bitrix.ru/download/index.php\" target=\"_blank\">www.1c-bitrix.ru</a> непосредственно на ваш сайт, а так же для распаковки дистрибутива на вашем сайте.<br><br> Загрузите этот скрипт в корневую папку вашего сайта и откройте его в браузере (введите в адресной строке браузера <nobr>http://&lt;ваш сайт&gt;/".$this_script_name."</nobr>).";
 	$MESS["LOADER_BACK_2LIST"] = "Вернуться в список дистрибутивов";
 	$MESS["LOADER_BACK"] = "Назад";
 	$MESS["LOADER_LOG_ERRORS"] = "Произошли следующие ошибки:";
@@ -239,7 +239,7 @@ color=\"#FF0000\"><b>Achtung!</b></font> PHP hat nicht genugend Rechte um das Ha
 	$MESS["LOADER_IS_DISTR"] = "Hochgeladene Installationspacks wurden gefunden. Klicken Sie auf den Namen des erforderlichen Installationspacks um mit dem Auspacken zu beginnen:";
 	$MESS["LOADER_OVERWRITE"] = "<b>Achtung!</b> Die existierenden Dateien konnen durch die Dateien aus dem Installationspack uberschrieben werden.";
 	$MESS["LOADER_IS_DISTR_PART"] = "Auf der Website wurden nicht vollstandig geladenen Installationspacks hochgeladen. Klicken Sie auf den Namen des erforderlichen Installationspacks um mit Upload fortzufuhren:";
-	$MESS["LOADER_NEW_LOAD_TITLE"] = "Download des Installationspacks von der Site <a href=\"http://www.bitrix.de\" target=\"_blank\">http://www.bitrix.de</a>";
+	$MESS["LOADER_NEW_LOAD_TITLE"] = "Download des Installationspacks von der Site <a href=\"https://www.bitrix.de\" target=\"_blank\">https://www.bitrix.de</a>";
 	$MESS["LOADER_NEW_ED"] = "Auswahl des Installationspacks";
 	$MESS["LOADER_NEW_VERSION"] = "Neue Version des Installationsskripts ins verfugbar!";
 	$MESS["LOADER_NEW_AUTO"] = "Auspacken automatisch nach dem Upload starten";
@@ -252,8 +252,8 @@ color=\"#FF0000\"><b>Achtung!</b></font> PHP hat nicht genugend Rechte um das Ha
 	$MESS["LOADER_NEW_STEPS240"] = "max. 240 Sekunden";
 	$MESS["LOADER_NEW_LOAD"] = "Hochladen";
 	$MESS["LOADER_DESCR"] = "Dieses Skript ist dient dem Download der \"Bitrix\"-Installationspacks von der Website <a
-href=\"http://www.bitrix.de/download/index.php\" target=\"_blank\">www.bitrix.de</a> direkt auf Ihre Website, sowie dem Auspacken des Installationspacks auf Ihrer Website.<br><br> 
-Laden Sie dieses Skript in das Hauptverzeichnis, und offnen Sie es in Ihrem Internet-Browser. Geben Sie dafur in der Adresszeile <nobr>http://&amp;lt;IhreWebsite&amp;gt;/".$this_script_name."</nobr>).";
+href=\"https://www.bitrix.de/download/index.php\" target=\"_blank\">www.bitrix.de</a> direkt auf Ihre Website, sowie dem Auspacken des Installationspacks auf Ihrer Website.<br><br> 
+Laden Sie dieses Skript in das Hauptverzeichnis, und offnen Sie es in Ihrem Internet-Browser. Geben Sie dafur in der Adresszeile <nobr>https://&amp;lt;IhreWebsite&amp;gt;/".$this_script_name."</nobr>).";
 	$MESS["LOADER_BACK_2LIST"] = "Zur der Installationspack-Liste zuruckkehren";
 	$MESS["LOADER_BACK"] = "Zuruck";
 	$MESS["LOADER_LOG_ERRORS"] = "Folgende Fehler sind aufgetreten:";
@@ -310,7 +310,7 @@ else
 	$MESS["LOADER_IS_DISTR"] = "Uploaded installation packages were found on the site. Click the name of any package to start installation:";
 	$MESS["LOADER_OVERWRITE"] = "<b>Attention!</b> Files currently present on your site will possibly be overwritten with files from the package.";
 	$MESS["LOADER_IS_DISTR_PART"] = "Incompletely uploaded installation packages were found on the site. Click the name of any package to finish loading:";
-	$MESS["LOADER_NEW_LOAD_TITLE"] = "Download new installation package from <a href=\"http://www.bitrixsoft.com\" target=\"_blank\">http://www.bitrixsoft.com</a>";
+	$MESS["LOADER_NEW_LOAD_TITLE"] = "Download new installation package from <a href=\"https://www.bitrix24.com\" target=\"_blank\">https://www.bitrix24.com</a>";
 	$MESS["LOADER_NEW_VERSION"] = "New version of bitrixsetup script is available!";
 	$MESS["LOADER_NEW_ED"] = "Choose a package";
 	$MESS["LOADER_NEW_AUTO"] = "automatically start unpacking after loading";
@@ -364,7 +364,14 @@ function LoaderGetMessage($name)
 	return $MESS[$name];
 }
 
-$bx_host = 'www.1c-bitrix.ru';
+
+if(LANG == 'ru')
+	$bx_host = 'www.1c-bitrix.ru';
+elseif(LANG == 'de')
+	$bx_host = 'www.bitrix.de';
+else
+	$bx_host = 'www.bitrixsoft.com';
+
 $bx_url = '/download/files/scripts/'.$this_script_name;
 $form = '';
 
@@ -380,7 +387,7 @@ if (!$strAction)
 	if ((!file_exists(UPDATE_FLAG) || time() - filemtime(UPDATE_FLAG) > 3600) && !$debug && !$proxyAddr)
 	{
 		file_put_contents(UPDATE_FLAG, time());
-		$res = @fsockopen($bx_host, 80, $errno, $errstr, 3);
+		$res = @fsockopen('ssl://'.$bx_host, 443, $errno, $errstr, 3);
 
 		if($res)
 		{
@@ -397,7 +404,7 @@ if (!$strAction)
 					if (filesize(__FILE__) != trim($regs[1]))
 					{
 						$tmp_name = $this_script_name.'.tmp';
-						if (LoadFile('http://'.$bx_host.$bx_url, $tmp_name, 0))
+						if (LoadFile('https://'.$bx_host.$bx_url, $tmp_name, 0))
 						{
 							if (rename($_SERVER['DOCUMENT_ROOT'].'/'.$tmp_name,__FILE__))
 							{
@@ -445,7 +452,7 @@ if ($strAction=="LIST")
 	$arLocalDistribs_tmp = array();
 
 	$handle = opendir($_SERVER["DOCUMENT_ROOT"]);
-	if (false && $handle)
+	if (isset($_REQUEST['test']) && $_REQUEST['test'] && $handle)
 	{
 		while (false !== ($ffile = readdir($handle)))
 		{
@@ -561,9 +568,9 @@ elseif ($strAction=="LOAD")
 	/*********************************************************************/
 
 	if(LANG == "ru")
-		$site = "http://www.1c-bitrix.ru/";
+		$site = "https://www.1c-bitrix.ru/";
 	else
-		$site = "http://www.bitrixsoft.com/";
+		$site = "https://www.bitrixsoft.com/";
 
 	if($_REQUEST['licence_type'] == 'src' || $_REQUEST['LICENSE_KEY'])
 	{
@@ -710,6 +717,7 @@ echo $script;
 function LoadFile($strRequestedUrl, $strFilename, $iTimeOut)
 {
 	global $proxyAddr, $proxyPort, $proxyUserName, $proxyPassword, $strUserAgent, $strRequestedSize;
+	$ssl = preg_match('#https://#', $strRequestedUrl);
 
 	$iTimeOut = IntVal($iTimeOut);
 	if ($iTimeOut>0)
@@ -769,7 +777,7 @@ function LoadFile($strRequestedUrl, $strFilename, $iTimeOut)
 		if (!$useproxy)
 		{
 			$host = $parsedurl["host"];
-			$port = $parsedurl["port"];
+			$port = $parsedurl["port"] ?? null;
 			$hostname = $host;
 		}
 		else
@@ -779,10 +787,10 @@ function LoadFile($strRequestedUrl, $strFilename, $iTimeOut)
 			$hostname = $parsedurl["host"];
 		}
 
-		$port = $port ? $port : "80";
+		$port = $port ? $port : ($ssl ? 443 : 80);
 
 		//		SetCurrentStatus(str_replace("#HOST#", $host, LoaderGetMessage("LOADER_LOAD_CONN2HOST")));
-		$sockethandle = fsockopen($host, $port, $error_id, $error_msg, 30);
+		$sockethandle = fsockopen(($ssl ? 'ssl://' : '').$host, $port, $error_id, $error_msg, 30);
 		if (!$sockethandle)
 		{
 			//			SetCurrentStatus(str_replace("#HOST#", $host, LoaderGetMessage("LOADER_LOAD_NO_CONN2HOST"))." [".$error_id."] ".$error_msg);
@@ -797,7 +805,7 @@ function LoadFile($strRequestedUrl, $strFilename, $iTimeOut)
 			$request = "";
 			if (!$useproxy)
 			{
-				$request .= "HEAD ".$parsedurl["path"].($parsedurl["query"] ? '?'.$parsedurl["query"] : '')." HTTP/1.0\r\n";
+				$request .= "HEAD ".$parsedurl["path"].(isset($parsedurl["query"]) ? '?'.$parsedurl["query"] : '')." HTTP/1.0\r\n";
 				$request .= "Host: $hostname\r\n";
 			}
 			else
@@ -865,7 +873,7 @@ function LoadFile($strRequestedUrl, $strFilename, $iTimeOut)
 			{
 				$redirection = $strLocationUrl;
 				$redirected = true;
-				if ((strpos($redirection, "http://")===false))
+				if (!preg_match("#https?://#", $redirection))
 					$strRealUrl = dirname($lasturl)."/".$redirection;
 				else
 					$strRealUrl = $redirection;
@@ -917,7 +925,7 @@ function LoadFile($strRequestedUrl, $strFilename, $iTimeOut)
 	if (!$useproxy)
 	{
 		$host = $parsedurl["host"];
-		$port = $parsedurl["port"];
+		$port = $parsedurl["port"] ?? null;
 		$hostname = $host;
 	}
 	else
@@ -927,10 +935,10 @@ function LoadFile($strRequestedUrl, $strFilename, $iTimeOut)
 		$hostname = $parsedurl["host"];
 	}
 
-	$port = $port ? $port : "80";
+	$port = $port ? $port : ($ssl ? 443 : 80);
 
 	SetCurrentStatus(str_replace("#HOST#", $host, LoaderGetMessage("LOADER_LOAD_CONN2HOST")));
-	$sockethandle = fsockopen($host, $port, $error_id, $error_msg, 30);
+	$sockethandle = fsockopen(($ssl ? 'ssl://' : '').$host, $port, $error_id, $error_msg, 30);
 	if (!$sockethandle)
 	{
 		SetCurrentStatus(str_replace("#HOST#", $host, LoaderGetMessage("LOADER_LOAD_NO_CONN2HOST"))." [".$error_id."] ".$error_msg);
@@ -946,7 +954,7 @@ function LoadFile($strRequestedUrl, $strFilename, $iTimeOut)
 		$request = "";
 		if (!$useproxy)
 		{
-			$request .= "GET ".$parsedurl["path"].($parsedurl["query"] ? '?'.$parsedurl["query"] : '')." HTTP/1.0\r\n";
+			$request .= "GET ".$parsedurl["path"].(isset($parsedurl["query"]) ? '?'.$parsedurl["query"] : '')." HTTP/1.0\r\n";
 			$request .= "Host: $hostname\r\n";
 		}
 		else
@@ -1519,7 +1527,7 @@ function html($ar)
 						</td>
 					</tr>
 					<tr>
-						<td style="font-size:10pt" valign="<?=$ar['TEXT_ALIGN']?$ar['TEXT_ALIGN']:'middle'?>"><?=$ar['TEXT']?></td>
+						<td style="font-size:10pt" valign="<?=($ar['TEXT_ALIGN'] ?? 'middle')?>"><?=$ar['TEXT']?></td>
 					</tr>
 					<tr>
 						<td style="font-size:10pt; padding-top: 20px" valign="middle" align="center" height="40px"><?=$ar['BOTTOM']?></td>
@@ -1531,7 +1539,11 @@ function html($ar)
 						<label for="ss"><span class="selected-lang lang <?=LANG?>"></span></label>
 						<div class="select-popup" id="lang-popup">
 							<?
-							foreach(array('en','de','ru') as $l)
+							$langs = array('en','de');
+							if(LANG == 'ru')
+								$langs = array('en','de','ru');
+								
+							foreach($langs as $l)
 							{
 								?>
 								<div class="select-lang-item">
@@ -2076,7 +2088,12 @@ function img($name)
 {
 	if (file_exists($_SERVER['DOCUMENT_ROOT'].'/images/'.$name))
 		return '/images/'.$name;
-	return 'http://www.1c-bitrix.ru/images/bitrix_setup/'.$name;
+
+	if(LANG == 'ru')
+		return 'https://www.1c-bitrix.ru/images/bitrix_setup/'.$name;
+	else
+		return 'https://www.bitrixsoft.com/images/bitrix_setup/'.$name;
+
 }
 
 function ShowError($str)
@@ -2099,4 +2116,3 @@ function EscapePHPString($str)
 	$str = str_replace("\"", "\\"."\"", $str);
 	return $str;
 }
-?>

@@ -14,6 +14,14 @@
     group: bitrix
     mode: 0640
 
+- name: update dehydrated hook file
+  copy:
+    src: dehydrated/hook.sh
+    dest: /home/bitrix/dehydrated/hook.sh
+    owner: bitrix
+    group: bitrix
+    mode: 0750
+
 - name: create dehydrated domains.txt for site
   template:
     src: dehydrated/tmp-domains.txt.j2
@@ -32,12 +40,7 @@
   shell: /home/bitrix/dehydrated/dehydrated --register --accept-terms
 
 - name: create certificates
-  shell: "/home/bitrix/dehydrated/dehydrated -c > /home/bitrix/dehydrated_update.log 2>&1"
-  when: dehydrated_type == 'test'
-
-- name: create certificates
-  shell: "/home/bitrix/dehydrated/dehydrated -c --force > /home/bitrix/dehydrated_update.log 2>&1"
-  when: dehydrated_type == 'prod'
+  shell: "/home/bitrix/dehydrated/dehydrated -c --keep-going > /home/bitrix/dehydrated_update.log 2>&1"
 
 - name: change access rigths
   file:

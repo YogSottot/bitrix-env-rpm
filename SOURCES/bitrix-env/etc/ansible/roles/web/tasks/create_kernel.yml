@@ -119,8 +119,13 @@
 ######## remove files
 ####
 - file: 
-    path: "{{ web_site_root_dir }}/bitrix/.settings.php.crm.orig"
+    path: "{{ web_site_root_dir }}/{{ item }}"
     state: absent
+  loop:
+    - "bitrix/.settings.php.crm.orig"
+    - "bitrix/.settings.php.orig"
+    - "bitrix/php_interface/dbconn.php.orig"
+    - "bitrix/php_interface/dbconn.php.crm.orig"
   when: "'bitrix-web' in group_names"
 ####
 ####### /remove files

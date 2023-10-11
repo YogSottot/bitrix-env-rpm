@@ -9,7 +9,7 @@ CFG_LOCALTIME="/etc/localtime"      # file configures the system-wide timezone o
                                     # that is used by applications for presentation to the user
 TZ_DB="/usr/share/zoneinfo"         # standart path for timezone database
 
-TZ_DEFAULT="Europe/Moscow"          # default timezone ( use if not found the settings in the system )
+TZ_DEFAULT="UTC"          # default timezone ( use if not found the settings in the system )
 
 CFG_PHP="/etc/php.d/bitrixenv.ini"   # bitrixenv php file
 

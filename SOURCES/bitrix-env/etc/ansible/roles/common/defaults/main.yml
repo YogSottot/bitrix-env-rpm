@@ -1,6 +1,6 @@
 ---
 # default timezone for server
-timezone_default: Europe/Moscow
+timezone_default: UTC
 
 # update php timezone by system
 timezone_php_update: update
