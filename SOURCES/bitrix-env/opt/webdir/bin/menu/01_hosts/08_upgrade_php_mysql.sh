@@ -15,18 +15,22 @@ sub_menu_update_php(){
 
     local host_logo="$HM0088"
     local menu_exit="$HM0042"
-    local up_php82="1. $HM00887"
-    local up_php81="2. $HM00886"
-    local up_php80="3. $HM00885"
-    local up_php74="4. $HM00884"
-    local up_php73="5. $HM00883"
-    local up_php72="6. $HM00882"
-    local up_php71="7. $HM00881"
-    local up_php70="8. $HM00880"
-    local up_php56="9. $HM0087"
+    local up_php83="1. $HM00888"
+
+    local up_php82="2. $HM00887"
+    local up_php81="3. $HM00886"
+    local up_php80="4. $HM00885"
+    local up_php74="5. $HM00884"
+    local up_php73="6. $HM00883"
+    local up_php72="7. $HM00882"
+    local up_php71="8. $HM00881"
+    local up_php70="9. $HM00880"
+    local up_php56="10. $HM0087"
 
     
     local up_menu="\n\t$menu_exit"
+    [[ $min_php_version -ge 56 && $min_php_version -lt 83  && $OS_VERSION -gt 6 ]] && \
+        up_menu=$up_menu"\n\t$up_php83"
     [[ $min_php_version -ge 56 && $min_php_version -lt 82  && $OS_VERSION -gt 6 ]] && \
         up_menu=$up_menu"\n\t$up_php82"
     [[ $min_php_version -ge 56 && $min_php_version -lt 81  && $OS_VERSION -gt 6 ]] && \
@@ -86,6 +90,16 @@ sub_menu_update_php(){
         case "$UP_MENU" in
             "0") return 1 ;;
             "1") 
+                echo "$UP_MENU"
+                if [[ $min_php_version -ge 83 || $OS_VERSION -eq 6 ]]; then
+                    error_pick
+                    UP_MENU=
+                    continue
+                fi
+                upgrade_cmd="$ansible_wrapper -a bx_php_upgrade_php83 --host $phost_name "
+                upgrade_version="8.3"
+            ;;
+             "2") 
                 if [[ $min_php_version -ge 82 || $OS_VERSION -eq 6 ]]; then
                     error_pick
                     UP_MENU=
@@ -95,7 +109,7 @@ sub_menu_update_php(){
                 upgrade_version="8.2"
             ;;
  
-            "2") 
+            "3") 
                 if [[ $min_php_version -ge 81 || $OS_VERSION -eq 6 ]]; then
                     error_pick
                     UP_MENU=
@@ -104,7 +118,7 @@ sub_menu_update_php(){
                 upgrade_cmd="$ansible_wrapper -a bx_php_upgrade_php81 --host $phost_name "
                 upgrade_version="8.1"
             ;;
-            "3") 
+            "4") 
                 if [[ $min_php_version -ge 80 || $OS_VERSION -eq 6 ]]; then
                     error_pick
                     UP_MENU=
@@ -113,7 +127,7 @@ sub_menu_update_php(){
                 upgrade_cmd="$ansible_wrapper -a bx_php_upgrade_php80 --host $phost_name "
                 upgrade_version="8.0"
             ;;
-            "4") 
+            "5") 
                 if [[ $min_php_version -ge 74 || $OS_VERSION -eq 6 ]]; then
                     error_pick
                     UP_MENU=
@@ -122,7 +136,7 @@ sub_menu_update_php(){
                 upgrade_cmd="$ansible_wrapper -a bx_php_upgrade_php74 --host $phost_name "
                 upgrade_version="7.4"
             ;;
-            "5")
+            "6")
                 if [[ $min_php_version -ge 73 ]]; then
                     error_pick
                     UP_MENU=
@@ -132,7 +146,7 @@ sub_menu_update_php(){
                 upgrade_version="7.3"
                 ;;
 
-             "6") 
+             "7") 
                 if [[ $min_php_version -ge 72 ]]; then
                     error_pick
                     UP_MENU=
@@ -141,7 +155,7 @@ sub_menu_update_php(){
                 upgrade_cmd="$ansible_wrapper -a bx_php_upgrade_php72 --host $phost_name"
                 upgrade_version="7.2"
                 ;;
-            "7")
+            "8")
                 if [[ $min_php_version -ge 71 ]]; then
                     error_pick
                     UP_MENU=
@@ -150,7 +164,7 @@ sub_menu_update_php(){
                 upgrade_cmd="$ansible_wrapper -a bx_php_upgrade_php71 --host $phost_name"
                 upgrade_version="7.1"
                 ;;
-             "8")
+             "9")
                 if [[ $min_php_version -ge 70 ]]; then
                     error_pick
                     UP_MENU=
@@ -159,7 +173,7 @@ sub_menu_update_php(){
                 upgrade_cmd="$ansible_wrapper -a bx_php_upgrade_php70 --host $phost_name"
                 upgrade_version="7.0"
                 ;;
-             "9")
+             "10")
                  if [[ $min_php_version -lt 56 ]]; then
                      upgrade_cmd="$ansible_wrapper -a bx_php_upgrade_php56 --host $phost_name"
                      upgrade_version="5.6"
@@ -206,6 +220,7 @@ sub_menu_downgrade_php(){
     local down_php74="6. $HM00895"
     local down_php80="7. $HM00896"
     local down_php81="8. $HM00897"
+    local down_php82="9. $HM00898"
 
     local down_menu="\n\t$menu_exit"
     [[ $min_php_version -gt 56 && $BITRIX_ENV_TYPE != "crm" ]] && \
@@ -229,7 +244,8 @@ sub_menu_downgrade_php(){
         down_menu=$down_menu"\n\t$down_php80"
     [[ $min_php_version -gt 81 ]] && \
         down_menu=$down_menu"\n\t$down_php81"
-
+    [[ $min_php_version -gt 82 ]] && \
+        down_menu=$down_menu"\n\t$down_php82"
 
     menu_list="$down_menu"
 
@@ -325,6 +341,15 @@ sub_menu_downgrade_php(){
                 fi
                 down_cmd="$ansible_wrapper -a bx_php_rollback_php81 --host ${phost_name}"
                 down_version="8.1"
+               ;;
+               "9")
+                if [[ $min_php_version -le 82 ]]; then
+                    error_pick
+                    DOWN_MENU=
+                    continue
+                fi
+                down_cmd="$ansible_wrapper -a bx_php_rollback_php82 --host ${phost_name}"
+                down_version="8.2"
                ;;
  
              *) 
@@ -495,7 +520,7 @@ select_update_type() {
         fi
 
         menu_list="\n\t${menu_exit}"
-        if [[ $PHP_VERSION -le 80 ]]; then
+        if [[ $PHP_VERSION -le 82 ]]; then
             menu_list="${menu_list}\n\t${menu_php_upgrade}"
         fi
 

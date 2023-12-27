@@ -6,6 +6,10 @@
 # php_rollback_versions - list of available version for rollback
 # php_upgraded_versions - list of available version for upgrade
 # rollback
+- include_tasks: rollback_php82.yml
+  when: to_php_version <= 82
+    and 82 in php_rollback_versions
+
 - include_tasks: rollback_php81.yml
   when: to_php_version <= 81
     and 81 in php_rollback_versions

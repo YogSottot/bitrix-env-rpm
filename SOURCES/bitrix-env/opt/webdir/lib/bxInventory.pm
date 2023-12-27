@@ -1678,12 +1678,12 @@ sub update_php {
           ? { manage_web => "upgrade_php", to_php_version => 70 }
           : { manage_web => "downgrade_php", to_php_version => 56 };
     }
-    elsif ( $type =~ /^bx_php_upgrade_php(70|71|72|73|74|80|81|82)$/ ) {
+    elsif ( $type =~ /^bx_php_upgrade_php(70|71|72|73|74|80|81|82|83)$/ ) {
         my $version = $1;
         $etc_playbook = catfile( $ansible_options->{'base'}, 'web.yml' );
         $opts = { manage_web => "upgrade_php", to_php_version => $version };
     }
-    elsif ( $type =~ /^bx_php_rollback_php(70|71|72|73|74|80|81)$/ ) {
+    elsif ( $type =~ /^bx_php_rollback_php(70|71|72|73|74|80|81|82)$/ ) {
         my $version = $1;
         $etc_playbook = catfile( $ansible_options->{'base'}, 'web.yml' );
         $opts = { manage_web => "downgrade_php", to_php_version => $version };

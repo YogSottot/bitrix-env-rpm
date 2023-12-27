@@ -243,6 +243,7 @@ HM00884="Update PHP to version 7.4"
 HM00885="Update PHP to version 8.0"
 HM00886="Update PHP to version 8.1"
 HM00887="Update PHP to version 8.2"
+HM00888="Update PHP to version 8.3"
 
 # Откат php до версии 5.6
 HM0089="Downgrade PHP"
@@ -254,6 +255,7 @@ HM00894="Downgrade PHP to version 7.3"
 HM00895="Downgrade PHP to version 7.4"
 HM00896="Downgrade PHP to version 8.0"
 HM00897="Downgrade PHP to version 8.1"
+HM00898="Downgrade PHP to version 8.2"
 
 # Обновление MySQLd до версии 5.7
 HM0090="Update MySQL to version 5.7"
