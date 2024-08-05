@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/bash
 #
 # Script to run stunnel in daemon mode at boot time.
 #

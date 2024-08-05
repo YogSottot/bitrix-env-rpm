@@ -3,7 +3,7 @@
 # dns_names: - array for domain names
 # email: email address
 # site_name: - bitrix site names
-- include: sites-gathering_facts_site_names.yml
+- include_tasks: sites-gathering_facts_site_names.yml
 
 - debug:
     msg: "{{ bx_sites_info }}"
@@ -46,10 +46,10 @@
     src: nginx/ssl_options.conf.j2
     dest: /etc/nginx/bx/conf/ssl_options.conf
 
-- include: configure_le_location_per_site.yml
+- include_tasks: configure_le_location_per_site.yml
   when: is_cluster == 'disable' and sites_cnt > 0
 
-- include: configure_le_location_on_balancer.yml
+- include_tasks: configure_le_location_on_balancer.yml
   when: is_cluster == 'enable' and sites_cnt > 0
 
 - name: restart nginx
@@ -57,15 +57,15 @@
     name: nginx
     state: restarted
 
-- include: dehydrated.yml
+- include_tasks: dehydrated.yml
   vars:
     dehydrated_type: "prod"
 
-- include: configure_le_certificates_per_site.yml
+- include_tasks: configure_le_certificates_per_site.yml
   when: sites_cnt > 0
 
-- include: configure_nginx_push_server.yml
-  when: push_server is defined and push_server > 0
+#- include_tasks: configure_nginx_push_server.yml
+#  when: push_server is defined and push_server > 0
 
 - name: reload nginx
   service: 
@@ -76,4 +76,3 @@
   service: 
     name: httpd
     state: reloaded
-

@@ -2,7 +2,6 @@
 - hosts: bitrix-hosts
   vars:
     cache_directory: /opt/webdir/tmp
-
   roles:
     - cleaner
 
@@ -18,6 +17,5 @@
 - hosts: bitrix-hosts
   vars:
     cache_directory: /opt/webdir/tmp
-
   roles:
     - cleaner

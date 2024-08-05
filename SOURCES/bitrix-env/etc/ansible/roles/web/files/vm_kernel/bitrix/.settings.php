@@ -57,7 +57,7 @@ return array (
     array (
       'default' =>
       array (
-        'className' => '\\Bitrix\\Main\\DB\\MysqlConnection',
+        'className' => '\\Bitrix\\Main\\DB\\MysqliConnection',
         'host' => 'localhost',
         'database' => '__DBNAME__',
         'login' => '__LOGIN__',

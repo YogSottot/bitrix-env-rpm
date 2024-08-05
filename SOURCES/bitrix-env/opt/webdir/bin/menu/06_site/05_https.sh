@@ -1,18 +1,20 @@
-#!/bin/bash
-# enable or disable access via http 
+#!/usr/bin/bash
+#
+# enable or disable access via http
 #set -x
 PROGNAME=$(basename $0)
 PROGPATH=$(dirname $0)
 [[ -z $DEBUG ]] && DEBUG=0
 
 . $PROGPATH/functions.sh || exit 1
+
 logo=$(get_logo)
 
 manage_https() {
     site_name=$1
 
     test_sitename "$site_name" || exit
- 
+
     site_dir=$(echo "$POOL_SITES_LIST" | grep "^$site_name:" | awk -F':' '{print $6}')
     [[ $DEBUG -gt 0 ]] && echo "site=$site_name dir=$site_dir"
 
@@ -50,8 +52,7 @@ manage_https() {
             print_message "$CS0101" "$SM0019 - $https_site_msg" "" any_key
         else
             http_status=$(echo "$https_site_inf" | awk -F':' '/bxSite:https/{print $5}')
-            print_message "$CS0101" \
-                "$site_https_message" "" any_key
+            print_message "$CS0101" "$site_https_message" "" any_key
         fi
     fi
 }
@@ -59,23 +60,21 @@ manage_https() {
 # print host menu
 menu_https() {
     _menu_https_00="$SM0201"
-    _menu_https_01="   $SM0050"
-
+    _menu_https_01="$SM0050"
 
     SITE_MENU_SELECT=
     until [[ -n "$SITE_MENU_SELECT" ]]; do
         menu_logo="$SM0050"
         print_menu_header
 
-
         # menu
         print_site_list_point_https
         get_task_by_type site POOL_SITE_TASK_LOCK POOL_SITE_TASK_INFO
         print_task_by_type site "$POOL_SITE_TASK_LOCK" "$POOL_SITE_TASK_INFO"
         if [[ $POOL_SITE_TASK_LOCK -eq 1 ]]; then
-            menu_list="\n\t$_menu_https_00"
+            menu_list="$_menu_https_00"
         else
-            menu_list="\n\t$_menu_https_01\n\t$_menu_https_00"
+            menu_list="$_menu_https_01\n\t\t $_menu_https_00"
         fi
         print_menu
 
@@ -88,12 +87,11 @@ menu_https() {
         # process selection
         case "$SITE_MENU_SELECT" in
             "0") exit ;;
-            *)   manage_https "$SITE_MENU_SELECT";;
+            *) manage_https "$SITE_MENU_SELECT" ;;
         esac
-    
+
         SITE_MENU_SELECT=
     done
 }
 
 menu_https
-

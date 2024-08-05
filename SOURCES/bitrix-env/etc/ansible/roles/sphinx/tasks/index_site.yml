@@ -15,7 +15,6 @@
   set_fact:
     bx_sites_info: "{{ hostvars[inventory_hostname]['bx_sites'] }}"
   tags: sites_facts
-
 ####
 ######## /create, upload variables that used in playbook
 
@@ -23,7 +22,6 @@
 ####
 - include_tasks: install.yml
   when: "inventory_hostname == manage_node and manage_sphinx == 'add_site'"
-
 ####
 ######## /configure sphinx service
 
@@ -31,7 +29,6 @@
 ####
 - include_tasks: index.yml
   when: "inventory_hostname == manage_node and manage_sphinx == 'add_site'"
-
 #####
 ######### /create index for sites
 
@@ -42,7 +39,5 @@
     php_script: "{{ manage_sphinx }}_index_in_web.php"
     php_server: "{{ cluster_web_server }}"
   when: "inventory_hostname == manage_node"
-
 #####
 ######### /create or delete sphinx instance in the site
-

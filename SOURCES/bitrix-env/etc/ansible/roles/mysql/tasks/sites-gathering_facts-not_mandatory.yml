@@ -2,10 +2,13 @@
 # get info about site installed on localhost
 # save info to: bx_sites_info
 - set_fact:
-    proccess_sites: True
+    proccess_sites: true
 
 - name: gathering facts about installed sites
-  bx_facts: name=list password=0 install='(kernel|ext_kernel)'
+  bx_facts:
+    name=list
+    password=0
+    install='(kernel|ext_kernel)'
   delegate_to: "{{ cluster_web_server }}"
   tags: gathering_facts
   ignore_errors: yes
@@ -19,4 +22,3 @@
     bx_sites_info: "{{ hostvars[inventory_hostname]['bx_sites'] }}"
   tags: gathering_facts
   when: proccess_sites
-

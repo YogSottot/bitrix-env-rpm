@@ -72,5 +72,3 @@
     state: touch
   when: type == 'disable'
   notify: restart httpd
-
-

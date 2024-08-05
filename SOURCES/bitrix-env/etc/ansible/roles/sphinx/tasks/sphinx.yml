@@ -20,7 +20,6 @@
   set_fact:
     bx_sites_info: "{{ hostvars[inventory_hostname]['bx_sites'] }}"
   tags: sites_facts
-
 ####
 ######## /create, upload variables that used in playbook
 
@@ -28,7 +27,6 @@
 ####
 - include_tasks: install.yml
   when: "inventory_hostname == manage_node and manage_sphinx == 'create'"
-
 ####
 ######## /configure sphinx service
 
@@ -46,7 +44,6 @@
     php_script: "{{ manage_sphinx }}_index_in_web.php"
     php_server: "{{ cluster_web_server }}"
   when: "inventory_hostname == manage_node"
-
 #####
 ######### /create or delete sphinx instance in the site
 
@@ -54,7 +51,6 @@
 ####
 - include_tasks: delete.yml
   when: "inventory_hostname == manage_node and manage_sphinx == 'delete'"
-
 ####
 ######## /disable service and delete role
 
@@ -69,7 +65,5 @@
   when: "monitoring_status == 'enable' and 
     inventory_hostname == manage_node and 
     manage_sphinx == 'delete'"
-
 ####
 ######## /configure monitoring 
-

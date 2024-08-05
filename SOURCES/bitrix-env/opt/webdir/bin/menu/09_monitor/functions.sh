@@ -1,3 +1,5 @@
+#!/usr/bin/bash
+#
 BASE_DIR=/opt/webdir
 BIN_DIR=$BASE_DIR/bin
 
@@ -33,7 +35,7 @@ get_monitor_status() {
 }
 
 # output info about current monitoing status
-print_monitor_status(){
+print_monitor_status() {
     [[ -z "$POOL_MONITOR_SERVER" ]] && get_monitor_status
 
     print_color_text "$MON0002 $POOL_MONITOR_STATUS"
@@ -55,7 +57,7 @@ print_monitor_status(){
 # 0 - user configured variables
 # 1 - user didn't set variables
 # 2 - error
-get_monitoring_auth_options(){
+get_monitoring_auth_options() {
     NAGIOS_USER=nagiosadmin
     NAGIOS_PASSWORD=
     MUNIN_USER=admin
@@ -88,7 +90,7 @@ get_monitoring_auth_options(){
 # 0 - user configured variables
 # 1 - user didn't set variables
 # 2 - error
-get_email_options(){
+get_email_options() {
     EMAIL=
     EMAIL_SERVER=
     EMAIL_PORT=
@@ -118,7 +120,7 @@ get_email_options(){
         fi
         
         # get the necessary values
-        clear
+        [[ $DEBUG -eq 0 ]] && clear
         print_color_text "$MON0015"
 
         # get email 

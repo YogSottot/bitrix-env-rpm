@@ -7,16 +7,18 @@
 [client]
 port = 3306
 socket = /var/lib/mysqld/mysqld.sock
-default-character-set = utf8
+default-character-set = utf8mb4
 
 [mysqld_safe]
 nice = 0
 socket = /var/lib/mysqld/mysqld.sock
+log-error = /var/log/mysql/error.log
 
 [mysqld]
-authentication_policy=mysql_native_password
+server-id = 1
+#authentication_policy=mysql_native_password
+authentication_policy = "*,,"
 disable_log_bin
-innodb_redo_log_capacity=128M
 
 # Basic mysql server configuration
 user = mysql
@@ -24,9 +26,12 @@ port = 3306
 basedir = /usr
 datadir = /var/lib/mysql
 socket = /var/lib/mysqld/mysqld.sock
+pid-file = /var/run/mysqld/mysqld.pid
+tmpdir = /tmp
+secure-log-path=/var/lib/mysql-files
+
 skip-external-locking
 default-storage-engine = innodb
-pid-file = /var/run/mysqld/mysqld.pid
 transaction-isolation = READ-COMMITTED
 max_allowed_packet = 16M
 myisam-recover-options = BACKUP
@@ -41,31 +46,38 @@ key_buffer_size = 16M
 thread_stack = 128K
 join_buffer_size = 2M
 sort_buffer_size = 2M
+thread_stack = 512K
 
 # Parameters for temporary tables
-tmpdir = /tmp
-max_heap_table_size	= 32M
+max_heap_table_size = 32M
 tmp_table_size = 32M
 
 # InnoDB parameters
 innodb_file_per_table
-innodb_buffer_pool_size	= 32M
+innodb_buffer_pool_size = 32M
 innodb_flush_log_at_trx_commit = 2
 innodb_flush_method = O_DIRECT
 innodb_strict_mode = OFF
+innodb_redo_log_capacity = 128M
+innodb_default_row_format = DYNAMIC
 
 # Database charset parameters
-character-set-server = utf8
-collation-server = utf8_unicode_ci
-init-connect = "SET NAMES utf8 COLLATE utf8_unicode_ci"
+character-set-server = utf8mb4
+collation-server = utf8mb4_0900_ai_ci
+init-connect = "SET NAMES utf8mb4 COLLATE utf8mb4_0900_ai_ci"
 #skip-character-set-client-handshake
 skip-name-resolve
+
+tls_version = TLSv1.2,TLSv1.3
+
+[system_default_sect]
+MinProtocol = TLSv1.2
 
 [mysqldump]
 quick
 quote-names
 max_allowed_packet = 16M
-default-character-set = utf8
+default-character-set = utf8mb4
 
 [mysql]
 
@@ -74,3 +86,4 @@ key_buffer = 16M
 
 # Include additional settings
 !includedir /etc/mysql/conf.d/
+

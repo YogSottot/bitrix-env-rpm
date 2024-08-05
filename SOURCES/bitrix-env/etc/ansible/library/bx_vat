@@ -1,9 +1,11 @@
-#!/bin/bash
+#!/usr/bin/bash
+#
 # Get host information:
 #   interfaces, connection speed and ip adrresses
 #   system type by installed RAM on board
 #   users's info - last password changes and availability
 #   software versions: php, mysql, bitrix-env
+#
 export LANG=en_EN.UTF-8
 export NOLOCALE=yes
 export PATH=/sbin:/bin:/usr/sbin:/usr/bin
@@ -13,17 +15,15 @@ MYSQL_CNF=/root/.my.cnf
 TMP_DIR=/opt/webdir/tmp
 [[ ! -d $TMP_DIR ]] && mkdir -m 700 $TMP_DIR
 LOG_FILE=$TMP_DIR/bx_vat_$$.log
-debug(){
-    mess=$1
 
+debug() {
+    mess=$1
     [[ $DEBUG -gt 0 ]] && echo "$(date +%s) $mess" >> $LOG_FILE
 }
 
 get_memory() {
-
     is_vps=1
     memory=$(free | awk '/Mem/{print $2}')
-
     # openvz installation
     if [[ -f /proc/user_beancounters ]]; then
         # > 500MB
@@ -31,48 +31,39 @@ get_memory() {
         if [[ -z "$memory" ]]; then
             # Memory allocation guarantee.
             mem4kblock=$(cat /proc/user_beancounters  | awk '/vmguarpages/{print $4}')
-
             # The current amount of allocated memory space is accounted into privvmpages parameter
             mem4kblock2=$(cat /proc/user_beancounters | awk '/privvmpages/{print $4}')
-
             memory=$(echo "${mem4kblock2} * 4"|bc)
             [[ $mem4kblock2 -gt $mem4kblock ]] && memory=$(echo "${mem4kblock} * 4"|bc)
-
         fi
     else
         is_vps=0
     fi
-
     echo $memory
 }
 
 get_os_version() {
     # one-time call
     [[ -n $OS_VERSION ]] && return 0
-
-    release_file=/etc/redhat-release
-    if [[ ! -f $release_file ]]; then
+    RELEASE_FILE=/etc/redhat-release
+    if [[ ! -f ${RELEASE_FILE} ]]; then
         if [[ -f /etc/centos-release ]]; then
-            release_file=/etc/centos-release
+            RELEASE_FILE=/etc/centos-release
         else
             echo "{\"changed\":false,\"failed\":true,\"msg\":\"not found rpm based OS\"}"
             exit 1
         fi
     fi
     # os version
-    OS_VERSION=$(cat /etc/redhat-release | \
-        sed -e "s/CentOS Linux release//;s/CentOS release // " | \
-        cut -d'.' -f1 | sed -e "s/\s\+//g")
+    OS_VERSION=$(cat ${RELEASE_FILE} | sed -e "s/CentOS Stream release//;s/CentOS release // " | cut -d'.' -f1 | sed -e "s/\s\+//g")
 }
 
 get_bx_version() {
     get_os_version
-
     PACKAGE_NAME=
     for pkg in bitrix-env bitrix-env-crm bitrix-env4; do
         package_data=$TMP_DIR/${pkg}_$(date +%s)_$$.pkginfo
         rpm -qi "$pkg" >$package_data 2>&1
-
         if [[ $? -eq 0 ]]; then
             PACKAGE_NAME=$pkg
             break
@@ -83,32 +74,24 @@ get_bx_version() {
         PACKAGE=0
         debug "rpm -qi $PACKAGE_NAME return error"
     elif [[ $PACKAGE == "bitrix-env4" ]]; then
-        bitrix_env_version=$(egrep -o '^Version\s*:\s*[0-9\.]+' $package_data | \
-            awk -F':' '{print $2}' | sed -e 's/\s\+//g')
-
+        bitrix_env_version=$(egrep -o '^Version\s*:\s*[0-9\.]+' $package_data | awk -F':' '{print $2}' | sed -e 's/\s\+//g')
         # test version value
         if [[ -z "$bitrix_env_version" ]]; then
             echo "{\"changed\":false,\"failed\":true,\"msg\":\"not found version for package=$PACKAGE_NAME\"}"
             debug "not found version for $PACKAGE_NAME"
-
             rm -f $package_data
             exit 1
         fi
         # create package info
         debug "found pakache info: bitrix_env_version=$bitrix_env_version bitrix_env_release=$bitrix_env_release"
         PACKAGE="4."$bitrix_env_version
-
     else
-        bitrix_env_version=$(egrep -o '^Version\s*:\s*[0-9\.]+' $package_data | \
-            awk -F':' '{print $2}' | sed -e 's/\s\+//g')
-        bitrix_env_release=$(egrep -o '^Release\s*:\s*[0-9]+' $package_data | \
-            awk -F':' '{print $2}' | sed -e 's/\s\+//g')
-
+        bitrix_env_version=$(egrep -o '^Version\s*:\s*[0-9\.]+' $package_data | awk -F':' '{print $2}' | sed -e 's/\s\+//g')
+        bitrix_env_release=$(egrep -o '^Release\s*:\s*[0-9]+' $package_data | awk -F':' '{print $2}' | sed -e 's/\s\+//g')
         # test version value
         if [[ -z "$bitrix_env_version" ]]; then
             echo "{\"changed\":false,\"failed\":true,\"msg\":\"not found version for package=$PACKAGE_NAME\"}"
             debug "not found version for $PACKAGE_NAME"
-
             rm -f $package_data
             exit 1
         fi
@@ -116,106 +99,89 @@ get_bx_version() {
         if [[ -z "$bitrix_env_release" ]]; then
             echo "{\"changed\":false,\"failed\":true,\"msg\":\"not found release for package=$PACKAGE_NAME\"}"
             debug "not found release for $PACKAGE_NAME"    
-
             rm -f $package_data
             exit 1
         fi
         # create package info
         debug "found pakache info: bitrix_env_version=$bitrix_env_version bitrix_env_release=$bitrix_env_release"
         PACKAGE=$bitrix_env_version"-"$bitrix_env_release
- 
     fi
-
     rm -f $TMP_DIR/*.pkginfo
 }
 
-get_bx_user_password(){
+get_bx_user_password() {
     bx_user=bitrix
-
     chage_data=$TMP_DIR/${bx_user}_$(date +%s)_$$.change
     # test if user exists
     user_found=$(grep -c "^$bx_user:" /etc/passwd)
     user_id=$(grep "^$bx_user:" /etc/passwd | awk -F':' '{print $3}')
     if [[ $user_found -gt 0 ]]; then
         debug "Found user $bx_user in the system"
-
         chage -l $bx_user > $chage_data 2>&1
-
         if [[ $? -gt 0 ]]; then
             echo "{\"changed\":false,\"failed\":true,\"msg\":\"cmd return error\"}"
             debug "\"chage -l $bx_user return error\""
             rm -f $chage_data
             exit 1
         fi
-
-        Last_password_change=$( awk -F':' '/Last password change/{print $2}' $chage_data| sed 's/^\s\+//;s/\s\+$//;')
-        Password_expires=$(     awk -F':' '/Password expires/{print $2}'     $chage_data| sed 's/^\s\+//;s/\s\+$//;')
-        Password_inactive=$(    awk -F':' '/Password inactive/{print $2}'    $chage_data| sed 's/^\s\+//;s/\s\+$//;')
+        Last_password_change=$(awk -F':' '/Last password change/{print $2}' $chage_data| sed 's/^\s\+//;s/\s\+$//;')
+        Password_expires=$(awk -F':' '/Password expires/{print $2}' $chage_data| sed 's/^\s\+//;s/\s\+$//;')
+        Password_inactive=$(awk -F':' '/Password inactive/{print $2}' $chage_data| sed 's/^\s\+//;s/\s\+$//;')
     else
         Last_password_change=0
         Password_expires=0
         Password_inactive=0
     fi
-
     rm -f $chage_data
 }
-get_bx_root_password(){
-    root_bx_user=root
 
+get_bx_root_password() {
+    root_bx_user=root
     chage_data=$TMP_DIR/${root_bx_user}_$(date +%s)_$$.change
     # test if user exists
     root_user_found=$(grep -c "^$root_bx_user:" /etc/passwd)
     root_user_id=$(grep "^$root_bx_user:" /etc/passwd | awk -F':' '{print $3}')
     if [[ $root_user_found -gt 0 ]]; then
         debug "Found user $root_bx_user in the system"
-
         chage -l $root_bx_user > $chage_data 2>&1
-
         if [[ $? -gt 0 ]]; then
             echo "{\"changed\":false,\"failed\":true,\"msg\":\"cmd return error\"}"
             debug "\"chage -l $root_bx_user return error\""
             rm -f $chage_data
             exit 1
         fi
-
-        root_Last_password_change=$( awk -F':' '/Last password change/{print $2}' $chage_data| sed 's/^\s\+//;s/\s\+$//;')
-        root_Password_expires=$(     awk -F':' '/Password expires/{print $2}'     $chage_data| sed 's/^\s\+//;s/\s\+$//;')
-        root_Password_inactive=$(    awk -F':' '/Password inactive/{print $2}'    $chage_data| sed 's/^\s\+//;s/\s\+$//;')
+        root_Last_password_change=$(awk -F':' '/Last password change/{print $2}' $chage_data| sed 's/^\s\+//;s/\s\+$//;')
+        root_Password_expires=$(awk -F':' '/Password expires/{print $2}' $chage_data| sed 's/^\s\+//;s/\s\+$//;')
+        root_Password_inactive=$(awk -F':' '/Password inactive/{print $2}' $chage_data| sed 's/^\s\+//;s/\s\+$//;')
     else
         root_Last_password_change=0
         root_Password_expires=0
         root_Password_inactive=0
     fi
-
     rm -f $chage_data
 }
 
-
-get_bx_network(){
-    ip_link_list=$(ip link show | egrep -o '^[0-9]+:\s+\S+' | \
-        awk '{print $2}' | sed -e 's/://g;s/\s\+//g;' | grep -v '^lo$')
-
+get_bx_network() {
+    ip_link_list=$(ip link show | egrep -o '^[0-9]+:\s+\S+' | awk '{print $2}' | sed -e 's/://g;s/\s\+//g;' | grep -v '^lo$')
     INT_INFO=''
     # current throughput
     for int in $ip_link_list; do
         ethtool_info=$(ethtool $int | egrep -o '(Speed|Link detected):\s+\S+')
         speed=$(echo "$ethtool_info" | awk -F':' '/Speed/{print $2}' | sed -e 's/://g;s/\s\+//g;')
-        link=$( echo "$ethtool_info" | awk -F':' '/Link/{print $2}'  | sed -e 's/://g;s/\s\+//g;')
-
+        link=$(echo "$ethtool_info" | awk -F':' '/Link/{print $2}' | sed -e 's/://g;s/\s\+//g;')
         if [[ $(echo "$link" | grep -wc 'yes') -gt 0 ]]; then
             INT_INFO=$INT_INFO"\"link_$int\":\"yes\",\"speed_$int\":\"$speed\","
-            inet_addr=$(ip addr show $int | egrep -o "inet\s+\S+" | \
-                sed -e 's/^inet\s\+//;s:/[0-9]\+$::;')
+            inet_addr=$(ip addr show $int | egrep -o "inet\s+\S+" | sed -e 's/^inet\s\+//;s:/[0-9]\+$::;')
             INT_INFO=$INT_INFO"\"addr_$int\":\"$inet_addr\","
         else
             INT_INFO=$INT_INFO"\"link_$int\":\"no\",\"speed_$int\":\"0\",\"addr_$int\":\"none\","
         fi
     done
-
 }
+
 # return  number
 # outdated
-get_bx_systemtype(){
+get_bx_systemtype() {
     system_type=1
     system_memory=$(get_memory) # KB
 
@@ -232,17 +198,16 @@ get_bx_systemtype(){
     [[ ( $system_memory -gt 24000000 ) && ( $system_memory -lt 32000000 ) ]] && system_type=12
     [[ ( $system_memory -gt 32000000 ) && ( $system_memory -lt 64000000 ) ]] && system_type=13
     [[ $system_memory -gt 64000000 ]] && system_type=14
-
 }
 
-# Centos7:
+# CentOS 7 + CentOS Strream 9:
 # mysql-community-server => mysql-community
 # Percona-Server-server  => percona
 # MariaDB-server         => MariaDB
 # mariadb-server         => mariadb
-# Centos6:
+# CentOS 6:
 # mysql-server           => mysql
-get_mysql_package(){
+get_mysql_package() {
     [[ -n $MYSQL_PACKAGE ]] && return 0
 
     PACKAGES_LIST=$(rpm -qa)
@@ -277,7 +242,7 @@ get_mysql_package(){
     MYSQL_UNI_VERSION=$(echo "$MYSQL_VERSION" | awk -F'.' '{printf "%s%s", $1,$2}')
 }
 
-get_sw_versions(){
+get_sw_versions() {
     NGINX_VERSION=$(rpm -qa --queryformat '%{version}' bx-nginx 2>/dev/null | head -1 )
     NGINX_VERSION_UP=0
     NGINX_VERSION_MID=0
@@ -290,14 +255,11 @@ get_sw_versions(){
     else
         NGINX_VERSION=not_installed
     fi
-    NGINX_SSL=ssl
-    [[ ( $NGINX_VERSION_UP -ge 1 ) && \
-        ( $NGINX_VERSION_MID -ge 10 ) && \
-        ( $NGINX_VERSION_END -ge 2 )  ]] && NGINX_SSL="ssl http2"
 
-    [[ ( $NGINX_VERSION_UP -ge 1 ) && \
-        ( $NGINX_VERSION_MID -ge 12 ) ]] && NGINX_SSL="ssl http2"
-
+    NGINX_SSL="ssl"
+    # from 1.26 "listen 443 ssl http2;" deprecated
+    #[[ ( $NGINX_VERSION_UP -ge 1 ) && ( $NGINX_VERSION_MID -ge 10 ) && ( $NGINX_VERSION_END -ge 2 ) ]] && NGINX_SSL="ssl http2"
+    #[[ ( $NGINX_VERSION_UP -ge 1 ) && ( $NGINX_VERSION_MID -ge 12 ) ]] && NGINX_SSL="ssl http2"
 
     SPHINX_VERSION=$(rpm -qa --queryformat '%{version}' sphinx 2>/dev/null | head -1 )
     SPHINX_VERSION_UP=0
@@ -318,11 +280,10 @@ get_sw_versions(){
     fi
 }
 
-get_push_server_info(){
+get_push_server_info() {
     PUSH_CONFIG=/etc/sysconfig/push-server-multi
     PUSH_NGINX_CONFIG=/etc/nginx/bx/conf/im_subscrider.conf
     PUSH_NGINX_SITE_CONFIG=/etc/nginx/bx/site_enabled/push.conf
-
     PUSH_SECURITY_KEY=
     PUSH_STATUS=not_installed
     PUSH_NGINX_TYPE=empty
@@ -343,17 +304,14 @@ get_push_server_info(){
     fi
 
     if [[ -f $PUSH_NGINX_CONFIG ]]; then
-        is_rtc_server=$(grep -v '^$\|^#' $PUSH_NGINX_CONFIG | \
-            grep -wc nodejs_sub)
+        is_rtc_server=$(grep -v '^$\|^#' $PUSH_NGINX_CONFIG | grep -wc nodejs_sub)
         if [[ $is_rtc_server -gt 0 ]]; then
             PUSH_NGINX_TYPE="nodejs-push-server"
         fi
-
-        is_nginx_module=$(grep -v '^$\|^#' $PUSH_NGINX_CONFIG | \
-            grep -wc push_stream_subscriber)
-        if [[ $is_nginx_module -gt 0 ]]; then
-            PUSH_NGINX_TYPE="nginx-push-stream-module"
-        fi
+#       is_nginx_module=$(grep -v '^$\|^#' $PUSH_NGINX_CONFIG | grep -wc push_stream_subscriber)
+#       if [[ $is_nginx_module -gt 0 ]]; then
+#           PUSH_NGINX_TYPE="nginx-push-stream-module"
+#       fi
     fi
 
     if [[ -f $PUSH_CONFIG ]]; then
@@ -373,90 +331,73 @@ get_push_server_info(){
     if [[ -f $PUSH_NGINX_SITE_CONFIG ]]; then
         true
     fi
-
 }
-
 
 # 0 - active
 # 1 - not running
-get_mysql_service_status(){
-    
+get_mysql_service_status() {
     # get version for OS
     get_os_version
-
     # get MySQL name
     get_mysql_package
-
-    if [[ $OS_VERSION -eq 7 ]]; then
+    # VMBITRIX_9.0
+    if [[ $OS_VERSION -eq 9 ]]; then
+	systemctl is-active $MYSQL_SERVICE > /dev/null 2>&1
+	return $?
+    elif [[ $OS_VERSION -eq 7 ]]; then
         systemctl is-active $MYSQL_SERVICE >/dev/null 2>&1
         return $?
     else
-		MYSQL_INIT_SCRIPT=/etc/init.d/mysqld
-        MYSQL_SERVICE_NAME=mysqld
-
+	MYSQL_INIT_SCRIPT=/etc/init.d/mysqld
+	MYSQL_SERVICE_NAME=mysqld
         if [[ -f /etc/init.d/mysql ]]; then
-            MYSQL_INIT_SCRIPT=/etc/init.d/mysql
-            MYSQL_SERVICE_NAME=mysql
+	    MYSQL_INIT_SCRIPT=/etc/init.d/mysql
+	    MYSQL_SERVICE_NAME=mysql
         fi
         $MYSQL_INIT_SCRIPT status | grep -wc running >/dev/null 2>&1
-
         return $?
     fi
 }
 
-
 ## test mysql root password
 ## mysql_root_password - set | not_set
 ## mysql_root_config   - /path/to/file | no
-test_mysql_root_password(){
+test_mysql_root_password() {
     mysql_root_config=not_found
     mysql_root_password=not_set
     mysql_service_status=not_active
-
     # get mysql status
     get_mysql_service_status
     [[ $? -gt 0 ]] && return 0
     mysql_service_status=active
-
     # test connection to mysql service with empty root password
     TEMP_MYCNF=$(mktemp $TMP_DIR/.my.cnf.XXXXXXXX)
     echo -e "[client]\nuser=root\npassword=\nsocket=/var/lib/mysqld/mysqld.sock" > $TEMP_MYCNF
     mysql --defaults-file=$TEMP_MYCNF -e "status;" >/dev/null 2>&1
     mysql_rtn=$?
     rm -f $TEMP_MYCNF
-
     # connection is accepted
-    [[ $mysql_rtn -gt 0 ]] && \
-        mysql_root_password=set
-
-    # try get 
+    [[ $mysql_rtn -gt 0 ]] && mysql_root_password=set
+    # try get
     if [[ -f $MYSQL_CNF ]]; then
         mysql_config_user=
-
-        # find out connection user
-        # we don't consider situation with several group block in config
+        # find out connection user we dont consider situation with several group block in config
         TEMP_LOG=$(mktemp $TMP_DIR/.my.XXXXXXXX)
-        mysql --defaults-file=$MYSQL_CNF  -e "status" | \
-            awk '/^Current user:/{print $3}' | awk -F'@' '{print $1}' > $TEMP_LOG 2>&1
+        mysql --defaults-file=$MYSQL_CNF  -e "status" | awk '/^Current user:/{print $3}' | awk -F'@' '{print $1}' > $TEMP_LOG 2>&1
         mysql_rtn=$?
-
         if [[ $mysql_rtn -eq 0 ]]; then
             mysql_config_user=$(cat $TEMP_LOG)
             [[ $mysql_config_user == "root" ]] && mysql_root_config=$MYSQL_CNF
         fi
-
         rm -f $TEMP_LOG
     fi
 }
 
 ## rpm packages info
-get_bx_packages(){
+get_bx_packages() {
     rpm_bin=$(which rpm 2>/dev/null)
-
     get_os_version
-
     [[ -z "$rpm_bin" ]] && return 1
-
     if [[ -n $rpm_bin ]]; then
         # get mysql package info
         get_mysql_package
@@ -465,33 +406,30 @@ get_bx_packages(){
         mysql_version=$MYSQL_VERSION
         mysql_mid_version=$MYSQL_MID_VERSION
         mysql_uni_version=$MYSQL_UNI_VERSION
-
         php_version=$($rpm_bin -qa --queryformat '%{name} %{version} \n' php | awk '{print $2}')
     fi
-
     [[ -z $php_version ]] && php_version='not_installed'
     [[ -z $rpm_bin ]] && rpm_bin='not_installed'
     php_version_up=0
     php_version_mid=0
     is_older_version_php=0
-
     if [[ $php_version != "not_installed" ]]; then
         php_version_up=$(echo "$php_version" | awk -F'.' '{printf "%d", $1}')
         php_version_mid=$(echo "$php_version" | awk -F'.' '{printf "%d", $2}')
-        [[ ( $php_version_up -ge 5 && $php_version_mid -ge 6 ) || $php_version_up -ge 7 ]] && \
-            is_older_version_php=1
-
+        [[ ( $php_version_up -ge 5 && $php_version_mid -ge 6 ) || $php_version_up -ge 7 ]] && is_older_version_php=1
         php_mysql_ext=$(php -m 2>/dev/null | egrep -o '^mysql.?$' | head -1)
         [[ -z $php_mysql_ext ]] && php_mysql_ext="not_installed"
-
     fi
-
     php_union_version=${php_version_up}${php_version_mid}
     php_supported_versions=(56 70 71 72 73)
+    # CentOS 7
     if [[ $OS_VERSION -eq 7 ]]; then
         php_supported_versions=(56 70 71 72 73 74 80 81 82 83)
     fi
-
+    # CentOS Stream 9
+    if [[ $OS_VERSION -eq 9 ]]; then
+	php_supported_versions=(81 82 83)
+    fi
     php_upgraded_versions=()
     php_rollback_versions=()
     index_upgrade=0
@@ -501,13 +439,11 @@ get_bx_packages(){
             php_upgraded_versions[$index_upgrade]=$item
             index_upgrade=$(( $index_upgrade + 1 ))
         fi
-
         if [[ $php_union_version -gt $item ]]; then
             php_rollback_versions[$index_rollback]=$item
             index_rollback=$(( $index_rollback + 1 ))
         fi
     done
-
     php_upgraded_version_str="["
     for item in ${php_upgraded_versions[*]}; do
         if [[ $php_upgraded_version_str != "[" ]]; then
@@ -516,7 +452,6 @@ get_bx_packages(){
         php_upgraded_version_str=${php_upgraded_version_str}$item
     done
     php_upgraded_version_str=${php_upgraded_version_str}"]"
-
     php_rollback_versions_str="["
     for item in ${php_rollback_versions[*]}; do
         if [[ $php_rollback_versions_str != "[" ]]; then
@@ -525,7 +460,6 @@ get_bx_packages(){
         php_rollback_versions_str=${php_rollback_versions_str}$item
     done
     php_rollback_versions_str=${php_rollback_versions_str}"]"
-
     # nodejs version
     nodejs_version=$(rpm -qa --queryformat '%{name} %{version} \n' nodejs | awk '{print $2}')
     if [[ -n $nodejs_version ]]; then
@@ -534,7 +468,6 @@ get_bx_packages(){
         nodejs_version=not_installed
         nodejs_major_version=not_installed
     fi
-
     # redis version
     redis_version=$(rpm -qa --queryformat '%{name} %{version} \n' redis | awk '{print $2}')
     if [[ -n $redis_version ]]; then
@@ -543,39 +476,29 @@ get_bx_packages(){
         redis_version=not_installed
         redis_uni_version=not_installed
     fi
-
-
-
     # push-server
-    push_server_version=$(rpm -qa --queryformat '%{name} %{version} \n' push-server | \
-        awk '{print $2}')
-    [[ -z $push_server_version ]] && \
-        push_server_version=$(rpm -qa --queryformat '%{name} %{version} \n' bx-push-server | \
-            awk '{print $2}')
-
+    push_server_version=$(rpm -qa --queryformat '%{name} %{version} \n' push-server | awk '{print $2}')
+    [[ -z $push_server_version ]] && push_server_version=$(rpm -qa --queryformat '%{name} %{version} \n' bx-push-server | awk '{print $2}')
     if [[ -n $push_server_version ]]; then
         push_server_major_version=$(echo "$push_server_version" | awk -F'.' '{print $1}')
     else
         push_server_version=not_installed
         push_server_major_version=not_installed
     fi
-
 }
+
 # return max memory of this type
 # new
-get_bx_systemtype_mem(){
+get_bx_systemtype_mem() {
     memory_limits="256:512:1024:1536:2048:3072:4096:5120:6144:7168:8192:9216:10240:11264:12288:13312:14336:15360:16384:65536"
     min_mb=0
-
     memory=$(get_memory)
     memory_mb=$((${memory}/1024))
     system_type_by_memory=256
-
     os_arch=$(uname -p)
     if [[ $(echo "$os_arch" | grep -c '\(i686\|i386\)') -gt 0 ]]; then
         [[ $memory_mb -gt 4096 ]] && memory_mb=4096
     fi
-
     for max_mb in $(echo $memory_limits| sed -e 's/:/ /g;' ); do
         if [[ $memory_mb -gt $min_mb && $memory_mb -le $max_mb ]]; then
             system_type_by_memory=$max_mb
@@ -589,7 +512,6 @@ check_iptables_status() {
     iptables_tmp=$(mktemp $TMP_DIR/bx_iptables.XXXXX)
     iptables_test_port=2222
     iptables_test_port_is_good=0
-
     # test if port is close (nobody listen)
     while [[ $iptables_test_port_is_good -eq 0 ]]; do
         ss -lnp | egrep ":80\s+$iptables_test_port" > $iptables_tmp 2>&1
@@ -599,35 +521,28 @@ check_iptables_status() {
             iptables_test_port=$(( $iptables_test_port + 1 ))
         fi
     done
-
     # iptables working (stateless)
-    iptables -I INPUT -p tcp \
-        --dport $iptables_test_port -j ACCEPT > $iptables_tmp 2>&1
+    iptables -I INPUT -p tcp --dport $iptables_test_port -j ACCEPT > $iptables_tmp 2>&1
     if [[ $? -eq 0 ]]; then
         iptables_status='stateless'
-        iptables -D INPUT -p tcp \
-            --dport $iptables_test_port -j ACCEPT > $iptables_tmp 2>&1
+        iptables -D INPUT -p tcp --dport $iptables_test_port -j ACCEPT > $iptables_tmp 2>&1
     fi
-
     # iptables working (stateful)
     if [[ $iptables_status == "stateless" ]]; then
-        iptables -I INPUT -m state --state NEW \
-            -p tcp --dport $iptables_test_port -j ACCEPT > $iptables_tmp 2>&1
+        iptables -I INPUT -m state --state NEW -p tcp --dport $iptables_test_port -j ACCEPT > $iptables_tmp 2>&1
         if [[ $? -eq 0 ]]; then
             iptables_status='stateful'
-            iptables -D INPUT -m state --state NEW \
-                -p tcp --dport $iptables_test_port -j ACCEPT > $iptables_tmp 2>&1
+            iptables -D INPUT -m state --state NEW -p tcp --dport $iptables_test_port -j ACCEPT > $iptables_tmp 2>&1
         fi
     fi
     rm -f $iptables_tmp
 }
 
-check_firewalld_status(){
+check_firewalld_status() {
     firewalld_package="not_installed"
     firewalld_status="not_running"
     firewalld_bx_type="not_installed"
     firewalld_tolerance="non_compatible"
-
     firewalld_tmp=$(mktemp $TMP_DIR/firewalld.XXXXX)
     rpm -qi firewalld > $firewalld_tmp 2>&1
     if [[ $? -gt 0 ]]; then
@@ -635,19 +550,16 @@ check_firewalld_status(){
         return 0
     fi
     firewalld_package="installed"
-
     firewall-cmd --state > $firewalld_tmp 2>&1
     if [[ $? -gt 0 ]]; then
         rm -f $firewalld_tmp
         return 0
     fi
-
     if [[ $(grep -c '^running$' $firewalld_tmp) -gt 0 ]]; then
         firewalld_status="running"
         if [[ $(firewall-cmd --get-zones | grep bx_trusted -c) -gt 0 ]]; then
             firewalld_bx_type="installed"
         fi
-
         systemctl status firewalld > $firewalld_tmp 2>&1
         if [[ $(grep -c "ERROR:" $firewalld_tmp) -eq 0 ]]; then
             firewalld_tolerance="compatible"
@@ -655,7 +567,6 @@ check_firewalld_status(){
     fi
     rm -f $firewalld_tmp
 }
-
 
 debug "start get_bx_version"
 get_bx_version

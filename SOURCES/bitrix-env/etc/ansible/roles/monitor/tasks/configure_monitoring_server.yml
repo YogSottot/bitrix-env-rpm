@@ -1,6 +1,6 @@
 ---
 # configure server
-- name: install server's packages
+- name: install servers packages
   yum:
     pkg: "{{ packages }}"
     state: latest
@@ -37,5 +37,3 @@
     name: nagios
     state: restarted
   when: inventory_hostname == monitoring_server
-
-

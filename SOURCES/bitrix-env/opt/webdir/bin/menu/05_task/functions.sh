@@ -1,3 +1,5 @@
+#!/usr/bin/bash
+#
 BASE_DIR=/opt/webdir
 BIN_DIR=$BASE_DIR/bin
 
@@ -9,45 +11,37 @@ task_menu=$BIN_DIR/menu/05_task
 [[ -f $task_menu/functions.txt  ]] && \
         . $task_menu/functions.txt
 
-get_pool_tasks(){
-
+get_pool_tasks() {
     process_inf=$($bx_process_script -a list)
     process_err=$(echo "$process_inf" | grep '^error:' | sed -e "s/^error://")
     process_msg=$(echo "$process_inf" | grep '^message:' | sed -e "s/^message://")
 
-    POOL_TASKS_LIST=$(echo "$process_inf" | \
-        grep '^info:' | sed -e "s/info://" | \
-        sort -t':' -k4 -nr)
+    POOL_TASKS_LIST=$(echo "$process_inf" | grep '^info:' | sed -e "s/info://" | sort -t':' -k4 -nr)
     POOL_TASKS_COUNT=$(echo "$POOL_TASKS_LIST" | wc -l)
 
-    [[ $DEBUG -gt 0 ]] && \
-        echo "$(get_text "$T0001" "$POOL_TASKS_COUNT")"
+    [[ $DEBUG -gt 0 ]] && echo "$(get_text "$T0001" "$POOL_TASKS_COUNT")"
 }
 
-print_pool_tasks(){
-    filter_type=$1     # filter by task type (ex. monitor)
-    filter_status=$2   # filter by task status (error, finished, interrupt)
-    filter_days=$3     # filter by task date
-    print_limit=$4     # limit output data for menu
-
+print_pool_tasks() {
+    filter_type=$1   # filter by task type (ex. monitor)
+    filter_status=$2 # filter by task status (error, finished, interrupt)
+    filter_days=$3   # filter by task date
+    print_limit=$4   # limit output data for menu
 
     [[ -z "$POOL_TASKS_COUNT" ]] && get_pool_tasks
-
 
     # Menu text
     echo_type=$filter_type
     echo_status=$filter_status
     echo_days=$filter_days
-    [[ -z "$filter_type" ]]     &&  echo_type="$T0002"
-    [[ -z "$filter_status" ]]   && echo_status="$T0002"
-    [[ -z "$filter_days" ]]     && echo_days="$T0002"
-    [[ -z "$print_limit" ]]     && print_limit=10
+    [[ -z "$filter_type" ]] &&  echo_type="$T0002"
+    [[ -z "$filter_status" ]] && echo_status="$T0002"
+    [[ -z "$filter_days" ]] && echo_days="$T0002"
+    [[ -z "$print_limit" ]] && print_limit=10
 
     pool_filter_list="$POOL_TASKS_LIST"
-    [[ -n "$filter_type" ]] && \
-        pool_filter_list=$(echo "$pool_filter_list" | grep -i ":$filter_type")
-    [[ -n "$filter_status" ]] && \
-        pool_filter_list=$(echo "$pool_filter_list" | grep -i ":$filter_status")
+    [[ -n "$filter_type" ]] && pool_filter_list=$(echo "$pool_filter_list" | grep -i ":$filter_type")
+    [[ -n "$filter_status" ]] && pool_filter_list=$(echo "$pool_filter_list" | grep -i ":$filter_status")
 
     if [[ -n "$filter_days" ]]; then
         CT=$(date +%s)
@@ -92,8 +86,7 @@ $line"
             task_step=$(echo $line| awk -F':' '{print $NF}')   # current operations
 
             if [[ $printed_tasks -lt $print_limit ]]; then
-                printf "%-25s | %-25s | %15s | %s\n" \
-                    "$task_id" "$task_date" "$task_status" "$task_step"
+                printf "%-25s | %-25s | %15s | %s\n" "$task_id" "$task_date" "$task_status" "$task_step"
             fi
             printed_tasks=$(($printed_tasks+1))
         done
@@ -107,7 +100,7 @@ $line"
     fi
 }
 
-stop_task(){
+stop_task() {
     print_message "$T0008" "" "" task_id
 
     stop_task_inf=$($bx_process_script -a stop -t $task_id)
@@ -121,18 +114,15 @@ stop_task(){
         return 1
     else
         POOL_TASKS_COUNT=
-        print_message "$T0200" \
-            "$(get_text "$T0010" "$task_id")" "" any_key
+        print_message "$T0200" "$(get_text "$T0010" "$task_id")" "" any_key
         return 0
     fi
 }
 
 clear_history() {
-    clear
-    print_message "$T0011" \
-        "$T0012" "" task_clear_days 7
-    print_message \
-        "$T0013" "" "" task_clear_type
+    [[ $DEBUG -eq 0 ]] && clear
+    print_message "$T0011" "$T0012" "" task_clear_days 7
+    print_message "$T0013" "" "" task_clear_type
 
     print_pool_tasks "$task_clear_type" "" "$task_clear_days"
     if [[ $FILTERED_TASK_CNT -eq 0 ]]; then
@@ -148,14 +138,12 @@ clear_history() {
         if [[ -n $task_clear_type ]]; then
             stop_task_exe=$stop_task_exe" -T $task_clear_type"
         fi
-        [[ $DEBUG -gt 0 ]] && \
-            echo "exec: $stop_task_exe"
+        [[ $DEBUG -gt 0 ]] && echo "exec: $stop_task_exe"
         stop_task_inf=$($stop_task_exe)
         stop_task_msg=$(echo "$stop_task_inf" | grep "message:" | sed -e 's/message://;')
         stop_task_err=$(echo "$stop_task_err" | grep "error:" | sed -e 's/error://;')
         print_message "$T0200" "$stop_task_msg" "" any_key
         TASK_MENU_SELECT=
         POOL_TASKS_COUNT=
-  fi
+    fi
 }
-

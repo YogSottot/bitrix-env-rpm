@@ -8,7 +8,9 @@
   when: item.ApacheConfNTLM != ""
 
 - name: delete ansible settings from apache config
-  bx_blockinfile: insertafter="CERTIFICATE ANSIBLE MANAGED BLOCK" state="delete"
+  bx_blockinfile:
+    insertafter="CERTIFICATE ANSIBLE MANAGED BLOCK"
+    state="delete"
     dest="{{ item.ApacheConfNTLM }}"
   with_items: "{{ bx_sites_info }}"
   when: item.ApacheConfNTLM != ""
@@ -23,4 +25,3 @@
       SSLCertificateKeyFile  /home/bitrix/dehydrated/certs/{{ common_name.stdout }}/privkey.pem
   with_items: "{{ bx_sites_info }}"
   when: item.ApacheConfNTLM != ""
-

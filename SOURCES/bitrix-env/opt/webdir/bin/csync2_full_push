@@ -1,6 +1,7 @@
-#!/bin/bash
+#!/usr/bin/bash
+#
 # set -x
-
+#
 CSYNC2_NAME=$1
 VERBOSE=$2
 [[ -z $CSYNC2_NAME ]] && CSYNC2_NAME=bxcluster
@@ -11,7 +12,7 @@ LOCK_NAME=/tmp/csync2_$CSYNC2_NAME.lock
 DATE_FORMAT='+%F_%H:%M:%S'
 
 # save message to log
-save_to_log(){
+save_to_log() {
   log_message=$1
   # print message for debug
   [[ $VERBOSE -gt 0 ]] && echo "$( date ${DATE_FORMAT} ): [$$] $log_message"
@@ -20,7 +21,7 @@ save_to_log(){
 }
 
 # create lock
-create_lock_file(){
+create_lock_file() {
   if [[ -f $LOCK_NAME ]]; then
     process_pid=$(cat $LOCK_NAME)
     if [[ $(ps -ef | grep $process_pid | grep -cv grep) -gt 0 ]]; then
@@ -33,7 +34,7 @@ create_lock_file(){
 }
 
 # delete lock
-delete_lock_file(){
+delete_lock_file() {
   if [[ -f $LOCK_NAME ]]; then
     rm -f $LOCK_NAME
     save_to_log "Removed lock file"
@@ -41,7 +42,7 @@ delete_lock_file(){
 }
 
 # check LA, stop if it is too high
-check_la_value(){
+check_la_value() {
   LA=$(/usr/bin/uptime | /bin/awk -F"load average: " '{print $2}' | /bin/awk -F\. '{print $1}')
 
   if [[ $LA -ge 10 ]]; then

@@ -1,7 +1,8 @@
-#!/bin/bash
+#!/usr/bin/bash
+#
 # clear temporary trash files for transformer module
 #set -x
-
+#
 export LANG=en_US.UTF-8
 export TERM=linux
 PROGNAME=$(basename $0)
@@ -38,13 +39,13 @@ if [[ -z "$SITE_NAME" ]]; then
 fi
 
 # logging infor to file
-log_to_file(){
+log_to_file() {
     _mess=$1
 
     echo "$(date +"%Y/%m/%d %H:%M:%S") $$ $_mess" | tee -a $LOGS_FILE
 }
 
-error(){
+error() {
     _mess="${1}"
     _exit="${2:-1}"
 
@@ -71,17 +72,13 @@ if [[ $TR_DIR =~ "." || $TR_DIR =~ "/" ]]; then
     error "Directory name $TR_DIR contains invalid characters. Exit"
 fi
 
-
-SITE_DIR=$(echo "$SITE_INFO" | \
-    grep ':directory:' | awk -F':' '{print $5}')
+SITE_DIR=$(echo "$SITE_INFO" |  grep ':directory:' | awk -F':' '{print $5}')
 
 TR_FF="${SITE_DIR}/${UPLOAD_DIR}/${TR_DIR}"
 if [[ ! -d $TR_FF ]]; then
     error "There are no $TR_FF"
 fi
 
-
 pushd $TR_FF || exit 
 find .  -type f -mmin +60 -exec rm -rf "{}" ";" >> $LOGS_FILE 2>&1
 popd 
-

@@ -3,11 +3,11 @@
 # Options:
 # slave_server - name of the replacement
 # serverid     - id of the replacement
-- include: sites-gathering_facts.yml
+- include_tasks: sites-gathering_facts.yml
 
-- include: sites-checks.yml
+- include_tasks: sites-checks.yml
 
-- include: mysql-check-master.yml
+- include_tasks: mysql-check-master.yml
   when: mysql_uni_version|int < 80
 
 - name: additional variables that present mysql server
@@ -19,23 +19,26 @@
     new_master_server_ip: "{{ hostvars[slave_server]['bx_netaddr'] }}"
   tags: vars
 
-- include: common-etckeeper.yml
+- include_tasks: common-etckeeper.yml
   when: "slave_server == inventory_hostname or master_server == inventory_hostname"
 
-- include: sites-make_public.yml
+- include_tasks: sites-make_public.yml
   when: "inventory_hostname == cluster_web_server"
 
 - name: read-only mode on master server
   delegate_to: "{{ master_server }}"
-  mysql_variables: variable=read_only value=1 login_unix_socket={{ mysql_socket }}
+  mysql_variables:
+    variable=read_only
+    value=1
+    login_unix_socket={{ mysql_socket }}
   tags: mysql
   when: "inventory_hostname == slave_server"
 
 # delete replication from new master
-- include: mysql-configure-master.yml
+- include_tasks: mysql-configure-master.yml
   when: "inventory_hostname == slave_server"
 
-- include: mysql-new_master-lock.yml
+- include_tasks: mysql-new_master-lock.yml
   when: "'bitrix-mysql' in group_names"
   vars:
     lock: mysql
@@ -49,10 +52,10 @@
   when: "inventory_hostname == slave_server"
   ignore_errors: yes
 
-- include: mysql-configure-slaves-new-master.yml
+- include_tasks: mysql-configure-slaves-new-master.yml
   when: "'bitrix-mysql' in group_names and inventory_hostname != slave_server"
 
-- include: mysql-pt-slave-restart-start.yml
+- include_tasks: mysql-pt-slave-restart-start.yml
   when: "'bitrix-mysql' in group_names and inventory_hostname != slave_server"
 
 # update runtime options for servers
@@ -72,35 +75,38 @@
     mysql_replication_role: master
   when: "'bitrix-mysql' in group_names and inventory_hostname == new_master_server"
  
-- include: mysql-new_master-lock.yml
+- include_tasks: mysql-new_master-lock.yml
   vars:
     lock: web
 
 # change sites config files - replace DBHost in site config files: dbconn.php and .settings.php 
-- include: sites-update_settings.yml
+- include_tasks: sites-update_settings.yml
   when: "inventory_hostname == slave_server"
 
 # update cluster module, delete master from slaves list in the cluster module
-- include: sites-register_master.yml
+- include_tasks: sites-register_master.yml
   when: "inventory_hostname == slave_server"
  
 # update cluster module, add/update records for slave servers
-- include: sites-register_slave.yml
+- include_tasks: sites-register_slave.yml
   when: "'bitrix-mysql' in group_names and inventory_hostname != slave_server"
 
 # enable public part of site
 - name: create site_stopped variable
   set_fact: site_stopped='N'
 
-- include: sites-make_public.yml
+- include_tasks: sites-make_public.yml
   when: "inventory_hostname == cluster_web_server"
 
 - name: remove the read-only mode from the master-server
-  mysql_variables: variable=read_only value=0 login_unix_socket={{ mysql_socket  }}
+  mysql_variables:
+    variable=read_only
+    value=0
+    login_unix_socket={{ mysql_socket  }}
   tags: mysqld_master
   when: "inventory_hostname == old_master_server"
 
-- include: mysql-inventory-master.yml
+- include_tasks: mysql-inventory-master.yml
   when: "inventory_hostname == slave_server"
 
 - name: delete lock files

@@ -1,11 +1,13 @@
-#!/bin/bash
-# manage sites and site's options 
+#!/usr/bin/bash
+#
+# manage sites and site's options
 #set -x
 PROGNAME=$(basename $0)
 PROGPATH=$(dirname $0)
 [[ -z $DEBUG ]] && DEBUG=0
 
 . $PROGPATH/03_mysql/functions.sh || exit 1
+
 logo=$(get_logo)
 
 update_mysql_configs() {
@@ -34,21 +36,25 @@ manage_mysql_service() {
 
 # print host menu
 menu_mysql() {
+#    menu_mysql_00="$MY0201"
+#    menu_mysql_01="$MY0045"
+#    menu_mysql_02="$MY0046"
+#    menu_mysql_03="$MY0047"
+#    #menu_mysql_04="$MY0048"
+#    #menu_mysql_05="$MY0049"
+#    #menu_mysql_06="$MY0050"
     menu_mysql_00="$MY0201"
     menu_mysql_01="$MY0045"
-    menu_mysql_02="$MY0046"
-    menu_mysql_03="$MY0047"
-    menu_mysql_04="$MY0048"
-    menu_mysql_05="$MY0049"
-    menu_mysql_06="$MY0050"
+    menu_mysql_02=" $MY0046"
+    menu_mysql_03=" $MY0047"
 
     menu_logo="$MY0051"
 
     MYSQL_MENU_SELECT=
     until [[ -n "$MYSQL_MENU_SELECT" ]]; do
-        clear
-        echo -e "\t\t\t" $logo
-        echo -e "\t\t\t" $menu_log
+        [[ $DEBUG -eq 0 ]] && clear
+        echo -e "\t\t" $logo
+        echo -e "\t\t" $menu_log
         echo
 
         # mysql servers list
@@ -58,32 +64,36 @@ menu_mysql() {
         print_task_by_type '(mysql|monitor)' "$POOL_MYSQL_TASK_LOCK" "$POOL_MYSQL_TASK_INFO"
 
         if [[ $POOL_MYSQL_TASK_LOCK -eq 1 ]]; then
-            menu_list="\n\t$menu_mysql_00"
+            menu_list="$menu_mysql_00"
         else
-            menu_list="\n\t$menu_mysql_01\n\t$menu_mysql_02\n\t$menu_mysql_03\n\t$menu_mysql_04"
-            if [[ $MYSQL_SLAVES_CNT -gt 0 ]]; then
-                menu_list="$menu_list\n\t$menu_mysql_05\n\t$menu_mysql_06"
-            fi
-            menu_list="$menu_list\n\t$menu_mysql_00"
+            menu_list="$menu_mysql_01\n\t\t$menu_mysql_02\n\t\t$menu_mysql_03"
+#            if [[ $MYSQL_SLAVES_CNT -gt 0 ]]; then
+#                menu_list="$menu_list\n\t\t$menu_mysql_05\n\t\t$menu_mysql_06"
+#            fi
+            menu_list="$menu_list\n\t\t $menu_mysql_00"
         fi
         print_menu
 
         print_message "$MY0205" '' '' MYSQL_MENU_SELECT
-       
+
         case "$MYSQL_MENU_SELECT" in
-            "1") update_mysql_configs   ;;
-            "2") change_mysql_password  ;;
-            "3") manage_mysql_service   ;;
-            "4") create_mysql_slave     ;;
-            "5") change_mysql_master    ;;
-            "6") remove_mysql_slave     ;;
+#            "1") update_mysql_configs ;;
+#            "2") change_mysql_password ;;
+#            "3") manage_mysql_service ;;
+#            #"4") create_mysql_slave ;;
+#            #"5") change_mysql_master ;;
+#            #"6") remove_mysql_slave ;;
+#            "0") exit ;;
+#            *) error_pick; MYSQL_MENU_SELECT= ;;
+            "1") update_mysql_configs ;;
+            "2") change_mysql_password ;;
+            "3") manage_mysql_service ;;
             "0") exit ;;
-            *)   error_pick; MYSQL_MENU_SELECT=;;
+            *) error_pick; MYSQL_MENU_SELECT= ;;
         esac
 
         MYSQL_MENU_SELECT=
-done
+    done
 }
 
 menu_mysql
-

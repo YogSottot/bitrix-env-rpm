@@ -13,7 +13,6 @@ use Pool;
 use Host;
 use bxDaemon;
 
-
 # basic path for site
 has 'config', is => 'ro', default => '/etc/ansible/group_vars/bitrix-memcached.yml';
 has 'group', is => 'ro', default => 'memcached';
@@ -62,7 +61,6 @@ sub groupOptions{
     data  => [$message_t, $group_options]
   );
 }
-
 
 ## get server options 
 sub serverOptions{

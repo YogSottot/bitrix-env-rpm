@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/usr/bin/bash
+#
 # state:
 #       init   ----- create CA certificate and server certificate
 #       uninit ----- delete CA certificates
@@ -26,15 +27,13 @@ LOG_FILE=$TMP_DIR/bx_ca_$$.log
 CA_PASS=$PRIV/ca_private
 #set -x
 
-log(){
+log() {
     mess=$1
-
     echo "$(date +%s) $mess" >> $LOG_FILE
 }
 
-debug(){
+debug() {
     mess=$1
-
     [[ $DEBUG -gt 0  ]] && log "$mess"
 }
 
@@ -50,7 +49,6 @@ print_error() {
 print_change() {
     msg=$1
     arh=$2
-
     if [[ -n $arh ]]; then
         echo "{\"changed\":true,\"msg\":\"$msg\",\"archive\":\"$arh\"}"
     else
@@ -64,7 +62,6 @@ print_change() {
 print_ok() {
     msg=$1
     arh=$2
-
     if [[ -n $arh ]]; then
         echo "{\"changed\":false,\"msg\":\"$msg\",\"archive\":\"$arh\"}"
     else
@@ -83,15 +80,12 @@ create_random_string() {
 
 test_hostname() {
     hostname=$1
-    [[ -z $hostname ]] &&
-        print_error "You must define hostname= option."
+    [[ -z $hostname ]] && print_error "You must define hostname= option."
 }
 
 status_cert() {
     hostname=${1}
-
     test_hostname "$hostname"
-
     status_cert=$(grep "CN=${hostname}$" $SSL/index.txt 2>/dev/null)
     if [[ -n $status_cert ]]; then
         index_state=$(echo "$status_cert" | tail -n 1 | awk '{print $1}')
@@ -104,13 +98,11 @@ status_cert() {
     return 2
 }
 
-status_cert_print(){
+status_cert_print() {
     hostname=${1}
-
     [[ -z $hostname ]] && hostname=$(hostname)
     status_cert $hostname
     status_cert_rtn=$?
-
     if [[ $status_cert_rtn -eq 0 ]]; then 
         echo "{\"archive\":\"$ARH/${hostname}.tar.gz}\",\"status\":\"exists\"}"
     elif [[ $status_cert_rtn  -eq 1 ]]; then
@@ -122,47 +114,28 @@ status_cert_print(){
 
 add_cert() {
     hostname=${1}
-
     test_hostname "$hostname"
-
     # status
     status_cert "${hostname}"
     if [[ $? -eq 0 ]]; then
         print_ok "Certificate already exists for server=$hostname"
     fi
-
     # server key
     srv_pass=$PRIV/${hostname}-private
     create_random_string > $srv_pass
-
     # generate server request
-    openssl req -new -keyout $SSL/$hostname-key.pem -out \
-        $SSL/$hostname-req.pem -days 3600 -config $SSL/openssl.cnf \
-        -subj "/CN=$hostname/" -passout file:$srv_pass >> $LOG_FILE 2>&1
-    [[ $? -gt 0 ]] && \
-        print_error "Cannot generate request for server=$hostname; Please see log=$LOG_FILE"
-
+    openssl req -new -keyout $SSL/$hostname-key.pem -out $SSL/$hostname-req.pem -days 3600 -config $SSL/openssl.cnf -subj "/CN=$hostname/" -passout file:$srv_pass >> $LOG_FILE 2>&1
+    [[ $? -gt 0 ]] && print_error "Cannot generate request for server=$hostname; Please see log=$LOG_FILE"
     # remove password
-    openssl rsa -in $SSL/$hostname-key.pem -out $SSL/$hostname-key.pem \
-        -passin file:$srv_pass >> $LOG_FILE 2>&1
-    [[ $? -gt 0 ]] && \
-        print_error "Cannot remove password for server=$hostname; Please see log=$LOG_FILE"
-
+    openssl rsa -in $SSL/$hostname-key.pem -out $SSL/$hostname-key.pem -passin file:$srv_pass >> $LOG_FILE 2>&1
+    [[ $? -gt 0 ]] && print_error "Cannot remove password for server=$hostname; Please see log=$LOG_FILE"
     # sign
-    openssl ca \
-        -batch \
-        -passin file:$CA_PASS \
-        -cert $SSL/ca.pem -policy policy_anything \
-        -out $SSL/$hostname-cert.pem -config $SSL/openssl.cnf \
-        -infiles $SSL/$hostname-req.pem >> $LOG_FILE 2>&1
-    [[ $? -gt 0 ]] && \
-        print_error "Cannot sign certificate for server=$hostname; Please see log=$LOG_FILE"
-
+    openssl ca -batch -passin file:$CA_PASS -cert $SSL/ca.pem -policy policy_anything -out $SSL/$hostname-cert.pem -config $SSL/openssl.cnf -infiles $SSL/$hostname-req.pem >> $LOG_FILE 2>&1
+    [[ $? -gt 0 ]] && print_error "Cannot sign certificate for server=$hostname; Please see log=$LOG_FILE"
     # archive
     arch_dir=$ARH/${hostname}
     arch_path=$ARH/${hostname}.tar.gz
-    [[ ! -d $arch_dir ]] && \
-        mkdir -m 0700 $arch_dir
+    [[ ! -d $arch_dir ]] && mkdir -m 0700 $arch_dir
     cp --preserve="mode,ownership" -f $SSL/ca.pem $arch_dir/
     cp --preserve="mode,ownership" -f $SSL/$hostname-key.pem $arch_dir/server.key
     cp --preserve="mode,ownership" -f $SSL/$hostname-cert.pem $arch_dir/server.crt
@@ -171,8 +144,7 @@ add_cert() {
 
     pushd $arch_dir 1>/dev/null 2>&1
     tar czf $arch_path . >>$LOG_FILE 2>&1
-    [[ $? -gt 0 ]] && \
-        print_error "Cannot create archive=$arch_path; Please see log=$LOG_FILE"
+    [[ $? -gt 0 ]] && print_error "Cannot create archive=$arch_path; Please see log=$LOG_FILE"
     popd 1>/dev/null 2>&1
     rm -rf $arch_dir
 
@@ -181,78 +153,56 @@ add_cert() {
 
 update_cert() {
     hostname=${1}
-
     test_hostname "$hostname"
-
     status_cert $hostname
     status_cert_rtn=$?
     if [[ $status_cert_rtn -eq 0 ]]; then
         revoke_cert $hostname
     fi
-
     add_cert $hostname
 }
 
 revoke_cert() {
     hostname=${1}
-
     test_hostname "$hostname"
-
     status_cert "$hostname"
     if [[ $? -eq 1 ]]; then
         print_ok "Not found valid certificate for hostname=$hostname"
     fi
-
-    openssl ca \
-        -batch \
-        -passin file:$CA_PASS \
-        -config $SSL/openssl.cnf \
-        -revoke $SSL/$hostname-cert.pem >> $LOG_FILE 2>&1
-    [[ $? -gt 0 ]] && \
-        print_error "Cannot revoke certificate for server=$hostname; Please see log=$LOG_FILE"
-
+    openssl ca -batch -passin file:$CA_PASS -config $SSL/openssl.cnf -revoke $SSL/$hostname-cert.pem >> $LOG_FILE 2>&1
+    [[ $? -gt 0 ]] && print_error "Cannot revoke certificate for server=$hostname; Please see log=$LOG_FILE"
     rm -f $SSL/$hostname-key.pem  $SSL/$hostname-cert.pem $SSL/$hostname-req.pem $PRIV/${hostname}-private
 }
 
 init_ca() {
     status_cert "$(hostname)"
     status_rtn=$?
-    [[ ( $status_rtn -eq 1 ) || ( $status_rtn -eq 0 ) ]] && \
-        print_ok "Auth CA already exists"
+    [[ ( $status_rtn -eq 1 ) || ( $status_rtn -eq 0 ) ]] && print_ok "Auth CA already exists"
 
     # create directories
     for dir in $SSL $PRIV $CERT $ARH; do
-        [[ ! -d $dir ]] && \
-            mkdir -m 700 -p $dir
+        [[ ! -d $dir ]] && mkdir -m 700 -p $dir
     done
-    
     # config
     cp /etc/pki/tls/openssl.cnf $SSL
     sed -i "s:./demoCA:$SSL:" $SSL/openssl.cnf >> $LOG_FILE 2>&1
     sed -i "s:/etc/pki/CA:$SSL:" $SSL/openssl.cnf >> $LOG_FILE 2>&1
     sed -i "s:cacert.pem:ca.pem:" $SSL/openssl.cnf >> $LOG_FILE 2>&1
-
     # Create necessary files: $database, $serial and $new_certs_dir
     # directory (optional)
     touch $SSL/index.txt
     echo "01" > $SSL/serial
     create_random_string > $CA_PASS
-
     # generate CA
-    openssl req -new -x509 -keyout $PRIV/cakey.pem -out $SSL/ca.pem \
-        -days 3600 -passout file:$CA_PASS -config $SSL/openssl.cnf \
-        -subj "/CN=CertificateAuthority/" >> $LOG_FILE 2>&1
-    [[ $? -gt 0 ]] && \
-        print_error "Cannot create CA; please see log=$LOG_FILE"
-
+    openssl req -new -x509 -keyout $PRIV/cakey.pem -out $SSL/ca.pem -days 3600 -passout file:$CA_PASS -config $SSL/openssl.cnf -subj "/CN=CertificateAuthority/" >> $LOG_FILE 2>&1
+    [[ $? -gt 0 ]] && print_error "Cannot create CA; please see log=$LOG_FILE"
     # add certificate for server
     add_cert $(hostname)
 }
 
 uninit_ca() {
     status_cert "$(hostname)"
-    [[ $? -eq 2 ]] && \
-        print_ok "Not found Certificate Auth"
+    [[ $? -eq 2 ]] && print_ok "Not found Certificate Auth"
     rm -rf $SSL
 }
 

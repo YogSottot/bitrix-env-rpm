@@ -2,7 +2,8 @@
 # hosts
 - name: remove server to web group
   delegate_to: 127.0.0.1
-  bx_conf: hostname={{ inventory_hostname }}
-    state=absent group=web
+  bx_conf:
+    hostname={{ inventory_hostname }}
+    state=absent
+    group=web
   tags: ansible_hosts
-

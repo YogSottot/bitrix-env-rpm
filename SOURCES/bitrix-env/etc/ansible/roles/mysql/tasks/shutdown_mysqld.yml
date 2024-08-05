@@ -6,20 +6,18 @@
 - name: shutdown mysql on CentOS6
   shell: mysqladmin shutdown
   tags: mysql
-  when: ansible_distribution == "CentOS"
-    and ansible_distribution_major_version == "6"
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "6"
 
 - name: shutdown mysql on CentOS7
   service:
     name: mysql
     state: stopped
   tags: mysql
-  when: ansible_distribution == "CentOS"
-    and ansible_distribution_major_version == "7"
-
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
 
 - name: wait mysql shutdown
-  wait_for: path=/var/lib/mysqld/mysqld.sock
+  wait_for:
+    path=/var/lib/mysqld/mysqld.sock
     state=absent
     delay=10
   tags: mysql
@@ -43,4 +41,3 @@
   args:
     removes: /var/lib/mysqld/mysqld.sock
   when: command_result.failed and stat_initd.stat.exists
-

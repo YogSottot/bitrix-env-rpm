@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/usr/bin/bash
+#
 # ntlm status
 # menu uses next functions: 
 # server_ntlm_status - information about host NTLM_STATUS
@@ -13,6 +14,7 @@ PROGPATH=$(dirname $0)
 [[ -z $DEBUG ]] && DEBUG=0
 
 . $PROGPATH/functions.sh || exit 1
+
 logo=$(get_logo)
 
 # ask user for host domain options
@@ -21,8 +23,7 @@ logo=$(get_logo)
 # NTLM_DC
 # NTLM_ADMIN
 # NTLM_PWD
-get_ntlm_options(){
-
+get_ntlm_options() {
     NTLM_HOST_SETTINGS=N
     NETBIOS_NAME_LIMIT=15                  # bytes
     NETBIOS_NAME_DEFAULT=$(hostname | awk -F'.' '{print $1}')       # netbios hostname
@@ -156,8 +157,7 @@ get_ntlm_options(){
 # -- not empty
 # -- NTLM configration options in database
 # -- LDAP Module
-ntlm_site_name(){
-
+ntlm_site_name() {
     start_ntlm_config=0
     # ask about sites
     print_message "$SM0090" "$SM0091" "" NTLM_SITE default
@@ -226,7 +226,6 @@ ntlm_site_name(){
 
 # start process for create/replace NTLM settings
 ntlm_create() {
- 
     # test current AD status for host
     [[ -z "$NTLM_STATUS" ]] && server_ntlm_status "skip"
 
@@ -251,12 +250,12 @@ ntlm_create() {
 
         # start configuration process
         if [[ $start_ntlm_config -eq 1 ]]; then
-            ntlm_task=$ntlm_task" --database=$site_db --root=$site_dir"
+#            ntlm_task=$ntlm_task" --database=$site_db --root=$site_dir"
 
             print_message "$SM0100" "" "" _domain_confirm 'n'
             if [[ $(echo "$_domain_confirm" | grep -iwc 'y') -gt 0 ]]; then
                 [[ $DEBUG -gt 0 ]] && echo "$ntlm_task"
-                exec_pool_task "$ntlm_task" "$SM0101"
+#                exec_pool_task "$ntlm_task" "$SM0101"
             fi
         fi
     fi
@@ -277,7 +276,7 @@ ntml_site_config() {
         print_message "$SM0100" "" "" _domain_confirm 'n'
         if [[ $(echo "$_domain_confirm" | grep -iwc 'y') -gt 0 ]]; then
             [[ $DEBUG -gt 0 ]] && echo "$ntlm_task"
-            exec_pool_task "$ntlm_task" "$SM0101"
+#            exec_pool_task "$ntlm_task" "$SM0101"
         fi
     else
         [[ $DEBUG -gt 0 ]] && print_message "$CS0101" "" "" any_key
@@ -318,10 +317,10 @@ sub_menu() {
 
         # process selection
         case "$MENU_SELECT" in
-            "1") ntlm_create;;                # configure new NTLM settings for server and one site
-            "2") ntml_site_config;;           # add existen NTLM settings to a site
+            #"1") ntlm_create ;; # configure new NTLM settings for server and one site
+            #"2") ntml_site_config ;; # add existen NTLM settings to a site
             "0") exit ;;
-            *)   error_pick;;
+            *) error_pick ;;
         esac
     
         MENU_SELECT=
@@ -329,4 +328,3 @@ sub_menu() {
 }
 
 sub_menu
-

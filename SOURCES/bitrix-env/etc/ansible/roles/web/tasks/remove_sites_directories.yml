@@ -1,6 +1,9 @@
 ---
 - name: enable web-services
-  service: name={{ item  }} enabled=no state=stopped
+  service:
+    name={{ item  }}
+    enabled=no
+    state=stopped
   with_items:
     - nginx
     - httpd
@@ -25,4 +28,3 @@
     state: absent
   tags: web
   with_items: "{{ bx_sites_info }}"
-

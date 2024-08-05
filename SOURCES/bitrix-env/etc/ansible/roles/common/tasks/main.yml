@@ -7,26 +7,19 @@
   when: "ansible_playbook_file != 'NOT_DEFINED'"
 
 - include_tasks: remove.yml
-  when: common_manage == 'remove'
-    and common_server == inventory_hostname
+  when: common_manage == 'remove' and common_server == inventory_hostname
 
 - include_tasks: forget.yml
-  when: common_manage == 'forget'
-    and inventory_hostname == cluster_web_server
+  when: common_manage == 'forget' and inventory_hostname == cluster_web_server
 
 - include_tasks: update.yml
-  when: common_manage == 'update'
-    or common_manage == 'forget'
+  when: common_manage == 'update' or common_manage == 'forget'
 
 - include_tasks: push.yml
-  when: common_manage == 'update'
-    and push_server is defined
-    and inventory_hostname == push_server
+  when: common_manage == 'update' and push_server is defined and inventory_hostname == push_server
 
 - include_tasks: push.yml
-  when: common_manage == 'update_push_server'
-    and push_server is defined
-    and inventory_hostname == push_server
+  when: common_manage == 'update_push_server' and push_server is defined and inventory_hostname == push_server
 
 - include_tasks: version.yml
   when: common_manage == 'version'
@@ -38,13 +31,10 @@
   when: common_manage == 'time'
 
 - include_tasks: reboot.yml
-  when: common_manage == 'reboot'
-    and common_server == inventory_hostname
+  when: common_manage == 'reboot' and common_server == inventory_hostname
 
 - include_tasks: password.yml
-  when: common_manage == 'password'
-    and common_server == inventory_hostname
+  when: common_manage == 'password' and common_server == inventory_hostname
 
 - include_tasks: configure_firewall_service.yml
   when: common_manage == 'firewall'
-

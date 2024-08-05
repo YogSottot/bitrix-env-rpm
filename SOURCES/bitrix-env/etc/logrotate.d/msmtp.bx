@@ -1,8 +1,8 @@
-/var/log/msmtp.log {
-		daily
-		missingok
-		rotate 10
-		compress
-		notifempty
-		create 666 root root
+/home/bitrix/msmtp_*.log {
+    daily
+    missingok
+    rotate 10
+    compress
+    notifempty
+    create 664 bitrix bitrix
 }

@@ -7,19 +7,20 @@
 
 Добавляем файл для репозитория /etc/yum.repos.d/bitrix-source.repo с содержимым:  
 ```bash
-[bitrix-source]
-name=$OS $releasever - source
-failovermethod=priority
-baseurl=http://repos.1c-bitrix.ru/yum/SRPMS
+[bitrix-source-9]
+name=Bitrix Packages Source for Enterprise Linux 9 - x86_64
+baseurl=https://repo.bitrix.info/dnf/SRPMS
 enabled=1
 gpgcheck=1
-gpgkey=http://repos.1c-bitrix.ru/yum/RPM-GPG-KEY-BitrixEnv
+priority=1
+failovermethod=priority
+gpgkey=https://repo.bitrix.info/dnf/RPM-GPG-KEY-BitrixEnv-9
 ```
 ```bash
 dnf download --source bitrix-env
 # или
 yum install yum-utils && yumdownloader --source bitrix-env
-rpm -Uvh  bitrix-env-7.3-11.src.rpm
+rpm -Uvh  bitrix-env-9.0-0.el9.src.rpm
 # распаковано в /root/rpmbuild
 ```
 
@@ -40,10 +41,10 @@ tar czf bitrix-env.tar.gz bitrix-env
 rm -rf bitrix-env
 spectool -g -R ~/rpmbuild/SPECS/bitrix-env.noarch.spec
 rpmbuild -bs ~/rpmbuild/SPECS/bitrix-env.noarch.spec
-mock -r epel-7-x86_64 --rebuild ~/rpmbuild/SRPMS/bitrix-env-7.3-0.fc28.src.rpm
+mock -r epel-9-x86_64 --rebuild ~/rpmbuild/SRPMS/bitrix-env-9.0-0.el9.src.rpm
 # реультат в
-/var/lib/mock/epel-7-x86_64/result/bitrix-env-7.3-0.el7.noarch.rpm
+/var/lib/mock/epel-7-x86_64/result/bitrix-env-9.0-0.el9.noarch.rpm
 ```
 
 
-Получили пакет для centos 7. Если нужен centos 6 — используем ```mock -r epel-6-x86_64 --rebuild ~/rpmbuild/SRPMS/bitrix-env-7.3-0.fc28.src.rpm```  
+Получили пакет для centos 9.  

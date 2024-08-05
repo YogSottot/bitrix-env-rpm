@@ -1,5 +1,6 @@
-#!/bin/bash
-# manage sites and site's options 
+#!/usr/bin/bash
+#
+# manage sites and site's options
 #set -x
 PROGNAME=$(basename $0)
 PROGPATH=$(dirname $0)
@@ -8,6 +9,7 @@ PROGPATH=$(dirname $0)
 . $PROGPATH/functions.sh || exit 1
 
 logo=$(get_logo)
+
 # get kernel options
 # SITE_DB
 # SITE_ROOT
@@ -19,21 +21,20 @@ get_kernel_options() {
     local site_type=${2:-link}
 
     # site charset
-    SITE_CHARSET="utf-8"
-    print_message "$CS0013" "" \
-        "" site_charset "$SITE_CHARSET"
+    SITE_CHARSET="UTF-8"
+#    print_message "$CS0013" "" "" site_charset "$SITE_CHARSET"
     SITE_CHARSET=$(echo "$SITE_CHARSET" | awk '{print tolower($0)}')
-    if [[ ( "$SITE_CHARSET" != "utf-8" ) && ( "$SITE_CHARSET" != "windows-1251" ) ]]; then
+    site_charset="$SITE_CHARSET"
+#    if [[ ( "$SITE_CHARSET" != "utf-8" ) && ( "$SITE_CHARSET" != "windows-1251" ) ]]; then
+    if [[ "$SITE_CHARSET" != "utf-8" ]]; then
         print_message "$CS0100" "$CS0200" "" any_key
         return 1
     fi
 
     if [[ $PUSH_SERVERS_CNT -gt 0 && $site_type != "link" ]]; then
         CONF_PUSH=y
-        push_server=$(echo "$PUSH_SERVERS" | \
-            grep NodeJS-PushServer | awk -F':' '{print $2}')
-        print_message "$CS0015" "$(get_text "$CS0014" "$push_server")" \
-            "" CONF_PUSH "$CONF_PUSH"
+        push_server=$(echo "$PUSH_SERVERS" | grep NodeJS-PushServer | awk -F':' '{print $2}')
+        print_message "$CS0015" "$(get_text "$CS0014" "$push_server")" "" CONF_PUSH "$CONF_PUSH"
         CONF_PUSH=$(echo "$CONF_PUSH" | awk '{print tolower($0)}')
         if [[ ( "$CONF_PUSH" != "y"  ) && ( "$CONF_PUSH" != "n"  ) ]]; then
             print_message "$CS0100" "$CS0201" "" any_key
@@ -43,8 +44,7 @@ get_kernel_options() {
 
     # site cron usage, enable or disable
     SITE_CRON="n"
-    print_message "$CS0016" "$CS0017\n$CS0018" \
-        "" SITE_CRON "$SITE_CRON"
+    print_message "$CS0016" "$CS0017\n$CS0018" "" SITE_CRON "$SITE_CRON"
     SITE_CRON=$(echo "$SITE_CRON" | awk '{print tolower($0)}')
     if [[ ( "$SITE_CRON" != "y" ) && ( "$SITE_CRON" != "n" ) ]]; then
         print_message "$CS0100" "$CS0201" "" any_key
@@ -52,20 +52,19 @@ get_kernel_options() {
     fi
 
     # auto options
-    SITE_ROOT=          # path to document root
-    SITE_DB=            # database name
-    SITE_USER=          # database user
-    SITE_PASSWORD=      # database password
+    SITE_ROOT=       # path to document root
+    SITE_DB=         # database name
+    SITE_USER=       # database user
+    SITE_PASSWORD=   # database password
     manual_input=N
-    print_message "$CS0020" "$CS0019" \
-        "" manual_input "$manual_input"
+    print_message "$CS0020" "$CS0019" "" manual_input "$manual_input"
     if [[ $(echo "$manual_input" | grep -wci "y") -gt 0 ]]; then
         local site_short=$(echo "$site_name" | awk -F'.' '{print $1}')
         SITE_ROOT=/home/bitrix/ext_www/$site_name
         SITE_DB=db"$site_short"
         SITE_USER=user"$site_short"
 
-        # we dont't test empty string, because there is deafult value for this options
+        # we don't test empty string, because there is deafult value for this options
         print_message "$(get_text "$CS0021" "$SITE_ROOT")" "" "" SITE_ROOT "$SITE_ROOT"
         print_message "$(get_text "$CS0022" "$SITE_DB")" "" "" SITE_DB "$SITE_DB"
         print_message "$(get_text "$CS0023" "$SITE_USER")" "" "" SITE_USER "$SITE_USER"
@@ -83,14 +82,12 @@ get_kernel_options() {
         echo "$SITE_PASSWORD" > $SITE_PASSWORD_FILE
     fi
 
-
     if [[ $DEBUG -gt 0 ]]; then
         if [[ -n $SITE_ROOT ]]; then
             echo "SITE_ROOT:            $SITE_ROOT"
             echo "SITE_DB:              $SITE_DB"
             echo "SITE_USER:            $SITE_USER"
-            [[ -f $SITE_PASSWORD_FILE ]] && \
-                echo "SITE_PASSWORD_FILE:   $SITE_PASSWORD_FILE"
+            [[ -f $SITE_PASSWORD_FILE ]] && echo "SITE_PASSWORD_FILE:   $SITE_PASSWORD_FILE"
             echo "SITE_PASSWORD:        $SITE_PASSWORD"
         fi
         echo "SITE_CHARSET:  $site_charset"
@@ -99,7 +96,6 @@ get_kernel_options() {
     fi
     return 0
 }
-
 
 # kernel site
 create_site_kernel() {
@@ -137,14 +133,12 @@ create_site_kernel() {
     [[ $DEBUG -gt 0 ]] && echo "$create_site_exe"
     exec_pool_task "$create_site_exe" "create kernel-site $site_name"
     print_log "create background task=$_task_id for kernel-site=$site_name" $LOGS_FILE
-
 }
 
-# kernel site
+# ext kernel site
 external_kernel() {
     local site_name=$1
 
- 
     create_site_mark=N
     create_site_exe=
     create_site_limit=3
@@ -178,11 +172,10 @@ external_kernel() {
     print_log "create background task=$_task_id for kernel=$site_name kernel_dir=$site_root" $LOGS_FILE
 }
 
-
 # link site
 create_site_link() {
     site_name=$1
-  
+
     create_site_mark=N
     create_site_exe=
     create_site_limit=3
@@ -193,17 +186,14 @@ create_site_link() {
             print_message "$CS0101" "$CS0203" "" any_key
             exit
         fi
-         print_message "$(get_text "$CS0024" "$kernel_directory")" \
-             "" "" kernel_directory "$kernel_directory"
+         print_message "$(get_text "$CS0024" "$kernel_directory")" "" "" kernel_directory "$kernel_directory"
         # test input options
         if [[ -z "$kernel_directory" ]]; then
             print_message "$CS0100" "$CS0207" "" any_key
         else
-
             # test if directory exist
             if [[ ! -d "$kernel_directory" ]]; then
-                print_message "$CS0100" "$(get_text "$CS0208" "$kernel_directory")" \
-                    "" any_key
+                print_message "$CS0100" "$(get_text "$CS0208" "$kernel_directory")" "" any_key
             else
                 test_subdirectory=""
                 for folder in "upload" "bitrix"; do
@@ -215,14 +205,12 @@ create_site_link() {
 
                 # all test done, form exec command
                 if [[ -n "$test_subdirectory" ]]; then
-                    print_message "$CS0100" \
-                        "$(get_text "$CS0212" "$test_subdirectory" "$kernel_directory")" \
-                        "" any_key
+                    print_message "$CS0100" "$(get_text "$CS0212" "$test_subdirectory" "$kernel_directory")" "" any_key
                 else
                 # try found kernel name and options
                 kernel_configs=$(echo "$SITES_LIST_WITH_NUMBER" | grep "$kernel_directory")
                     if [[ -n $kernel_configs ]]; then
-                        kernel_name=$(echo "$kernel_configs" | awk -F':' '{print $2}') 
+                        kernel_name=$(echo "$kernel_configs" | awk -F':' '{print $2}')
                         create_site_exe="$bx_sites_script -a create -s $site_name -t link --kernel_site $kernel_name --kernel_root $kernel_directory"
                         create_site_mark=Y
                     else
@@ -238,7 +226,6 @@ create_site_link() {
     [[ $DEBUG -gt 0 ]] && echo "$create_site_exe"
     exec_pool_task "$create_site_exe" "create link-site $site_name"
     print_log "create background task=$_task_id for link=$site_name kernel_dir=$kernel_directory" $LOGS_FILE
-
 }
 
 # create site
@@ -255,15 +242,13 @@ create_site() {
     ### 1. test if site with defined name exists in list
     #echo "$SITES_LIST_WITH_NUMBER"
     if [[ $(echo "$SITES_LIST_WITH_NUMBER" | grep -ci ":$site_name:") -gt 0 ]]; then
-        print_message "$CS0101" \
-            "$(get_text "$CS0210" "$site_name")" \
-            "" any_key
+        print_message "$CS0101" "$(get_text "$CS0210" "$site_name")" "" any_key
         return 1
     fi
 
     # additional options
     site_type="link"
-  
+
     ### 2. site type: link, kernel or ext kernel
     print_color_text "$CS0007" blue
     echo "$CS0008"
@@ -276,13 +261,10 @@ create_site() {
     # coonvert to lower case string
     site_type=$(echo "$site_type" | awk '{print tolower($0)}')
     case "$site_type" in
-    link) create_site_link "$site_name" ;;
-    kernel) create_site_kernel "$site_name" ;;
-    ext_kernel) external_kernel "$site_name" ;;
-    *) 
-        print_message "$CS0101" \
-            "$(get_text "$CS0211" "$site_type")" "" any_key
-    ;;
+        link) create_site_link "$site_name" ;;
+        kernel) create_site_kernel "$site_name" ;;
+        ext_kernel) external_kernel "$site_name" ;;
+        *) print_message "$CS0101" "$(get_text "$CS0211" "$site_type")" "" any_key ;;
     esac
 }
 
@@ -291,18 +273,16 @@ sub_menu() {
     menu_00="$CS0002"
     menu_01="$CS0001"
 
-
     SITE_MENU_SELECT=
     until [[ -n "$SITE_MENU_SELECT" ]]; do
-
         menu_logo="$CS0003"
         print_menu_header
 
-        # test mysql options: 
+        # test mysql options:
         #   empty password and empty my.cnf file
         #   cluster settings
         #   push server settings
-        check_site_options 
+        check_site_options
         if [[ $? -gt 0 ]]; then
             print_message "$CS0101" "" "" any_key
             exit
@@ -315,9 +295,9 @@ sub_menu() {
         print_pool_sites
         print_task_by_type site "$POOL_SITE_TASK_LOCK" "$POOL_SITE_TASK_INFO"
         if [[ $POOL_SITE_TASK_LOCK -eq 1 ]]; then
-            menu_list="\n$menu_00"
+            menu_list="$menu_00"
         else
-            menu_list="\n$menu_01\n$menu_00"
+            menu_list="$menu_01\n\t\t $menu_00"
         fi
 
         print_menu
@@ -336,10 +316,9 @@ sub_menu() {
                 [[ $test_hostname -eq 1 ]] && create_site "$SITE_MENU_SELECT"
             ;;
         esac
-    
+
         SITE_MENU_SELECT=
     done
 }
 
 sub_menu
-

@@ -9,8 +9,7 @@
   tags: site_index
 
 - name: create data directory
-  file: path="{{ sphinx_lib_dir }}/{{ item.SiteCsync2 }}"
-    state=directory owner=sphinx group=sphinx mode=0770
+  file: path="{{ sphinx_lib_dir }}/{{ item.SiteCsync2 }}" state=directory owner=sphinx group=sphinx mode=0770
   with_items: "{{ bx_sites_info }}"
   tags: site_index
 

@@ -1,3 +1,5 @@
+#!/usr/bin/bash
+#
 PROGNAME=$(basename $0)
 PROGPATH=$(dirname $0)
 [[ -z $DEBUG ]] && DEBUG=0
@@ -6,7 +8,7 @@ PROGPATH=$(dirname $0)
 logo=$(get_logo)
 
 # /opt/webdir/bin/bx-sites -a configure_transformer --site sitename --root /home/bitrix/ext_www/sitename --hostname vm04
-configure_tr(){
+configure_tr() {
     if [[ -z $SITES_TR ]]; then
         sites_transformer_status
     fi
@@ -41,19 +43,17 @@ configure_tr(){
         return 1
     fi
 
-    local task_exec="$bx_web_script -a configure_transformer"
-    task_exec=$task_exec" --site $SITE_NAME"
-    task_exec=$task_exec" --root $SITE_DIR"
-    task_exec=$task_exec" --hostname $TR_CHOICE"
-    task_exec=$task_exec" --domains $SITE_NAME,localhost"
-    [[ $DEBUG -gt 0 ]] && \
-        echo "task_exec=$task_exec"
-    exec_pool_task "$task_exec" "configure_transformer"
+    #local task_exec="$bx_web_script -a configure_transformer"
+    #task_exec=$task_exec" --site $SITE_NAME"
+    #task_exec=$task_exec" --root $SITE_DIR"
+    #task_exec=$task_exec" --hostname $TR_CHOICE"
+    #task_exec=$task_exec" --domains $SITE_NAME,localhost"
+    #[[ $DEBUG -gt 0 ]] && echo "task_exec=$task_exec"
+    #exec_pool_task "$task_exec" "configure_transformer"
 
 }
 
-sub_menu(){
-
+sub_menu() {
     submenu_00="$TRANSF201"
     submenu_01="   $TRANSF204"
 
@@ -94,11 +94,10 @@ sub_menu(){
                 if [[ -n "$TR_SERVER" ]]; then
                     exit
                 fi
-                configure_tr "$SITE_NAME" ;;
+                #configure_tr "$SITE_NAME" ;;
         esac
         SITE_NAME=
     done
 }
 
 sub_menu
-

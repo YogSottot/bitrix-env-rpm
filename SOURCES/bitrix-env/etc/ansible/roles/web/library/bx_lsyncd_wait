@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/bash
 # 
 # Waiting until synchronized lsyncd
 #set -x
@@ -10,71 +10,66 @@ TMP_DIR=/opt/webdir/tmp
 [[ ! -d $TMP_DIR ]] && mkdir -m 700 $TMP_DIR
 LOG_FILE=$TMP_DIR/bx_lsyncd_wait_$$.log
 
-debug(){
+debug() {
     mess=$1
-
     [[ $DEBUG -gt 0 ]] && echo "$(date +%s) $mess" >> $LOG_FILE
 }
 
-notify(){
+notify() {
     msg="${1}"
     err="${2:-0}"
-
     json="\"msg\":\"$msg\","
     json=$json"\"changed:\":false"
     [[ $err -gt 0 ]] && json=$json",\"failed\":true"
-
     echo "{$json}"
     exit $err
 }
 
-test_log(){
+test_log() {
     if [[ ! -f $log ]]; then
-        return 1
+	return 1
     fi
     return 0
 }
 
-get_variables(){
-
+get_variables() {
     [[ -z $timeout ]] && timeout=30
     [[ -z $attempts ]] && attempts=10
     [[ -z $log ]] && notify "You must define lsynd log=/path/to/log" 1
 }
 
-get_delay(){
-    ( egrep -o '[0-9]+ delays' $log 2>/dev/null || echo 9999 ) | \
-        awk 'BEGIN{total=0}{total+=$1}END{print total}'
+get_delay() {
+    ( egrep -o '[0-9]+ delays' $log 2>/dev/null || echo 9999 ) | awk 'BEGIN{total=0}{total+=$1}END{print total}'
 }
 
-lsyncd_wait(){
+lsyncd_wait() {
     step=0
 
     # test file exists
     file_exists=0
     while [[ ( $file_exists -eq 0 ) && ( $step -lt $attempts  ) ]]; do
-        test_log
-        if [[ $? -eq 0 ]]; then
-            file_exists=1
-        fi
-        step=$(( $step+1 ))
-        sleep $timeout
+	test_log
+	if [[ $? -eq 0 ]]; then
+	    file_exists=1
+	fi
+	step=$(( $step+1 ))
+	sleep $timeout
     done
     if [[ $file_exists -eq 0 ]]; then
-        notify "Not found log file=$log"
+	notify "Not found log file=$log"
     fi
 
     # test timeout
     step=0
     delay=$(get_delay)
     while [[ ( $delay -gt 0 ) && ( $step -lt $attempts ) ]]; do
-        sleep $timeout
-        delay=$(get_delay)
-        step=$(( $step+1 ))
+	sleep $timeout
+	delay=$(get_delay)
+	step=$(( $step+1 ))
     done
 
     if [[ $delay -gt 0 ]]; then
-        notify "Lsyncd-synchronization was not completed in the allotted time" 1
+	notify "Lsyncd-synchronization was not completed in the allotted time" 1
     fi
 
     notify "Lsyncd-synchronization was completed"

@@ -1,38 +1,54 @@
 ---
 # read-only mode on master server
 - name: read-only on master server
-  mysql_variables: variable=read_only value=1 login_unix_socket={{ mysql_socket }}
+  mysql_variables:
+    variable=read_only
+    value=1
+    login_unix_socket={{ mysql_socket }}
   delegate_to: "{{ master_server }}"
   tags: mysqld_master
 
 - name: master options
-  mysql_replication: mode=getmaster login_unix_socket={{ mysql_socket }}
+  mysql_replication:
+    mode=getmaster
+    login_unix_socket={{ mysql_socket }}
   delegate_to: "{{ master_server }}"
   register: master_status
   tags: mysqld_master
 
 - name: create cache directory
-  file: path={{ cache_directory }}
-    state=directory owner=root group=root mode=0700
-
+  file:
+    path={{ cache_directory }}
+    state=directory
+    owner=root
+    group=root
+    mode=0700
 
 # upload databases on slave from master server
 - name: create mysql client config
-  template: src=.my.cnf.j2
+  template:
+    src=.my.cnf.j2
     dest={{ cache_directory }}/.my.cnf-cluster
-    owner=root group=root mode=0400
+    owner=root
+    group=root
+    mode=0400
   tags: mysqld_slave
 
 - name: upload site DB on slave server
-  bx_dump: src={{ master_server }} dst={{ mysql_socket }} db={{ item.DBName }}
+  bx_dump:
+    src={{ master_server }}
+    dst={{ mysql_socket }}
+    db={{ item.DBName }}
     config_file={{ cache_directory }}/.my.cnf-cluster
-    replace=yes site_type={{ item.SiteInstall }}
+    replace=yes
+    site_type={{ item.SiteInstall }}
   with_items: "{{ bx_sites_info }}"
   tags: mysqld_slave
 
 # configure replication
 - name: change master
-  mysql_replication: mode=changemaster
+  mysql_replication:
+    mode=changemaster
     master_host={{ master_server }}
     master_log_file={{ master_status.File }}
     master_log_pos={{ master_status.Position }}
@@ -45,12 +61,15 @@
   tags: mysqld_slave
 
 - name: start replication 
-  mysql_replication: mode=startslave
+  mysql_replication:
+    mode=startslave
   tags: mysqld_slave
-  
 
 # disable read-only mode
 - name: remove the read-only mode from the master-server
-  mysql_variables: variable=read_only value=0 login_unix_socket={{ mysql_socket  }}
+  mysql_variables:
+    variable=read_only
+    value=0
+    login_unix_socket={{ mysql_socket  }}
   delegate_to: "{{ master_server  }}"
   tags: mysqld_master

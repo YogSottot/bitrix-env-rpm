@@ -6,7 +6,8 @@
 # 4. upgrade php7 version
 # 5. update httpd configuration (only for Centos 6)
 - name: enable mysqli extension
-  lineinfile: dest=/etc/php.d/30-mysqli.ini
+  lineinfile:
+    dest=/etc/php.d/30-mysqli.ini
     line='extension=mysqli.so'
   tags: php7
 
@@ -15,19 +16,20 @@
   tags: php7
 
 # create list bx_sites_info
-- include: sites-gathering_facts-not_mandatory.yml
+- include_tasks: sites-gathering_facts-not_mandatory.yml
 
 - include_tasks: sites-enable_mysqli.yml
   when: "proccess_sites and inventory_hostname == cluster_web_server"
 
 # configure and upgrade remi
-- include: configure_remi_php7.yml
+- include_tasks: configure_remi_php7.yml
 
 # configure apache service
-- include: configure_httpd_php7.yml
+- include_tasks: configure_httpd_php7.yml
 
 - name: delete old extension files
-  file: path=/etc/php.d/{{ item }}
+  file:
+    path=/etc/php.d/{{ item }}
     state=absent
   tags: php7
   with_items:
@@ -40,9 +42,10 @@
     - 40-xhprof.ini.rpmsave
     - 10-opcache.ini.rpmnew
 
-- include: php_ext_dublicates.yml
+- include_tasks: php_ext_dublicates.yml
 
 - name: restart httpd
-  service: name=httpd state=restarted
+  service:
+    name=httpd
+    state=restarted
   tags: php7
-

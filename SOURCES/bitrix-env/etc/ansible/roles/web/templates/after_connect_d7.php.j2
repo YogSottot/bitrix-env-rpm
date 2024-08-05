@@ -5,7 +5,7 @@ $connection = \Bitrix\Main\Application::getConnection();
 {% if bitrix_site_charset == 'windows-1251' -%}
 $connection->queryExecute("SET NAMES 'cp1251'");
 {%- else %}
-$connection->queryExecute("SET NAMES 'utf8'");
-$connection->queryExecute("SET collation_connection = 'utf8_unicode_ci'");
+$connection->queryExecute("SET NAMES 'utf8mb4'");
+$connection->queryExecute("SET collation_connection = 'utf8mb4_0900_ai_ci'");
 {%- endif %}
 

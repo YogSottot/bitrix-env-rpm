@@ -45,7 +45,8 @@
   when: mysql_service == 'mariadb'
 
 - name: start mysql service
-  service: name={{ mysql_service }} state=started enabled=yes
+  service:
+    name={{ mysql_service }}
+    state=started
+    enabled=yes
   tags: mysql
-
-

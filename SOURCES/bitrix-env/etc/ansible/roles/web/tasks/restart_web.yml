@@ -5,10 +5,13 @@
   when: "inventory_hostname == cluster_web_server"
 
 - name: restart nginx service
-  service: name=nginx state=restarted
+  service:
+    name=nginx
+    state=restarted
   when: "'bitrix-web' in group_names"
 
 - name: restart apache service
-  service: name=httpd state=restarted
+  service:
+    name=httpd
+    state=restarted
   when: "'bitrix-web' in group_names"
-

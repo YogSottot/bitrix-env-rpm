@@ -55,7 +55,9 @@
 - name: create tmp directory for lsyncd
   delegate_to: "{{ lsync_server  }}"
   file: path={{ item }}
-    state=directory owner=bitrix group=bitrix
+    state=directory
+    owner=bitrix
+    group=bitrix
   with_items:
     - /var/run/lsyncd
     - /var/log/lsyncd
@@ -63,6 +65,8 @@
 # enable service
 - name: enable service lsyncd
   delegate_to: "{{ lsync_server }}"
-  service: name=lsyncd-{{ inventory_hostname }} state=started enabled=yes
+  service:
+    name=lsyncd-{{ inventory_hostname }}
+    state=started
+    enabled=yes
   when: lsync_started
-

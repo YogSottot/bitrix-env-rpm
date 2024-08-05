@@ -37,4 +37,3 @@
     - "/etc/my.cnf.rpm*"
     - "/etc/my.cnf.bx_mysql*"
   ignore_errors: yes
-

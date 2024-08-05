@@ -3,42 +3,84 @@
 - name: get server options
   bx_vat:
 
+# CentOS 7
 - name: install yum-utils
   yum:
     name: yum-utils
     state: latest
-  when: "inventory_hostname == common_server or common_server == 'NOT_DEFINED'"
+  when: inventory_hostname == common_server or common_server == 'NOT_DEFINED' and ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
 
 - name: remove old value installonly_limit options
   lineinfile:
     dest: /etc/yum.conf
     line: installonly_limit=5
     state: absent
-  when: "inventory_hostname == common_server or common_server == 'NOT_DEFINED'"
+  when: inventory_hostname == common_server or common_server == 'NOT_DEFINED' and ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
 
 - name: configure installonly_limit options
   lineinfile:
     dest: /etc/yum.conf
     line: installonly_limit=3
-  when: "inventory_hostname == common_server or common_server == 'NOT_DEFINED'"
+  when: inventory_hostname == common_server or common_server == 'NOT_DEFINED' and ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
 
 - name: delete old kernels
   shell: package-cleanup --oldkernels --count=3 -y
-  when: "inventory_hostname == common_server or common_server == 'NOT_DEFINED'"
+  when: inventory_hostname == common_server or common_server == 'NOT_DEFINED' and ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
 
 - name: clean yum info
   shell: yum clean all
   tags: yum_update
-  when: "inventory_hostname == common_server or common_server == 'NOT_DEFINED'"
+  when: inventory_hostname == common_server or common_server == 'NOT_DEFINED' and ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
 
 # configure percona repository
 - name: update percona release
   shell: yum -y --nogpg update percona-release
-  when: mysql_package == 'Percona-Server-server'
+  when: mysql_package == 'Percona-Server-server' and ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
 
 - name: update all packages
   yum:
     pkg: '*'
     state: latest
   tags: yum_update
-  when: "inventory_hostname == common_server or common_server == 'NOT_DEFINED'"
+  when: inventory_hostname == common_server or common_server == 'NOT_DEFINED' and ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
+
+# CentOS Stream 9
+- name: install dnf-utils
+  dnf:
+    name: dnf-utils
+    state: latest
+  when: inventory_hostname == common_server or common_server == 'NOT_DEFINED' and ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+
+- name: remove old value installonly_limit options
+  lineinfile:
+    dest: /etc/yum.conf
+    line: installonly_limit=5
+    state: absent
+  when: inventory_hostname == common_server or common_server == 'NOT_DEFINED' and ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+
+- name: configure installonly_limit options
+  lineinfile:
+    dest: /etc/yum.conf
+    line: installonly_limit=3
+  when: inventory_hostname == common_server or common_server == 'NOT_DEFINED' and ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+
+- name: delete old kernels
+  shell: dnf remove --oldinstallonly --setopt installonly_limit=3 kernel -y
+  when: inventory_hostname == common_server or common_server == 'NOT_DEFINED' and ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+
+- name: clean dnf info
+  shell: dnf clean all
+  tags: dnf_update
+  when: inventory_hostname == common_server or common_server == 'NOT_DEFINED' and ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+
+# configure percona repository
+- name: update percona release
+  shell: dnf -y --nogpg update percona-release
+  when: mysql_package == 'Percona-Server-server' and ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+
+- name: update all packages
+  yum:
+    pkg: '*'
+    state: latest
+  tags: dnf_update
+  when: inventory_hostname == common_server or common_server == 'NOT_DEFINED' and ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"

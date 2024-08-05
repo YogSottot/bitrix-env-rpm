@@ -1,5 +1,5 @@
 ---
-- include: sites-gathering_facts_site_names.yml
+- include_tasks: sites-gathering_facts_site_names.yml
 
 - name: delete dehydrated domains.txt for site
   file:
@@ -9,7 +9,7 @@
   when: item.HTTPSCertType == 'letsencrypt'
 
 - name: delete certificate nginx directory
-  shell:  "rm -rf ./{{ item.SiteName }}"
+  shell: "rm -rf ./{{ item.SiteName }}"
   args:
     chdir: /etc/nginx/certs
   with_items: "{{ bx_sites_info }}"
@@ -38,12 +38,16 @@
   with_items: "{{ bx_sites_info }}"
 
 - name: delete previously settings
-  bx_blockinfile: insertafter="CERTIFICATE ANSIBLE MANAGED BLOCK" state="delete"
+  bx_blockinfile:
+    insertafter="CERTIFICATE ANSIBLE MANAGED BLOCK"
+    state="delete"
     dest="{{ item.NginxHTTPSFullPath }}"
   with_items: "{{ bx_sites_info }}"
 
 - name: delete previously settings for apache
-  bx_blockinfile: insertafter="CERTIFICATE ANSIBLE MANAGED BLOCK" state="delete"
+  bx_blockinfile:
+    insertafter="CERTIFICATE ANSIBLE MANAGED BLOCK"
+    state="delete"
     dest="{{ item.ApacheConfNTLM }}"
   with_items: "{{ bx_sites_info }}"
   when: item.ApacheConfNTLM != ""
@@ -67,5 +71,3 @@
     content: |
       include bx/conf/ssl.conf;
   with_items: "{{ bx_sites_info }}"
-
-

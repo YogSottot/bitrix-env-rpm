@@ -1,3 +1,5 @@
+#!/usr/bin/bash
+#
 BASE_DIR=/opt/webdir
 BIN_DIR=$BASE_DIR/bin
 
@@ -21,8 +23,7 @@ site_menu_fnc=$site_menu_dir/functions.sh
 [[ -f $trasformer_menu/functions.txt ]] && \
     . $trasformer_menu/functions.txt
 
-sites_transformer_status(){
-
+sites_transformer_status() {
     cache_pool_sites
     
     IFS_BAK=$IFS
@@ -59,7 +60,7 @@ sites_transformer_status(){
 
 }
 
-print_sites_transformer_status(){
+print_sites_transformer_status() {
     sites_transformer_status
 
     if [[ -z $SITES_TR ]]; then
@@ -90,7 +91,7 @@ print_sites_transformer_status(){
 # TR_SERVER - transformer server name
 # TR_SITE - transformer site
 # TR_CHOICE - possible choice for transformer server
-get_transformer_status(){
+get_transformer_status() {
     TR_SERVER=
     TR_SITE=
     TR_DIR=
@@ -133,8 +134,7 @@ get_transformer_status(){
     TR_INFO="$TR_SERVER:$TR_SITE:$TR_DIR:$TR_CHOICE"
 }
 
-cache_transfomer_status(){
- 
+cache_transfomer_status() {
     TR_INFO=
     TR_SERVERS_CACHE=$CACHE_DIR/tr_servers.cache             # cache file
     TR_SERVERS_CACHE_LT=3600                                         # live time for cache file in seconds
@@ -150,8 +150,6 @@ cache_transfomer_status(){
         TR_SITE=$(echo "$TR_INFO" | awk -F':' '{print $2}')
         TR_DIR=$(echo "$TR_INFO" | awk -F':' '{print $3}')
         TR_CHOICE=$(echo "$TR_INFO" | awk -F':' '{print $4}')
-
-
     fi
 
     if [[ $DEBUG -gt 0 ]]; then
@@ -162,15 +160,13 @@ cache_transfomer_status(){
     fi
 }
 
-
-print_transformer_status(){
+print_transformer_status() {
     cache_transfomer_status
     
     if [[ -z $TR_SERVER ]]; then
         echo "$TRANSF011"
         return 1
     fi
-
 
     print_color_text "$TRANSF012"
     echo $MENU_SPACER

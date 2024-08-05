@@ -1,5 +1,7 @@
 #!/usr/bin/perl
+#
 # get providers list, use it's for additional actions
+#
 use strict;
 use warnings;
 
@@ -153,4 +155,3 @@ EOT
 ;
   exit;
 }
-

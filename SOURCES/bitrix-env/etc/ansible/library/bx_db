@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/usr/bin/bash
+#
 # create dump for database and upload it to local mysql
 # src=          server with source of db ( ip address or unix socket )
 # dst=          server with destination of db  
@@ -6,9 +7,9 @@
 # login=        login for connection
 # password=     password
 # Carefully! Ansible already provides values in quotes
-
+#
 #set -e
-
+#
 BY_TABLE=1      # if set to 1 it is create dump per table
                 # Longer but more reliable for large databases
 REPLACE=0       # relace destionation database or not
@@ -26,59 +27,53 @@ TMPFILE=$TMPDIR/.bx_db
 
 # test mandatory option and print error if not exists
 test_variables() {
-  [[ -z $db ]] && db=mysql
-  if [[ ( -z $login ) && ( -z $password ) ]]; then
-    if [[ -f $DEFAULT_CONF ]]; then
-      DEFAULT_CONF_USAGE=1
+    [[ -z $db ]] && db=mysql
+    if [[ ( -z $login ) && ( -z $password ) ]]; then
+	if [[ -f $DEFAULT_CONF ]]; then
+	    DEFAULT_CONF_USAGE=1
+	else
+	    # create config with empty root
+	    echo "# test mysql conf" > $DEFAULT_CONF
+	    echo "[mysqld]"  >> $DEFAULT_CONF
+	    echo "user=root" >> $DEFAULT_CONF
+	    echo "password=" >> $DEFAULT_CONF
+	    echo >> $DEFAULT_CONF
+	    chmod 640 $DEFAULT_CONF
+	    # test default
+	    mysql -e 'select 1;' 1>/dev/null 2>&1
+	    if [[ $? -gt 0 ]]; then
+		echo "{\"changed\":false,\"failed\":true,\"msg\":\"option $var= is mandatory, you must define it or set in $DEFAULT_CONF file\"}"
+		rm -f $DEFAULT_CONF
+		exit 1
+	    fi
+	    DEFAULT_CONF_USAGE=1
+	fi
     else
-      # create config with empty root
-      echo "# test mysql conf" > $DEFAULT_CONF
-      echo "[mysqld]"  >> $DEFAULT_CONF
-      echo "user=root" >> $DEFAULT_CONF
-      echo "password=" >> $DEFAULT_CONF
-      echo >> $DEFAULT_CONF
-      chmod 640 $DEFAULT_CONF
-
-      # test default
-      mysql -e 'select 1;' 1>/dev/null 2>&1
-      if [[ $? -gt 0 ]]; then
-        echo "{\"changed\":false,\"failed\":true,\"msg\":\"option $var= is mandatory, you must define it or set in $DEFAULT_CONF file\"}"
-        rm -f $DEFAULT_CONF
-        exit 1
-      fi
-      DEFAULT_CONF_USAGE=1
+	login=root
+	MYSQLCMD=$MYSQLCMD" --user=$login --password='$password'"
     fi
-  else
-    login=root
-    MYSQLCMD=$MYSQLCMD" --user=$login --password='$password'"
-  fi
 }
 
 get_db_list() {
-  # test if mysql running
-  system_process=$(ps -ef | grep -w 'mysqld' | grep -vw grep | grep -vwc $$)
-  if [[ $system_process -gt 0 ]]; then 
-
-    $MYSQLCMD --skip-column-names -e "show databases;" | \
-      grep -vw 'information_schema\|performance_schema\|mysql\|test' | \
-      grep -v '#mysql' >$TMPFILE 2>&1
-    if [[ $? -gt 0 ]]; then
-      echo "{\"changed\":false,\"failed\":true,\"msg\":\"mysql cmd return error $(head $TMPFILE)\"}"
-      rm -f $TMPFILE
-      exit 1
+    # test if mysql running
+    system_process=$(ps -ef | grep -w 'mysqld' | grep -vw grep | grep -vwc $$)
+    if [[ $system_process -gt 0 ]]; then 
+	$MYSQLCMD --skip-column-names -e "show databases;" | grep -vw 'information_schema\|performance_schema\|mysql\|test' | grep -v '#mysql' >$TMPFILE 2>&1
+	if [[ $? -gt 0 ]]; then
+	    echo "{\"changed\":false,\"failed\":true,\"msg\":\"mysql cmd return error $(head $TMPFILE)\"}"
+	    rm -f $TMPFILE
+	    exit 1
+	fi
+	dbs_list=$(grep -vw "$db" $TMPFILE| awk '{printf "\"%s\",", $1}' | sed -e 's/,$//;')
+    else
+	dbs_list=""
     fi
-
-    dbs_list=$(grep -vw "$db" $TMPFILE| awk '{printf "\"%s\",", $1}' | sed -e 's/,$//;')
-  else
-    dbs_list=""
-  fi
     dbs_out="{\"ansible_facts\":{"
     dbs_out=$dbs_out"\"dbs_list\":["
     dbs_out=$dbs_out$dbs_list
     dbs_out=$dbs_out"]}}"
     echo $dbs_out
 }
-
 
 # get options from file
 source ${1}

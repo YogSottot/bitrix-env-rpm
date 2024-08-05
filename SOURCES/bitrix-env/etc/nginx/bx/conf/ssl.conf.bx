@@ -3,19 +3,24 @@
 # that are sent to HTTPS port to distinguish it from 4XX in a log and an error page redirection.
 error_page 497 https://$host$request_uri;
 
-# Increase keepalive connection lifetime
-keepalive_timeout	70;
-keepalive_requests	150;
+# keepalive connection lifetime
+keepalive_timeout 70;
+keepalive_requests 150;
 
-# SSL encryption parameters
+# encryption parameters
 ssl_protocols TLSv1.2 TLSv1.3;
 ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384;
 ssl_prefer_server_ciphers off;
 
-ssl_certificate		/etc/nginx/ssl/cert.pem;
-ssl_certificate_key	/etc/nginx/ssl/cert.pem;
-ssl_dhparam         /etc/nginx/ssl/dhparam.pem;
+# files
+ssl_certificate /etc/nginx/ssl/cert.pem;
+ssl_certificate_key /etc/nginx/ssl/cert.pem;
+ssl_dhparam /etc/nginx/ssl/dhparam.pem;
 
 # performance
-ssl_session_cache	shared:SSL:10m;
-ssl_session_timeout	10m;
+ssl_session_cache shared:SSL:10m;
+ssl_session_timeout 10m;
+
+# http2
+http2 on;
+

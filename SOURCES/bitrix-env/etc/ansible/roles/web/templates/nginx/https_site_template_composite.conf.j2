@@ -57,9 +57,9 @@ server {
     server_name {{ nginx_srv }};
 
     access_log /var/log/nginx/{{ site_name }}_access.log main;
-    error_log  /var/log/nginx/{{ site_name }}_error.log warn;
+    error_log /var/log/nginx/{{ site_name }}_error.log warn;
   
-  # Enable SSL connection
+    # Enable SSL connection
     {% if item['HTTPSCertType'] == 'general' %}
     include bx/conf/ssl.conf;
     {% else %}
@@ -73,26 +73,25 @@ server {
     # CERTIFICATE ANSIBLE MANAGED BLOCK
     {% endif %}
 
- 
-    set $docroot		"{{ site_root }}";
-    root            "{{ site_root }}";
+    set $docroot "{{ site_root }}";
+    root "{{ site_root }}";
     proxy_ignore_client_abort {{ item['proxy_ignore_client_abort']|default('off') }};
     index index.php;
-  
+
     server_name_in_redirect off;
 
-    set $proxyserver	"{{ nginx_proxy }}";
-    proxy_set_header	X-Forwarded-For    $proxy_add_x_forwarded_for;
-    proxy_set_header	X-Real-IP          {{ nginx_proxy_ip }};
-    proxy_set_header	Host               {{ nginx_proxy_host }};
-    proxy_set_header  X-Forwarded-Host   {{ nginx_proxy_vhost }};
-    proxy_set_header  X-Forwarded-Scheme {{ nginx_proxy_scheme }};
+    set $proxyserver "{{ nginx_proxy }}";
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Real-IP {{ nginx_proxy_ip }};
+    proxy_set_header Host {{ nginx_proxy_host }};
+    proxy_set_header X-Forwarded-Host {{ nginx_proxy_vhost }};
+    proxy_set_header X-Forwarded-Scheme {{ nginx_proxy_scheme }};
     {% if nginx_proxy_https != '' -%}
-    proxy_set_header  HTTPS {{ nginx_proxy_https }};
+    proxy_set_header HTTPS {{ nginx_proxy_https }};
     {% endif %}
 
     {% if item.SiteName != 'default' -%}
-    set $imcontenttype	"text/html; charset=utf-8";
+    set $imcontenttype "text/html; charset=utf-8";
     {% endif %}
 
     {% if nginx_composite == 'enable' -%}
@@ -104,12 +103,12 @@ server {
     set $memcached_key "/${host}${composite_key}/index@${args}.html";
     {% else -%}
     # composite variables
-    set $composite_cache    "bitrix/html_pages/${host}${composite_key}/index@${args}.html";
-    set $composite_file     "${docroot}/${composite_cache}";
+    set $composite_cache "bitrix/html_pages/${host}${composite_key}/index@${args}.html";
+    set $composite_file "${docroot}/${composite_cache}";
     {% endif %}
 
     # config file
-    set $composite_enabled  "${docroot}/bitrix/html_pages/.enabled";
+    set $composite_enabled "${docroot}/bitrix/html_pages/.enabled";
     # if test pass through general tests:
     set $use_composite_cache "";
     # global site test, the same for all sites on the server
@@ -125,39 +124,38 @@ server {
 
     # main location with processing composite
     location / {
-        {% if nginx_composite_storage in ['memcached', 'memcached_cluster'] -%}
-        error_page 404 405 412 502 504 = @apache;
-        {% endif %}
+	{% if nginx_composite_storage in ['memcached', 'memcached_cluster'] -%}
+	error_page 404 405 412 502 504 = @apache;
+	{% endif %}
 
-        if (-f $composite_enabled)     { set $use_composite_cache "${use_composite_cache}C"; }
-    
-        {% if nginx_composite_storage == 'files' -%}
-        # test cache file exists
-        if (-f $composite_file)  { set $use_composite_cache "${use_composite_cache}D"; }
+	if (-f $composite_enabled) { set $use_composite_cache "${use_composite_cache}C"; }
 
-        if ($use_composite_cache = "ABCD") { rewrite .* /$composite_cache last; }
-        {% elif nginx_composite_storage in ['memcached', 'memcached_cluster'] -%}
+	{% if nginx_composite_storage == 'files' -%}
+	# test cache file exists
+	if (-f $composite_file) { set $use_composite_cache "${use_composite_cache}D"; }
 
-        default_type text/html;
-        # use mecached for keys
-        if ($use_composite_cache = "ABC") { 
-        add_header X-Bitrix-Composite "Nginx (memcached)";
-        memcached_pass {{ nginx_composite_mc_serv }}:{{ nginx_composite_mc_port }};
-        }
-        {% endif -%}
-        proxy_pass $proxyserver;
+	if ($use_composite_cache = "ABCD") { rewrite .* /$composite_cache last; }
+	{% elif nginx_composite_storage in ['memcached', 'memcached_cluster'] -%}
+
+	default_type text/html;
+	# use mecached for keys
+	if ($use_composite_cache = "ABC") {
+	    add_header X-Bitrix-Composite "Nginx (memcached)";
+	    memcached_pass {{ nginx_composite_mc_serv }}:{{ nginx_composite_mc_port }};
+	}
+	{% endif -%}
+	proxy_pass $proxyserver;
     }
 
     {% if nginx_composite_storage in ['memcached', 'memcached_cluster'] -%}
     location @apache {
-        proxy_pass $proxyserver;
+	proxy_pass $proxyserver;
     }
     {% endif %}
 
     {%- else -%}
     # Include parameters common to all websites
     include bx/conf/bitrix.conf;
-
     {%endif %}
 
     # Include munin and nagios web

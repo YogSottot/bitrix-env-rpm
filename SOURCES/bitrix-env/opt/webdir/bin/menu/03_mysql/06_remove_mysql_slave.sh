@@ -1,3 +1,5 @@
+#!/usr/bin/bash
+#
 PROGNAME=$(basename $0)
 PROGPATH=$(dirname $0)
 [[ -z $DEBUG ]] && DEBUG=0
@@ -5,47 +7,43 @@ PROGPATH=$(dirname $0)
 . $PROGPATH/functions.sh || exit 1
 logo=$(get_logo)
 
-remove_slave(){
-    local my_server="${1}"
+#remove_slave() {
+#    local my_server="${1}"
+#
+#    # test if server exist
+#    cache_mysql_servers_status
+#    local my_data=$(echo "$MYSQL_SERVERS" | egrep ":slave:" |  grep "^$my_server:")
+#    if [[ -z $my_data ]]; then
+#        my_data=$(echo "$MYSQL_SERVERS" | egrep ":slave:" |  grep ":$my_server$")
+#    fi
+#
+#    if [[ -z "$my_data" ]]; then
+#        print_message "$MY0200" "$(get_text "$MY0028" "$my_server")" "" any_key
+#    fi
+#
+#    # test server settings
+#    check_mysql_options
+#    if [[ $? -gt 0 ]]; then
+#        print_message "$MY0200" "" "" any_key
+#        exit
+#    fi
+#
+#    local task_cmd="$bx_mysql_script -s $my_server -a remove"
+#    [[ $DEBUG -gt 0   ]] && echo "task_cmd=$task_cmd"
+#    exec_pool_task "$task_cmd" "$(get_text "$MY0043" "$my_server")"
+#}
 
-    # test if server exist
-    cache_mysql_servers_status
-    local my_data=$(echo "$MYSQL_SERVERS" | egrep ":slave:" |  grep "^$my_server:")
-    if [[ -z $my_data ]]; then
-        my_data=$(echo "$MYSQL_SERVERS" | egrep ":slave:" |  grep ":$my_server$")
-    fi
-
-    if [[ -z "$my_data" ]]; then
-        print_message "$MY0200" \
-            "$(get_text "$MY0028" "$my_server")" "" any_key
-    fi
-
-    # test server settings
-    check_mysql_options
-    if [[ $? -gt 0 ]]; then
-        print_message "$MY0200" \
-            "" "" any_key
-        exit
-    fi
-
-    local task_cmd="$bx_mysql_script -s $my_server -a remove"
-    [[ $DEBUG -gt 0   ]] && \
-        echo "task_cmd=$task_cmd"
-    exec_pool_task "$task_cmd" "$(get_text "$MY0043" "$my_server")"
-}
-
-sub_menu(){
+sub_menu() {
     menu_00="$MY0201"
     menu_01="   $MY0044"
 
     menu_logo="$MY0044"
 
-
     MENU_SELECT=
     until [[ -n "$MENU_SELECT" ]]; do
-        clear
-        echo -e "\t\t\t" $logo
-        echo -e "\t\t\t" $menu_logo
+        [[ $DEBUG -eq 0 ]] && clear
+        echo -e "\t\t" $logo
+        echo -e "\t\t" $menu_logo
         echo
 
         # print only slave servers
@@ -73,7 +71,7 @@ sub_menu(){
 
         case "$MENU_SELECT" in
             0) exit ;;
-            *) remove_slave "$MENU_SELECT" ;;
+            #*) remove_slave "$MENU_SELECT" ;;
         esac
         MENU_SELECT=
     done

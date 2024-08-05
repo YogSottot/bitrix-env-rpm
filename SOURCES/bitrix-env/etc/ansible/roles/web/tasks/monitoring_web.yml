@@ -1,21 +1,28 @@
 ---
 # enable monitoring fo web nodes
 - name: nginx config for sub status in site_available
-  template: src=nginx/nginx_server_status.conf.j2
+  template:
+    src=nginx/nginx_server_status.conf.j2
     dest="{{ nginx_base_dir }}/{{ nginx_available_sites_dir }}/nginx_server_status.conf"
-    owner="{{ site_bitrix }}" group="{{ site_root }}" mode=0664
+    owner="{{ site_bitrix }}"
+    group="{{ site_root }}"
+    mode=0664
   tags: monitor
   notify: restart nginx
 
 - name: nginx config for sub status in site_enable
-  file: src="{{ nginx_base_dir }}/{{ nginx_available_sites_dir }}/nginx_server_status.conf"
+  file:
+    src="{{ nginx_base_dir }}/{{ nginx_available_sites_dir }}/nginx_server_status.conf"
     dest="{{ nginx_base_dir }}/{{ nginx_enabled_sites_dir }}/nginx_server_status.conf"
     state=link
   tags: monitor
   notify: restart nginx
 
 - name: enable web-service plugins
-  file: src=/usr/share/munin/plugins/{{ item }} dest=/etc/munin/plugins/{{ item }} state=link
+  file:
+    src=/usr/share/munin/plugins/{{ item }}
+    dest=/etc/munin/plugins/{{ item }}
+    state=link
   with_items:
     - apache_accesses
     - apache_processes
@@ -25,7 +32,8 @@
   tags: monitor
 
 - name: enable process monitoring plugins
-  file: src=/usr/share/munin/plugins/process_status_
+  file:
+    src=/usr/share/munin/plugins/process_status_
     dest=/etc/munin/plugins/process_status_{{ item }}
     state=link
   with_items:
@@ -34,5 +42,7 @@
   tags: monitor
 
 - name: restart munin-node service
-  service: name=munin-node state=restarted
+  service:
+    name=munin-node
+    state=restarted
   tags: monitor

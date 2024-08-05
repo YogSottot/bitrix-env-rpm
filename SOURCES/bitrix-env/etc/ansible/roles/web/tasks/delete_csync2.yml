@@ -1,14 +1,16 @@
 ---
 # delete csync configuration and cron task
 - name: delete csync2 configuration file
-  file: path="{{ csync_configdir }}/csync2_{{ web_site_csync2 }}.cfg"
+  file:
+    path="{{ csync_configdir }}/csync2_{{ web_site_csync2 }}.cfg"
     state=absent
   tags: csync2_configs
   when: "'bitrix-web' in group_names"
 
 - name: delete cron task for site
-  lineinfile: dest=/etc/cron.d/bx_csync
-    regexp="\s+({{ web_site_csync2 }}|{{ web_site_csync2 }})\s+" state=absent
+  lineinfile:
+    dest=/etc/cron.d/bx_csync
+    regexp="\s+({{ web_site_csync2 }}|{{ web_site_csync2 }})\s+"
+    state=absent
   tags: csync2_configs
   when: "'bitrix-web' in group_names"
-

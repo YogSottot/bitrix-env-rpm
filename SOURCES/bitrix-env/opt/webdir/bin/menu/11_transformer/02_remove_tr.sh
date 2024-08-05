@@ -1,3 +1,5 @@
+#!/usr/bin/bash
+#
 PROGNAME=$(basename $0)
 PROGPATH=$(dirname $0)
 [[ -z $DEBUG ]] && DEBUG=0
@@ -6,7 +8,7 @@ PROGPATH=$(dirname $0)
 logo=$(get_logo)
 
 # /opt/webdir/bin/bx-sites -a configure_transformer --site sitename --root /home/bitrix/ext_www/sitename --hostname vm04
-remove_tr(){
+remove_tr() {
     if [[ -z $TR_SERVER ]]; then
         cache_transfomer_status
     fi
@@ -27,18 +29,15 @@ remove_tr(){
         return 1
     fi
 
-    local task_exec="$bx_web_script -a remove_transformer"
-    task_exec=$task_exec" --site $TR_SITE"
-    task_exec=$task_exec" --root $TR_DIR"
-    task_exec=$task_exec" --hostname $TR_SERVER"
-    [[ $DEBUG -gt 0 ]] && \
-        echo "task_exec=$task_exec"
-    exec_pool_task "$task_exec" "remove_transformer"
-
+    #local task_exec="$bx_web_script -a remove_transformer"
+    #task_exec=$task_exec" --site $TR_SITE"
+    #task_exec=$task_exec" --root $TR_DIR"
+    #task_exec=$task_exec" --hostname $TR_SERVER"
+    #[[ $DEBUG -gt 0 ]] && echo "task_exec=$task_exec"
+    #exec_pool_task "$task_exec" "remove_transformer"
 }
 
-sub_menu(){
-
+sub_menu() {
     submenu_00="$TRANSF201"
     submenu_01="1. $TRANSF004"
 
@@ -61,11 +60,10 @@ sub_menu(){
 
         case "$SITE_NAME" in
             0) exit ;;
-            1) remove_tr ;;
+            #1) remove_tr ;;
         esac
         SITE_NAME=
     done
 }
 
 sub_menu
-

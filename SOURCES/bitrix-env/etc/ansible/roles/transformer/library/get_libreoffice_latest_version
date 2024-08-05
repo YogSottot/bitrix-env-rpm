@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/usr/bin/bash
+#
 export LANG=en_EN.UTF-8
 export NOLOCALE=yes
 export PATH=/sbin:/bin:/usr/sbin:/usr/bin

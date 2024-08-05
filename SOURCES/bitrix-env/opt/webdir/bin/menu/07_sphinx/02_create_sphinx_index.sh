@@ -1,3 +1,5 @@
+#!/usr/bin/bash
+#
 PROGNAME=$(basename $0)
 PROGPATH=$(dirname $0)
 [[ -z $DEBUG  ]] && DEBUG=0
@@ -5,7 +7,7 @@ PROGPATH=$(dirname $0)
 . $PROGPATH/functions.sh || exit 1
 logo=$(get_logo)
 
-update_sphinx_instance(){
+update_sphinx_instance() {
     local srv_name="$1"
 
     test_srv_name=$(echo "$SPHINX_SERVERS" | grep -c "^$srv_name:")
@@ -22,20 +24,19 @@ update_sphinx_instance(){
             "" "" any_key && \
             return 2
 
-    print_message "$SPH0007" \
-        "" "" sphinx_reindex 'n'
-    task_exec="$bx_sphinx_script -a create -s $srv_name -d $sphinx_dbname"
-    task_desc="$(get_text "$SPH0010" "$srv_name")"
+    print_message "$SPH0007" "" "" sphinx_reindex 'n'
+    #task_exec="$bx_sphinx_script -a create -s $srv_name -d $sphinx_dbname"
+    #task_desc="$(get_text "$SPH0010" "$srv_name")"
 
-    [[ $(echo "$sphinx_reindex" | grep -wic "y") -gt 0  ]] && \
-        task_exec=$task_exec" --reindex"
+    #[[ $(echo "$sphinx_reindex" | grep -wic "y") -gt 0  ]] && \
+    #    task_exec=$task_exec" --reindex"
         
-    [[ $DEBUG -gt 0  ]] && \
-        echo "task_exec=$task_exec"
-    exec_pool_task "$task_exec" "$task_desc"
+    #[[ $DEBUG -gt 0  ]] && \
+    #    echo "task_exec=$task_exec"
+    #exec_pool_task "$task_exec" "$task_desc"
 }
 
-sub_menu(){
+sub_menu() {
     menu_00="$SPH0201"
     menu_01="   $SPH0011"
 
@@ -71,7 +72,7 @@ sub_menu(){
 
         case "$MENU_SELECT" in
             0) exit ;;
-            *) update_sphinx_instance "$MENU_SELECT" ;;
+            #*) update_sphinx_instance "$MENU_SELECT" ;;
         esac
         MENU_SELECT=
     done

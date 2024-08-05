@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/usr/bin/bash
+#
 export LANG=en_US.UTF-8
 export TERM=linux
 PROGNAME=$(basename $0)
@@ -15,9 +16,8 @@ LOGS_FILE=$LOGS_DIR/pool_menu.log
 if [[ -z $OS_VERSION ]]; then
     get_os_type
 fi
- 
-logo=$(get_logo)
 
+logo=$(get_logo)
 
 ansible_wrapper=$PROGPATH/wrapper_ansible_conf # parse config file, add and change data in the ansible configuration
 bx_monotor_script=$PROGPATH/bx-monitor         # manage monitoring 
@@ -56,33 +56,44 @@ if [[ ! -x $bx_process_script ]]; then
 fi
  
 ######################### MENU POINTS
-menu_create_pool_1="1.  $MM0010"
-menu_hosts_manage_1="1.  $MM0011"
-menu_local_2="2.  $MM0012"
-menu_mysql_srv_3="3.  $MM0013"
-menu_mc_srv_4="4.  $MM0014"
-menu_sites_6="6.  $MM0016"
-menu_sphinx_7="7.  $MM0017"
-menu_web_8="8.  $MM0018"
-menu_monitoring_5="5.  $MM0019"
-menu_jobs_10="10. $MM0015"
-menu_push_09="9.  $MM0020"
-menu_trans_11="11. $MM00201"
-menu_default_exit="0.  $MM0007."
+#menu_create_pool_1="1.  $MM0010"
+#menu_hosts_manage_1="1.  $MM0011"
+#menu_local_2="2.  $MM0012"
+#menu_mysql_srv_3="3.  $MM0013"
+#menu_mc_srv_4="4.  $MM0014"
+#menu_sites_6="6.  $MM0016"
+##menu_sphinx_7="7.  $MM0017"
+#menu_web_8="8.  $MM0018"
+##menu_monitoring_5="5.  $MM0019"
+#menu_jobs_10="10. $MM0015"
+#menu_push_09="9.  $MM0020"
+##menu_trans_11="11. $MM00201"
+#menu_default_exit="0.  $MM0007."
+
+menu_create_pool_1="1. $MM0010"
+menu_hosts_manage_1="1. $MM0011"
+menu_local_2="2. $MM0012"
+menu_mysql_srv_3="3. $MM0013"
+menu_mc_srv_4="4. $MM0014"
+menu_sites_6="6. $MM0016"
+menu_web_8="7. $MM0018"
+menu_jobs_10="8. $MM0015"
+menu_push_09="5. $MM0020"
+menu_default_exit="0. $MM0007."
 
 # create configuration mgmt environment
 # all action do wrapper, but it can return error
 # CREATE_POOL
-create_pool_1() {
-    clear
+create_pool_action() {
+    [[ $DEBUG -eq 0 ]] && clear
   
     POOL_CREATE_OPTION_INT=
     POOL_CREATE_OPTION_HOST=
     until [[ ( -n "$POOL_CREATE_OPTION_INT" ) && ( -n "$POOL_CREATE_OPTION_HOST" )  ]]; do
-        clear;
+        [[ $DEBUG -eq 0 ]] && clear;
         # print header
-        echo -e "\t\t\t" $logo
-        echo -e "\t\t\t" "$MM0021"
+        echo -e "\t\t" $logo
+        echo -e "\t\t" "$MM0021"
         echo
 
         # POOL_CREATE_OPTION_INT 
@@ -90,7 +101,7 @@ create_pool_1() {
         if [[ $HOST_NETWORK -gt 1 ]]; then
             print_color_text "$MM0022" green
             echo
-      
+
             for _info_ip in $HOST_IPS; do
                 int=$(echo $_info_ip | awk -F'=' '{print $1}')
                 ip=$(echo $_info_ip | awk -F'=' '{print $2}')
@@ -102,9 +113,7 @@ create_pool_1() {
                 POOL_CREATE_OPTION_INT=$_interface
                 # create configuration with IP
             else
-                print_message "$MM0025" \
-                    "$(get_text "$MM0026" "$_interface")" \
-                    "" _user
+                print_message "$MM0025" "$(get_text "$MM0026" "$_interface")" "" _user
                 [[ $(echo "$_user" | grep -wci 'y') -eq 0 ]] && exit 1
                 continue
             fi
@@ -112,24 +121,19 @@ create_pool_1() {
         elif [[ $HOST_NETWORK -eq 1 ]]; then
             POOL_CREATE_OPTION_INT=$(echo "$HOST_IPS" | awk -F'=' '{print $1}')
         else
-            print_message "$BU1001" \
-                "$MM0027" "" any_key
+            print_message "$BU1001" "$MM0027" "" any_key
             exit
         fi
 
         # POOL_CREATE_OPTION_HOST
         # hostname, may be user want to change it
         _hostname=$(hostname)
-        print_message "$(get_text "$MM0028" "$_hostname")" \
-            "$MM0029" \
-            "" _hostname $_hostname
+        print_message "$(get_text "$MM0028" "$_hostname")" "$MM0029" "" _hostname $_hostname
         # test hostname
         if [[ -n "$_hostname" ]]; then
             POOL_CREATE_OPTION_HOST=$_hostname
         else
-            print_message "$MM0025 " \
-                "$MM0030" \
-                "" _host_user
+            print_message "$MM0025 " "$MM0030" "" _host_user
             [[ $(echo "$_user" | grep -wci 'y') -eq 0 ]] && exit 1
         fi
     done
@@ -141,174 +145,181 @@ create_pool_1() {
         POOL_CREATE_OPTION_INT=$(echo $POOL_CREATE_OPTION_INT | awk -F'/' '{print $1}')
     fi
 
-
-    [[ $DEBUG -gt 0 ]] && \
-        echo "cmd=$ansible_wrapper -a create -H $POOL_CREATE_OPTION_HOST -I $POOL_CREATE_OPTION_INT"
-    output=$($ansible_wrapper -a create -H $POOL_CREATE_OPTION_HOST \
-        -I $POOL_CREATE_OPTION_INT)
+    [[ $DEBUG -gt 0 ]] && echo "cmd=$ansible_wrapper -a create -H $POOL_CREATE_OPTION_HOST -I $POOL_CREATE_OPTION_INT"
+    output=$($ansible_wrapper -a create -H $POOL_CREATE_OPTION_HOST -I $POOL_CREATE_OPTION_INT)
 
     # test on error message
     error=$(  echo "$output" | grep '^error:'   | sed -e 's/^error://')
     message=$(echo "$output" | grep '^message:' | sed -e 's/^message://')
     any_key=
     if [[ -n "$error" ]]; then
-        print_message "$MM0031 $BU1001" \
-            "$message" '' 'any_key'
+        print_message "$MM0031 $BU1001" "$message" '' 'any_key'
     else
-        print_message "$MM0032 $BU1002"  \
-            "$message" '' 'any_key'
+        print_message "$MM0032 $BU1002" "$message" '' 'any_key'
     fi
 }
 
 # manage host in the pool
 hosts_manage() {
-  $PROGPATH/menu/01_host.sh
+    $PROGPATH/menu/01_host.sh
 }
 
 # manage localhost settings
-localhost_manage(){
-  $PROGPATH/menu/02_local.sh
+localhost_manage() {
+    $PROGPATH/menu/02_local.sh
 }
 
-
 # manage mysql servers in the pool
-hosts_mysql(){
-  $PROGPATH/menu/03_mysql.sh
+hosts_mysql() {
+    $PROGPATH/menu/03_mysql.sh
 }
 
 # manage memcached servers in the pool
-hosts_memcached(){
-  $PROGPATH/menu/04_memcached.sh
+hosts_memcached() {
+    $PROGPATH/menu/04_memcached.sh
 }
 
 # manage tasks on the server
-hosts_tasks(){
-  $PROGPATH/menu/05_task.sh
+hosts_tasks() {
+    $PROGPATH/menu/05_task.sh
 }
 
 # manage sites on the pool
-sites_manage(){
-  $PROGPATH/menu/06_site.sh
+sites_manage() {
+    $PROGPATH/menu/06_site.sh
 }
 
-hosts_sphinx(){
-  $PROGPATH/menu/07_sphinx.sh
+hosts_sphinx() {
+    $PROGPATH/menu/07_sphinx.sh
 }
 
-hosts_web(){
-  $PROGPATH/menu/08_web.sh
+hosts_web() {
+    $PROGPATH/menu/08_web.sh
 }
 
 # manage monitoring options for server pool
-hosts_monitoring(){
-  $PROGPATH/menu/09_monitor.sh
+hosts_monitoring() {
+    $PROGPATH/menu/09_monitor.sh
 }
 
-push_service(){
-  $PROGPATH/menu/10_push.sh
+push_service() {
+    $PROGPATH/menu/10_push.sh
 }
 
-transformer_service(){
-   if [[ $OS_VERSION -ge 7 ]]; then
-        $PROGPATH/menu/11_transformer.sh
+transformer_service() {
+    if [[ $OS_VERSION -ge 7 ]]; then
+	$PROGPATH/menu/11_transformer.sh
     else
-        print_message "There is no support for CentOS $OS_VERSION version" \
-            "press any key to continue" "" any_key
-        return 1
+	print_message "There is no support for CentOS $OS_VERSION version" "press any key to continue" "" any_key
+	return 1
     fi
 }
-
 
 # main menu for pool manage
-menu_server_list(){
-  
-  logo_msg="$MM0033"
-  test_passw_bitrix_localhost
+menu_server_list() {
+    logo_msg="$MM0033"
+    test_passw_bitrix_localhost
 
-  POOL_SELECTION=
-  POOL_MAIN_CONFIG=/etc/ansible/group_vars/bitrix-hosts.yml
-  POLL_HOST_CONFIG=/etc/ansible/ansible-roles
-  until [[ "$POOL_SELECTION" == "0" ]]; do
-    clear;
-    # print header
-    echo -e "\t\t\t" $logo
-    echo -e "\t\t\t" $logo_msg
-    echo
+    POOL_SELECTION=
+    POOL_MAIN_CONFIG=/etc/ansible/group_vars/bitrix-hosts.yml
+    POLL_HOST_CONFIG=/etc/ansible/ansible-roles
+    until [[ "$POOL_SELECTION" == "0" ]]; do
+	[[ $DEBUG -eq 0 ]] && clear;
+	# print header
+	echo -e "\t\t" $logo
+	echo -e "\t\t" $logo_msg
+	echo
 
-    # not found pool configuation
-    if [[ ! -f $POOL_MAIN_CONFIG ]]; then
-      if [[ -f $POLL_HOST_CONFIG ]]; then
-        print_header "$MM0034"
-        echo $BU0029
-        echo -e "\t\t" $menu_default_exit
-      else
-        print_header "$MM0035"
-        get_local_network $LINK_STATUS
-        if [[ $HOST_NETWORK -gt 0 ]]; then
-          print_color_text "$MM0036" red
-          echo "$BU0029"
-          echo -e "\t\t " $menu_create_pool_1
-          echo -e "\t\t " $menu_local_2
-          echo -e "\t\t " $menu_default_exit
-        else
-          echo "$BU0029"
-          echo -e "\t\t " $menu_local_2
-          echo -e "\t\t " $menu_default_exit
-        fi
-      fi
-      print_message "$MM0037" \
-          '' '' POOL_SELECTION
+	# not found pool configuation
+	if [[ ! -f $POOL_MAIN_CONFIG ]]; then
+	    if [[ -f $POLL_HOST_CONFIG ]]; then
+		print_header "$MM0034"
+		echo -e "\t\t" $BU0029
+		echo -e "\t\t" $menu_default_exit
+	    else
+		print_header "$MM0035"
+		get_local_network $LINK_STATUS
+		if [[ $HOST_NETWORK -gt 0 ]]; then
+		    print_color_text "$MM0036" red
+		    echo -e "\t\t" "$BU0029"
+		    echo -e "\t\t" $menu_create_pool_1
+		    echo -e "\t\t" $menu_local_2
+		    echo -e "\t\t" $menu_default_exit
+		else
+		    echo -e "\t\t" "$BU0029"
+		    echo -e "\t\t" $menu_local_2
+		    echo -e "\t\t" $menu_default_exit
+		fi
+	    fi
+	    print_message "$MM0037" '' '' POOL_SELECTION
+	    case "$POOL_SELECTION" in
+		"1") create_pool_action; HOST_NETWORK=; HOST_NETWORK_INFO= ;;
+		"2") localhost_manage ;;
+		"0") exit ;;
+		*) error_pick ;;
+	    esac
+	    POOL_SELECTION=
+	else
+	    print_pool_info
 
-      case "$POOL_SELECTION" in
-        "1") create_pool_1; HOST_NETWORK=; HOST_NETWORK_INFO=;;
-        "2") localhost_manage;;
-        "0") exit;;
-        *)   error_pick;;
-      esac
-      POOL_SELECTION=
-    else
-        print_pool_info
+#	    echo -e "\t\t" "$BU0029"
+#	    echo -e "\t\t" $menu_hosts_manage_1
+#	    echo -e "\t\t" $menu_local_2
+#	    echo -e "\t\t" $menu_mysql_srv_3
+#	    echo -e "\t\t" $menu_mc_srv_4
+#	    #echo -e "\t\t" $menu_monitoring_5
+#	    echo -e "\t\t" $menu_sites_6
+#	    #echo -e "\t\t" $menu_sphinx_7
+#	    echo -e "\t\t" $menu_web_8
+#	    echo -e "\t\t" $menu_push_09
+#	    echo -e "\t\t" $menu_jobs_10
+#	    #if [[ $OS_VERSION -ge 7 ]]; then
+#	    #    echo -e "\t\t" $menu_trans_11
+#	    #fi
+#	    echo -e "\t\t" $menu_default_exit
 
-        echo "$BU0029"
-        echo -e "\t\t" $menu_hosts_manage_1
-        echo -e "\t\t" $menu_local_2
-        echo -e "\t\t" $menu_mysql_srv_3
-        echo -e "\t\t" $menu_mc_srv_4
-        echo -e "\t\t" $menu_monitoring_5
-        echo -e "\t\t" $menu_sites_6
-        echo -e "\t\t" $menu_sphinx_7
-        echo -e "\t\t" $menu_web_8
-        echo -e "\t\t" $menu_push_09
-        echo -e "\t\t" $menu_jobs_10
-        if [[ $OS_VERSION -ge 7 ]]; then
-            echo -e "\t\t" $menu_trans_11
-        fi
-        echo -e "\t\t" $menu_default_exit
-        
-        print_message "$MM0037" \
-            '' '' POOL_SELECTION
+            echo -e "\t\t" "$BU0029"
+            echo -e "\t\t" $menu_hosts_manage_1
+            echo -e "\t\t" $menu_local_2
+            echo -e "\t\t" $menu_mysql_srv_3
+            echo -e "\t\t" $menu_mc_srv_4
+            echo -e "\t\t" $menu_push_09
+            echo -e "\t\t" $menu_sites_6
+            echo -e "\t\t" $menu_web_8
+            echo -e "\t\t" $menu_jobs_10
+            echo -e "\t\t" $menu_default_exit
 
-      case "$POOL_SELECTION" in 
-        "1"|a)  hosts_manage; POOL_SERVER_LIST=;;
-        "2"|c)  localhost_manage;;
-        "3"|d)  hosts_mysql;;
-        "4"|e)  hosts_memcached;;
-        "5"|l)  hosts_monitoring;;
-        "6"|g)  sites_manage;;
-        "7"|i)  hosts_sphinx;;
-        "8"|k)  hosts_web;;
-        "9"|m) push_service;;
-        "10"|f)  hosts_tasks; POOL_SERVER_LIST=;;
-        "11"|n) transformer_service;;
-        0|z)  exit;;
-        *)    error_pick;;
-      esac
-      POOL_SELECTION=
- 
-    fi
- done
+	    print_message "$MM0037" '' '' POOL_SELECTION
+
+	    case "$POOL_SELECTION" in
+#		"1"|a) hosts_manage; POOL_SERVER_LIST= ;;
+#		"2"|c) localhost_manage ;;
+#		"3"|d) hosts_mysql ;;
+#		"4"|e) hosts_memcached ;;
+#		#"5"|l) hosts_monitoring ;;
+#		"6"|g) sites_manage ;;
+#		#"7"|i) hosts_sphinx ;;
+#		"8"|k) hosts_web ;;
+#		"9"|m) push_service ;;
+#		"10"|f) hosts_tasks; POOL_SERVER_LIST= ;;
+#		#"11"|n) transformer_service ;;
+#		0|z) exit ;;
+#		*) error_pick ;;
+                "1"|a) hosts_manage; POOL_SERVER_LIST= ;;
+                "2"|c) localhost_manage ;;
+                "3"|d) hosts_mysql ;;
+                "4"|e) hosts_memcached ;;
+                "5"|m) push_service ;;
+                "6"|g) sites_manage ;;
+                "7"|k) hosts_web ;;
+                "8"|f) hosts_tasks; POOL_SERVER_LIST= ;;
+                0|z) exit ;;
+		*) error_pick ;;
+	    esac
+	    POOL_SELECTION=
+	fi
+    done
 }
-
 
 # action part
 menu_server_list

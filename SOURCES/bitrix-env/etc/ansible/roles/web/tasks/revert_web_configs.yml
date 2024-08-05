@@ -1,7 +1,11 @@
-- bx_etckeeper: dest=nginx commit="add_web_{{ inventory_hostname }}"
+- bx_etckeeper:
+    dest=nginx
+    commit="add_web_{{ inventory_hostname }}"
   register: nginx_commit
 
-- bx_etckeeper: dest=httpd commit="add_web_{{ inventory_hostname }}"
+- bx_etckeeper:
+    dest=httpd
+    commit="add_web_{{ inventory_hostname }}"
   register: httpd_commit
 
 - file:
@@ -38,9 +42,12 @@
     owner: apache
   when: not httpd_commit.changed
 
-- service: name=nginx state=restarted
+- service:
+    name=nginx
+    state=restarted
   when: not nginx_commit.changed
 
-- service: name=httpd state=stopped
+- service:
+    name=httpd
+    state=stopped
   when: not httpd_commit.changed
-

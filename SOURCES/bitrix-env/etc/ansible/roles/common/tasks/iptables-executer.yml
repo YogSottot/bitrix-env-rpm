@@ -33,4 +33,3 @@
     path: "{{ tmp_file.stdout }}"
     state: absent
   tags: iptables
-

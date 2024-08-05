@@ -67,35 +67,34 @@ if ( $o_format =~ /^te?xt$/ ) { $o_format = "plain" };
 # process request
 my $confPool = Pool->new();
 my $confMonitor = undef;
-if ($o_action =~ /^status$/i){
-  $confMonitor = $confPool->monitorStatus();
-
-# configure server 
-}elsif ($o_action =~ /^enable$/){
-  $confMonitor = $confPool->monitorEnable(
-      { 
-          nagios_server_login => $o_nagios_user,
-          nagios_server_password => $o_nagios_password,
-          munin_server_login => $o_munin_user,
-          munin_server_password => $o_munin_password,
-          monitoring_server => $o_monitoring_server,
-          monitor_email => $o_monitor_email,
-          monitor_smtphost => $o_smtphost, 
-          monitor_smtpport => $o_smtpport,
-          monitor_smtplogin => $o_smtplogin,
-          monitor_smtppass => $o_smtppass,
-          monitor_smtpmethod => $o_smtpmethod,
-          monitor_smtptls => $o_smtptls,
-          notify_nagios => ($o_notify_nagios)? 1: 0,
-      }
-  );
-}elsif ($o_action =~ /^disable$/){
-  $confMonitor = $confPool->monitorDisable();
-}elsif ($o_action =~ /^update$/ ){
-  $confMonitor = $confPool->monitorUpdate();
-}else{
-  $confMonitor = Output->new( error => 1, message => "Unknown action option. PLease use -h for help message." );
-}
+#if ($o_action =~ /^status$/i){
+#  $confMonitor = $confPool->monitorStatus();
+# configure server
+#}elsif ($o_action =~ /^enable$/){
+#  $confMonitor = $confPool->monitorEnable(
+#      {
+#          nagios_server_login => $o_nagios_user,
+#          nagios_server_password => $o_nagios_password,
+#          munin_server_login => $o_munin_user,
+#          munin_server_password => $o_munin_password,
+#          monitoring_server => $o_monitoring_server,
+#          monitor_email => $o_monitor_email,
+#          monitor_smtphost => $o_smtphost,
+#          monitor_smtpport => $o_smtpport,
+#          monitor_smtplogin => $o_smtplogin,
+#          monitor_smtppass => $o_smtppass,
+#          monitor_smtpmethod => $o_smtpmethod,
+#          monitor_smtptls => $o_smtptls,
+#          notify_nagios => ($o_notify_nagios)? 1: 0,
+#      }
+#  );
+#}elsif ($o_action =~ /^disable$/){
+#  $confMonitor = $confPool->monitorDisable();
+#}elsif ($o_action =~ /^update$/ ){
+#  $confMonitor = $confPool->monitorUpdate();
+#}else{
+#  $confMonitor = Output->new( error => 1, message => "Unknown action option. PLease use -h for help message." );
+#}
 #print Dumper( $confMonitor );
 $confMonitor->print($o_format);
 
@@ -129,4 +128,3 @@ EOT
 ;
   exit;
 }
-

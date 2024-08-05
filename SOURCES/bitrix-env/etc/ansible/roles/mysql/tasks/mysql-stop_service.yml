@@ -6,8 +6,14 @@
   tags: vars
 
 - name: stop mysql service
-  service: name={{ mysql_service }} state=stopped
+  service:
+    name={{ mysql_service }}
+    state=stopped
   tags: mysql
 
 - name: wait closed port
-  wait_for: port={{ mysql_port }} delay=10 timeout=100 state=stopped
+  wait_for:
+    port={{ mysql_port }}
+    delay=10
+    timeout=100
+    state=stopped

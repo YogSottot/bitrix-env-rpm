@@ -4,28 +4,38 @@
 - name: set hostname on Centos6
   shell: hostname {{ hostname }}; echo {{ hostname }} > /etc/hostname
   tags: hostname
-  when: ansible_distribution == "CentOS" 
-    and ansible_distribution_major_version == "6"
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "6"
 
+# CentOS 7
 - name: set hostname on Centos7
   shell: hostnamectl set-hostname {{ hostname }}
   tags: hostname
-  when: ansible_distribution == "CentOS" 
-    and ansible_distribution_major_version == "7"
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
+
+# CentOS Stream 9
+- name: set hostname on CentOS Stream 9
+  shell: hostnamectl set-hostname {{ hostname }}
+  tags: hostname
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
 
 - name: set sysnetwork on host
-  lineinfile: dest=/etc/sysconfig/network
-    regexp="^\s*HOSTNAME=" 
+  lineinfile:
+    dest=/etc/sysconfig/network
+    regexp="^\s*HOSTNAME="
     line="HOSTNAME={{ hostname }}"
   tags: hostname
 
 # configure hosts file
 - name: remove temporary directory
-  file: path=/tmp/hosts state=absent
+  file:
+    path=/tmp/hosts
+    state=absent
   tags: hosts
 
 - name: create temporary directory
-  file: path=/tmp/hosts state=directory
+  file:
+    path=/tmp/hosts
+    state=directory
   tags: hosts
 
 - name: create a file which will holds current hosts records
@@ -69,12 +79,18 @@
   tags: hosts
 
 - name: assemble records for hosts file
-  assemble: src=/tmp/hosts/ dest=/etc/hosts
-    mode=0644 owner=root group=root
+  assemble:
+    src=/tmp/hosts/
+    dest=/etc/hosts
+    mode=0644
+    owner=root
+    group=root
   tags: hosts
 
 # script which can ask master server for update ip address of client server in the ansible configuration
 - name: enable iflocal script on the server
-  file: src={{ pool_replace_ifscript }} dest=/sbin/ifup-local
+  file:
+    src={{ pool_replace_ifscript }}
+    dest=/sbin/ifup-local
     state=link
   tags: hosts

@@ -1,10 +1,12 @@
 #!/usr/bin/perl
+#
 # get information about current site(s) configuration
 # run as ansible module
 # gathering facts about sites
 # options:
 # "name=list password=0 status=finished type=DBName site=default"
 # dbname=sitemanager0
+#
 use strict;
 use warnings;
 

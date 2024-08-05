@@ -1,3 +1,5 @@
+#!/usr/bin/bash
+#
 BASE_DIR=/opt/webdir
 BIN_DIR=$BASE_DIR/bin
 
@@ -17,7 +19,7 @@ ansible_mysql_group=/etc/ansible/group_vars/bitrix-mysql.yml
 # return:
 # MYSQL_SERVERS
 # MYSQL_SLAVES_CNT - number of mysql slave servers
-get_mysql_servers_status(){
+get_mysql_servers_status() {
     MYSQL_SERVERS=
     MYSQL_SLAVES_CNT=0
     # get info from ansible configuration
@@ -64,10 +66,8 @@ get_mysql_servers_status(){
             my_server_package=$(echo "$h_info" | awk -F':' '{print $9}')
             my_server_rootpw_f=$(echo "$h_info" | awk -F':' '{print $10}')
             my_server_rootcfg_f=$(echo "$h_info" | awk -F':' '{print $11}')
-            [[ $my_server_rootcfg_f == "/root/.my.cnf" ]] && \
-                my_server_rootcfg=Y
-            [[ $my_server_rootpw_f == "set" ]] && \
-                my_server_rootpw=Y
+            [[ $my_server_rootcfg_f == "/root/.my.cnf" ]] && my_server_rootcfg=Y
+            [[ $my_server_rootpw_f == "set" ]] && my_server_rootpw=Y
             my_server_status=$(echo "$h_info" | awk -F':' '{print $12}')
         fi
         my_server_info="$host_ident:$ipaddr:$my_server_id:$my_server_type"
@@ -76,8 +76,7 @@ get_mysql_servers_status(){
         my_server_info="$my_server_info:$hostname"
 
         # update variables
-        [[ $my_server_type ==  "slave" ]] && \
-            MYSQL_SLAVES_CNT=$(( $MYSQL_SLAVES_CNT+1 ))
+        [[ $my_server_type ==  "slave" ]] && MYSQL_SLAVES_CNT=$(( $MYSQL_SLAVES_CNT+1 ))
         MYSQL_SERVERS="${MYSQL_SERVERS}${my_server_info}
 "
     done
@@ -85,7 +84,7 @@ get_mysql_servers_status(){
     IFS_BAK=
 }
 
-cache_mysql_servers_status(){
+cache_mysql_servers_status() {
     MYSQL_SERVERS=
     MYSQL_SLAVES_CNT=0
     MYSQL_SERVERS_CACHE=$CACHE_DIR/mysql_servers_status.cache             # cache file
@@ -101,9 +100,8 @@ cache_mysql_servers_status(){
     fi
 }
 
-
 # print information abount mysql servers for menu
-print_mysql_servers_status(){
+print_mysql_servers_status() {
     local exclude=$1            # exclude servers by this type of service: slave or master
     local mysql_only="${2:-1}"  # show only mysql servers
 
@@ -129,8 +127,7 @@ print_mysql_servers_status(){
     echo $MENU_SPACER
     # vm03.ksh.bx:172.17.10.103:::Percona-Server-server:5.7.18:active:Y:Y:vm03
     # vm04.ksh.bx:172.17.10.104:1:master:Percona-Server-server:5.7.18:active:Y:Y:vm04.ksh.bx
-    printf "%-3s | %-17s | %20s| %6s | %20s | %6s | %2s | %2s | %s\n" \
-        "ID" "Hostname" "IP" "Type" "Package" "Ver." "P" "C" "Status"
+    printf "%-3s | %-17s | %20s| %6s | %20s | %6s | %2s | %2s | %s\n" "ID" "Hostname" "IP" "Type" "Package" "Ver." "P" "C" "Status"
     echo $MENU_SPACER
 
     IFS_BAK=$IFS
@@ -140,8 +137,7 @@ print_mysql_servers_status(){
             [[ $(echo "$line" | egrep -c ":$exclude:") -gt 0 ]] && continue
         fi
         echo "$line" | \
-            awk -F':' '{printf "%-3s | %-17s | %20s| %6s | %20s | %6s | %2s | %2s | %s\n", \
-            $3, $10, $2, $4, $5, $6, $8, $9, $7}'
+            awk -F':' '{printf "%-3s | %-17s | %20s| %6s | %20s | %6s | %2s | %2s | %s\n", $3, $10, $2, $4, $5, $6, $8, $9, $7}'
     done
     echo $MENU_SPACER
     echo "$MY0005"
@@ -155,7 +151,7 @@ print_mysql_servers_status(){
 # 3. All MySQL services are running
 # include test_site_options STOP_ALL_CONDITIONS 
 # include test last update on master server
-check_mysql_options(){
+check_mysql_options() {
     local tested_server="${1}"
 
     
@@ -208,20 +204,15 @@ check_mysql_options(){
             my_type=$(echo "$line" | awk -F':' '{print $4}')
         fi
 
-        my_version=$(echo "$line" |  awk -F':' '{print $6}' | \
-            awk -F'.' '{printf "%d.%d", $1, $2}')
+        my_version=$(echo "$line" |  awk -F':' '{print $6}' | awk -F'.' '{printf "%d.%d", $1, $2}')
         my_password=$(echo "$line" | awk -F':' '{print $8}')
         my_conf=$(echo "$line" | awk -F':' '{print $9}')
         my_status=$(echo "$line" | awk -F':' '{print $7}')
 
-        [[ ( $my_status == "active" ) && ( $my_version != "$master_version" ) ]] && \
-            MY_DIFFERENT_VERSION="${MY_DIFFERENT_VERSION}${hostname}\n"
-        [[ ( $my_status == "active" ) && ( $my_password == "N" ) ]] && \
-            MY_PASSWORD_EMPTY="${MY_PASSWORD_EMPTY}${hostname}\n"
-        [[ ( $my_status == "active" ) && ( $my_conf == "N" ) ]] && \
-            MY_CONFIG_EMPTY="${MY_CONFIG_EMPTY}${hostname}\n"
-        [[ $my_status != "active" ]] && \
-            MY_NOT_ACTIVE="${MY_NOT_ACTIVE}${hostname}\n"
+        [[ ( $my_status == "active" ) && ( $my_version != "$master_version" ) ]] && MY_DIFFERENT_VERSION="${MY_DIFFERENT_VERSION}${hostname}\n"
+        [[ ( $my_status == "active" ) && ( $my_password == "N" ) ]] && MY_PASSWORD_EMPTY="${MY_PASSWORD_EMPTY}${hostname}\n"
+        [[ ( $my_status == "active" ) && ( $my_conf == "N" ) ]] && MY_CONFIG_EMPTY="${MY_CONFIG_EMPTY}${hostname}\n"
+        [[ $my_status != "active" ]] && MY_NOT_ACTIVE="${MY_NOT_ACTIVE}${hostname}\n"
     done
     IFS=$IFS_BAK
     IFS_BAK=

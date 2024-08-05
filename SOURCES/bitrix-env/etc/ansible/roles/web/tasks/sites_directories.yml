@@ -4,8 +4,12 @@
 # phpUploadDir
 # phpSessionDir
 - name: create basic directories for sites
-  file: path={{ item }} state=directory
-    owner={{ site_bitrix }} group={{ site_bitrix }} mode=0770
+  file:
+    path={{ item }}
+    state=directory
+    owner={{ site_bitrix }}
+    group={{ site_bitrix }}
+    mode=0770
   with_items:
     - /tmp/php_sessions/ext_www
     - /tmp/php_upload/ext_www
@@ -13,27 +17,34 @@
   tags: sites
 
 - name: create sessions directories for sites
-  file: path={{ item.phpSessionDir }} state=directory
-    owner={{ site_bitrix }} group={{ site_bitrix }} mode=0770
+  file:
+    path={{ item.phpSessionDir }}
+    state=directory
+    owner={{ site_bitrix }}
+    group={{ site_bitrix }}
+    mode=0770
   with_items: "{{ bx_sites_info }}"
   tags: sites
-  when: item.SiteInstall == 'link' 
-    or item.SiteInstall == 'kernel'
+  when: item.SiteInstall == 'link' or item.SiteInstall == 'kernel'
 
 - name: create upload directories for sites
-  file: path={{ item.phpUploadDir }} state=directory
-    owner={{ site_bitrix }} group={{ site_bitrix }} mode=0770
+  file:
+    path={{ item.phpUploadDir }}
+    state=directory
+    owner={{ site_bitrix }}
+    group={{ site_bitrix }}
+    mode=0770
   with_items: "{{ bx_sites_info }}"
   tags: sites
-  when: item.SiteInstall == 'link' 
-    or item.SiteInstall == 'kernel'
-
-
+  when: item.SiteInstall == 'link' or item.SiteInstall == 'kernel'
 
 - name: set access rights on main nginx directories
   delegate_to: "{{ cluster_web_server }}"
-  file: path={{ item }} state=directory
-    owner={{ site_bitrix }} group={{ site_bitrix }}
+  file:
+    path={{ item }}
+    state=directory
+    owner={{ site_bitrix }}
+    group={{ site_bitrix }}
     mode=755
   with_items:
     - "{{ nginx_base_dir }}"
@@ -41,9 +52,13 @@
   tags: web
 
 - name: create web-services directories
-  file: path={{ item }} state=directory
-    owner={{ site_bitrix }} group={{ site_bitrix }}
-    mode={{ site_dirs_mode }} recurse=yes
+  file:
+    path={{ item }}
+    state=directory
+    owner={{ site_bitrix }}
+    group={{ site_bitrix }}
+    mode={{ site_dirs_mode }}
+    recurse=yes
   with_items:
     - "{{ csync_configdir  }}"
     - "{{ lsync_logdir }}"
@@ -55,4 +70,3 @@
     - "{{ httpd_base_dir  }}/{{ httpd_config_dir }}"
     - "{{ nginx_base_dir  }}/bx/settings"
   tags: web
-

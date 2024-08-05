@@ -43,4 +43,3 @@
     name: nrpe
     state: restarted
   tags: service
-

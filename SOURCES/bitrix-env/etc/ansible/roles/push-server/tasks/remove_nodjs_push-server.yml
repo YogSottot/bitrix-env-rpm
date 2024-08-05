@@ -3,22 +3,34 @@
   bx_vat:
 
 # remove settings from sites
+
 - include_tasks: sites-delete_push_server_settings.yml
 
 # remove apache settings
+
+# CentOS 6
 - name: remove apache22 settings
   lineinfile:
     dest: /etc/sysconfig/httpd
     line: "BX_PUSH_SECURITY_KEY"
     state: absent
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "6"
 
+# CentOS 7
 - name: remove apache24 settings
-  lineinfile: 
+  lineinfile:
     dest: /etc/httpd/bx/conf/00-environment.conf
     line: "SetEnv BX_PUSH_SECURITY_KEY"
     state: absent
-  when: ansible_distribution == "CentOS"
-    and ansible_distribution_major_version == "7"
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
+
+# CentOS Stream 9
+- name: remove apache24 settings
+  lineinfile:
+    dest: /etc/httpd/bx/conf/00-environment.conf
+    line: "SetEnv BX_PUSH_SECURITY_KEY"
+    state: absent
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
 
 - name: service httpd restart
   delegate_to: "{{ cluster_web_server }}"
@@ -27,8 +39,9 @@
     state: restarted
 
 #  remove nginx settings
+
 - name: remove nginx configs
-  file: 
+  file:
     path: "{{ item }}"
     state: absent
   delegate_to: "{{ cluster_web_server }}"
@@ -38,7 +51,7 @@
     - /etc/nginx/bx/conf/rtc-im_subscrider.conf
 
 - name: remove sub and pub locations
-  file: 
+  file:
     path: /etc/nginx/bx/conf/blank-im_subscrider.conf
     state: touch
   delegate_to: "{{ cluster_web_server }}"
@@ -66,24 +79,33 @@
     state: restarted
 
 # nodejs service
-- name: service nodejs stop
-  service:
-    name: "push-server"
-    state: stopped
-    enabled: no
-  when: ansible_distribution == "CentOS"
-    and ansible_distribution_major_version == "7"
 
+# CentOS 6
 - name: service nodejs stop
   service:
     name: "push-server-multi"
     state: stopped
     enabled: no
-  when: ansible_distribution == "CentOS"
-    and ansible_distribution_major_version == "6"
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "6"
+
+# CentOS 7
+- name: service nodejs stop
+  service:
+    name: "push-server"
+    state: stopped
+    enabled: no
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
+
+# CentOS Stream 9
+- name: service nodejs stop
+  service:
+    name: "push-server"
+    state: stopped
+    enabled: no
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
 
 - name: remove service configs
-  file: 
+  file:
     path: "{{ item }}"
     state: absent
   with_fileglob:
@@ -100,12 +122,22 @@
     - SECURITY_KEY
 
 # redis
+
+# CentOS 7
 - name: service redis stop
-  service: 
+  service:
     name: redis
     state: stopped
-    enabled: no 
+    enabled: no
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
+
+# CentOS Stream 9
+- name: service redis stop
+  service:
+    name: redis
+    state: stopped
+    enabled: no
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
 
 # ansible inventory
 - include_tasks: push-server-inventory-remove.yml
-

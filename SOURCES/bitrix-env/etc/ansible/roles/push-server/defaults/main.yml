@@ -18,4 +18,3 @@ rpm_name_old: push-server
 ansible_playbook_file: NOT_DEFINED
 ansible_playbook_debug: NOT_DEFINED
 push_server: NOT_DEFINED
-

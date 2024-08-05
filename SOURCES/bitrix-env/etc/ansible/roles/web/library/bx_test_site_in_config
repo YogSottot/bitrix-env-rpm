@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+#
 # search string in sitename in configs that fits regexp in the basedir
 #
 

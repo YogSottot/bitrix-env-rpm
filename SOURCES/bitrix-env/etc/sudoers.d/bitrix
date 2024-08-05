@@ -1,8 +1,10 @@
-Defaults:bitrix !requiretty
-Defaults:root !requiretty
-
-Cmnd_Alias BITRIXCMD = /opt/webdir/bin/wrapper_ansible_conf
-Cmnd_Alias BXCMD = /opt/webdir/bin/bx-monitor, /opt/webdir/bin/bx-process, /opt/webdir/bin/bx-sites, /opt/webdir/bin/bx-mysql, /opt/webdir/bin/bx-mc, /opt/webdir/bin/bx-sphinx, /opt/webdir/bin/bx-node, /opt/webdir/bin/bx-provider
-
-bitrix  ALL=(ALL) NOPASSWD: BITRIXCMD, BXCMD
+#
+#Defaults:bitrix !requiretty
+#Defaults:root !requiretty
+#
+#Cmnd_Alias BITRIXCMD = /opt/webdir/bin/wrapper_ansible_conf
+#Cmnd_Alias BXCMD = /opt/webdir/bin/bx-monitor, /opt/webdir/bin/bx-process, /opt/webdir/bin/bx-sites, /opt/webdir/bin/bx-mysql, /opt/webdir/bin/bx-mc, /opt/webdir/bin/bx-sphinx, /opt/webdir/bin/bx-node, /opt/webdir/bin/bx-provider
+#
+#bitrix  ALL=(ALL) NOPASSWD: BITRIXCMD, BXCMD
+#
 

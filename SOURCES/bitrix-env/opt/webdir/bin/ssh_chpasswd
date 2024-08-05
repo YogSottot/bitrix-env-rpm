@@ -3,7 +3,7 @@
 # performs password changes via ssh
 # Usage: ssh_chpasswd server port user oldpwd newpwd 
 # ksh770, 03/02/14
-
+#
 set timeout 1
 # ip address or hostname
 set server [lindex $argv 0]

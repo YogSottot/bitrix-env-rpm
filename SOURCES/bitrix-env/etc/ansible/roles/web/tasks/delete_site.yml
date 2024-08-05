@@ -7,7 +7,11 @@
 #####
 - name: gathering facts about deleted site
   delegate_to: "{{ cluster_web_server }}"
-  bx_facts: name=status password=0 site={{ web_site_name }} site_dir={{ web_site_dir }}
+  bx_facts:
+    name=status
+    password=0
+    site={{ web_site_name }}
+    site_dir={{ web_site_dir }}
   tags: configure_site
 
 - name: create variable with site options
@@ -51,7 +55,7 @@
   when: "web_site_type == 'kernel' or web_site_type == 'link'"
 
 # defined is_cluster and bx_sites_info variables
-- include: bx_sites_info.yml
+- include_tasks: bx_sites_info.yml
 
 - name: web cluster update for site data
   set_fact:
@@ -65,12 +69,20 @@
 ######## delete site configuration data; we don't remove by file, because we need to support older versions
 ####
 - name: delete cron settings
-  bx_site_opts: name=cron state=disable site={{ web_site_name }} dir={{ web_site_root_dir  }}
+  bx_site_opts:
+    name=cron
+    state=disable
+    site={{ web_site_name }}
+    dir={{ web_site_root_dir  }}
   when: "inventory_hostname == cluster_web_server and web_site_cron == 'enable'"
   ignore_errors: yes
 
 - name: delete email settings
-  bx_site_opts: name=mail state=disable site={{ web_site_name }} dir={{ web_site_root_dir }}
+  bx_site_opts:
+    name=mail
+    state=disable
+    site={{ web_site_name }}
+    dir={{ web_site_root_dir }}
   when: "inventory_hostname == cluster_web_server and web_site_email != ''"
   ignore_errors: yes
 
@@ -118,22 +130,19 @@
   file:
     path: "{{ web_site_bx_temp_directory }}"
     state: absent
-  when: web_site_bx_temp_directory != '' 
-    and web_site_type != 'link' and 'bitrix-web' in group_names
+  when: web_site_bx_temp_directory != '' and web_site_type != 'link' and 'bitrix-web' in group_names
 
 - name: delete bx_temp nginx config
   file:
     path: "{{ web_site_nginx_bx_temp_config }}"
     state: absent
-  when: web_site_nginx_bx_temp_config != '' 
-    and web_site_type != 'ext_kernel' and 'bitrix-web' in group_names
+  when: web_site_nginx_bx_temp_config != '' and web_site_type != 'ext_kernel' and 'bitrix-web' in group_names
 
 - name: delete custom settings nginx
   file:
     path: "{{ web_site_costom_directory }}"
     state: absent
-  when: web_site_costom_directory != '' 
-    and web_site_type != 'ext_kernel' and 'bitrix-web' in group_names
+  when: web_site_costom_directory != '' and web_site_type != 'ext_kernel' and 'bitrix-web' in group_names
 
 ####
 ######## /delete files data
@@ -141,7 +150,9 @@
 ######## delete config for web services
 #####
 - name: delete nginx config files
-  file: path={{ item }} state=absent
+  file:
+    path={{ item }}
+    state=absent
   with_items:
     - "{{ web_site_ngx_http_link }}"
     - "{{ web_site_ngx_https_link }}"
@@ -162,9 +173,7 @@
   with_items:
     - "{{ web_site_apache_scale_conf }}"
   notify: restart httpd-scale
-  when: web_site_type != "ext_kernel" 
-    and ansible_distribution_major_version == "7"
-    and inventory_hostname == cluster_web_server
+  when: web_site_type != "ext_kernel" and ansible_distribution_major_version == "7" and inventory_hostname == cluster_web_server
 
 - name: change default site root directory
   lineinfile: 
@@ -179,9 +188,7 @@
     dest: /etc/httpd/conf/httpd-scale.conf
     regexp: "DocumentRoot"
     line: "DocumentRoot '/var/www/html'"
-  when: web_site_name == "default" 
-    and ansible_distribution_major_version == "7"
-    and inventory_hostname == cluster_web_server
+  when: web_site_name == "default" and ansible_distribution_major_version == "7" and inventory_hostname == cluster_web_server
   notify: restart httpd-scale
 
 - name: add listen directive to httpd config
@@ -197,9 +204,7 @@
     dest: /etc/httpd/conf/httpd-scale.conf
     line: "Listen 127.0.0.1:9887" 
     state: present 
-  when: web_site_name == "default" 
-    and ansible_distribution_major_version == "7"
-    and inventory_hostname == cluster_web_server
+  when: web_site_name == "default" and ansible_distribution_major_version == "7" and inventory_hostname == cluster_web_server
   notify: restart httpd-scale
 
 ####
@@ -207,7 +212,7 @@
 
 ######## /delete database from mysql server
 ####
-- include: delete_db.yml
+- include_tasks: delete_db.yml
   when: "web_site_type == 'kernel' or web_site_type == 'ext_kernel'"
 ####
 ######## /delete database from mysql server
@@ -220,10 +225,10 @@
 
 ######## delete csync configuration
 ####
-- include: delete_csync2.yml
+- include_tasks: delete_csync2.yml
   when: "fstype is defined and cluster_web_configure == 'enable' and fstype == 'csync'"
 
-- include: configs_lsyncd_delete_site.yml
+- include_tasks: configs_lsyncd_delete_site.yml
   when: "fstype is defined and cluster_web_configure == 'enable' and fstype == 'lsync'"
 
 ####

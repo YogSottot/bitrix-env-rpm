@@ -1,28 +1,38 @@
 ---
 - name: install Remi repository
-  yum: name="http://rpms.famillecollet.com/enterprise/remi-release-6.rpm"
+  yum:
+    name="http://rpms.famillecollet.com/enterprise/remi-release-6.rpm"
     state=present
   when: ansible_distribution_major_version == "6"
   tags: remi
 
 - name: install Remi repository
-  yum: name="http://rpms.famillecollet.com/enterprise/remi-release-7.rpm"
+  yum:
+    name="http://rpms.famillecollet.com/enterprise/remi-release-7.rpm"
     state=present
   when: ansible_distribution_major_version == "7"
   tags: remi
 
 - name: disable remi php56 repository
-  ini_file: dest=/etc/yum.repos.d/remi.repo
-    section=remi-php56 option=enabled value=0
+  ini_file:
+    dest=/etc/yum.repos.d/remi.repo
+    section=remi-php56
+    option=enabled
+    value=0
   tags: remi
 
 - name: enable remi php70 repository
-  ini_file: dest=/etc/yum.repos.d/remi-php70.repo
-    section=remi-php70 option=enabled value=1
+  ini_file:
+    dest=/etc/yum.repos.d/remi-php70.repo
+    section=remi-php70
+    option=enabled
+    value=1
   tags: remi
 
 - name: remove packages
-  yum: name=php-pecl-xhprof state=absent
+  yum:
+    name=php-pecl-xhprof
+    state=absent
   tags: php7
 
 - name: update system by remi repository
@@ -32,4 +42,3 @@
     update_cache: yes
     update_only: yes
   tags: php7
-

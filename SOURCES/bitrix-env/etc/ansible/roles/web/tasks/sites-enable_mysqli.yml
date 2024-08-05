@@ -1,7 +1,8 @@
 ---
 - name: enable mysqli usage on site
   with_items: "{{ bx_sites_info }}"
-  lineinfile: dest="{{ item.DocumentRoot }}/bitrix/php_interface/dbconn.php"
+  lineinfile:
+    dest="{{ item.DocumentRoot }}/bitrix/php_interface/dbconn.php"
     line='define("BX_USE_MYSQLI", true);'
     insertbefore='^\?\>$'
   tags: php7
@@ -12,4 +13,3 @@
   args:
     executable: /bin/bash
   tags: php7
-

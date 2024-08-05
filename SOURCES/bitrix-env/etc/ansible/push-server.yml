@@ -1,7 +1,7 @@
 ---
 # This playbook configure RTC server
 # manage_node: node when rtc created or deleted
-# rtc_type: nodejs or nginx
+# rtc_type: nodejs only
 - hosts: bitrix-hosts
   roles:
     - "push-server"
@@ -9,6 +9,5 @@
 - hosts: bitrix-hosts
   vars:
     cache_directory: /opt/webdir/tmp
-
   roles:
     - cleaner

@@ -14,4 +14,3 @@ web_mysql_socket: /var/lib/mysqld/mysqld.sock
 cluster_web_configure: disable
 cluster_web_server: {{ hostname }}
 cluster_web_netaddr: {{ host_ip_address }}
-

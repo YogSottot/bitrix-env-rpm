@@ -8,7 +8,6 @@
     - process_status_searchd
   notify: restart munin-node
 
-
 - name: munin - disable sphindex plugin
   file:
     path: "{{item}}"

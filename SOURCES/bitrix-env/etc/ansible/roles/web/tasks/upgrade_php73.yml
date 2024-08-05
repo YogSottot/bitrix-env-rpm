@@ -21,7 +21,6 @@
   shell: "rpm -e --nodeps php-pecl-zip || true"
   args:
     removes: /usr/lib64/php/modules/zip.so
-        
 
 - name: update system by remi repository
   yum: 
@@ -36,9 +35,10 @@
     name: php-pecl-zip
     state: installed
 
-- include: php_ext_dublicates.yml
+- include_tasks: php_ext_dublicates.yml
 
 - name: restart httpd
-  service: name=httpd state=restarted
+  service:
+    name=httpd
+    state=restarted
   tags: php7
-

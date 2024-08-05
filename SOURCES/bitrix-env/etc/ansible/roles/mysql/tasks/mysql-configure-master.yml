@@ -15,21 +15,28 @@
   tags: mysql
 
 - name: restart mysqld service 
-  service: name=mysqld state=restarted
+  service:
+    name=mysqld
+    state=restarted
   tags: mysql
 
 - debug: msg="src={{ mysql_socket }}"
 
 - name: reset replication option on the new master-server
-  bx_slave: src={{ mysql_socket }}
+  bx_slave:
+    src={{ mysql_socket }}
   tags: mysql
 
 - name: stop mysqld service on the new master-server
-  service: name=mysqld state=stopped
+  service:
+    name=mysqld
+    state=stopped
   tags: mysql
 
 - name: delete replication files on the new master-server
-  file: path=/var/lib/mysql/{{ item }} state=absent
+  file:
+    path=/var/lib/mysql/{{ item }}
+    state=absent
   with_items:
     - master.info
     - relay-bin.info
@@ -37,10 +44,14 @@
   tags: mysql
 
 - name: start mysqld service on the new master-server
-  service: name=mysqld state=started
+  service:
+    name=mysqld
+    state=started
   tags: mysql
 
 - name: set the read-only mode from new master server
-  mysql_variables: variable=read_only value=1 login_unix_socket={{ mysql_socket }}
+  mysql_variables:
+    variable=read_only
+    value=1
+    login_unix_socket={{ mysql_socket }}
   tags: mysql
-

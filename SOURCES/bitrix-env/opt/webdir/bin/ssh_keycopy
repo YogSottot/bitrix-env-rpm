@@ -2,7 +2,7 @@
 #
 # performs copy ssh key to the server via ssh-copy-id
 # ksh770, 04/02/14
-
+#
 set timeout 15
 # ip address or hostname
 set server [lindex $argv 0]

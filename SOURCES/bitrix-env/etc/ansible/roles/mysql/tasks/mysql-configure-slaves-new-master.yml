@@ -1,19 +1,25 @@
 ---
 # read-only mode on master server
 - name: read-only on new master server
-  mysql_variables: variable=read_only value=1 login_unix_socket={{ mysql_socket }}
+  mysql_variables:
+    variable=read_only
+    value=1
+    login_unix_socket={{ mysql_socket }}
   delegate_to: "{{ new_master_server  }}"
   tags: mysql
   run_once: true
 
 - name: master option from replacement
-  mysql_replication: mode=getmaster login_unix_socket={{ mysql_socket }}
+  mysql_replication:
+    mode=getmaster
+    login_unix_socket={{ mysql_socket }}
   delegate_to: "{{ new_master_server }}"
   register: master_status
   tags: mysql
 
 - name: stop slave
-  mysql_replication: mode={{ item }} 
+  mysql_replication:
+    mode={{ item }}
     login_unix_socket={{ mysql_socket }}
   tags: mysql
   ignore_errors: true
@@ -22,7 +28,8 @@
     - resetslave
 
 - name: change master
-  mysql_replication: mode=changemaster
+  mysql_replication:
+    mode=changemaster
     master_host={{ new_master_server }}
     master_log_file={{ master_status.File }}
     master_log_pos={{ master_status.Position }}
@@ -34,11 +41,15 @@
   tags: mysql
 
 - name: start replication 
-  mysql_replication: mode=startslave
+  mysql_replication:
+    mode=startslave
   tags: mysql
 
 - name: read-write on new master server
   delegate_to: "{{ new_master_server }}"
-  mysql_variables: variable=read_only value=0 login_unix_socket={{ mysql_socket  }}
+  mysql_variables:
+    variable=read_only
+    value=0
+    login_unix_socket={{ mysql_socket  }}
   tags: mysql
   run_once: true

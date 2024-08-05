@@ -9,10 +9,9 @@
     state: stopped
   ignore_errors: true
 
-- include: iptables-executer.yml
+- include_tasks: iptables-executer.yml
 
 - service:
     name: iptables
     enabled: yes
     state: started
-

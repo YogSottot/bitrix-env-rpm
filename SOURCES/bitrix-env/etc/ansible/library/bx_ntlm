@@ -1,5 +1,7 @@
-#!/bin/bash
+#!/usr/bin/bash
+#
 # test ntlm settings on server 
+#
 export LANG=en_EN.UTF-8
 export PATH=$PATH:/sbin:/usr/sbin
 
@@ -10,7 +12,6 @@ LOG=$TMP/bx_ntlm.log
 
 debug() {
   msg=$1
-
   [[ $DEBUG -gt 1 ]] && printf "%s: %d: %s\n" "$(date +%F-%H-%M-%S)" "$$" "$msg" >> $LOG
 }
 
@@ -18,9 +19,7 @@ debug() {
 print() {
     msg=${1}
     type=${2:-facts}
-
     debug "$msg"
-
     code=0
     if [[ "$type" == "error" ]]; then
         msg_out=$(echo "$msg" | head -1)
@@ -47,43 +46,34 @@ print() {
 }
 
 # get net ads info status
-get_net_ads_info(){
+get_net_ads_info() {
     # test net ads
     net_info=$($NET_CMD ads info 2>&1)
     [[ $? -gt 0 ]] && print "command='net ads info' return error"
-
-    LDAP_SERVER=$(echo "$net_info" | \
-        awk -F':' '/^LDAP server:/{print $2}' | sed -e 's/^\s\+//;s/\s\+$//;')
+    LDAP_SERVER=$(echo "$net_info" | awk -F':' '/^LDAP server:/{print $2}' | sed -e 's/^\s\+//;s/\s\+$//;')
     [[ -z "$LDAP_SERVER" ]] && print "command='net ads info' does not return LDAP server IP"
-    
-    LDAP_SERVER_NAME=$(echo "$net_info" | \
-    awk -F':' '/^LDAP server name:/{print $2}' | sed -e 's/^\s\+//;s/\s\+$//;')
-    REALM=$(echo "$net_info" | \
-        awk -F':' '/^Realm:/{print $2}' | sed -e 's/^\s\+//;s/\s\+$//;')
-    KDC_SERVER=$(echo "$net_info" | \
-        awk -F':' '/^KDC server:/{print $2}' | sed -e 's/^\s\+//;s/\s\+$//;')
-    OFFSET_TIME=$(echo "$net_info" | \
-        awk -F':' '/^Server time offset:/{print $2}' | sed -e 's/^\s\+//;s/\s\+$//;')
+    LDAP_SERVER_NAME=$(echo "$net_info" | awk -F':' '/^LDAP server name:/{print $2}' | sed -e 's/^\s\+//;s/\s\+$//;')
+    REALM=$(echo "$net_info" | awk -F':' '/^Realm:/{print $2}' | sed -e 's/^\s\+//;s/\s\+$//;')
+    KDC_SERVER=$(echo "$net_info" | awk -F':' '/^KDC server:/{print $2}' | sed -e 's/^\s\+//;s/\s\+$//;')
+    OFFSET_TIME=$(echo "$net_info" | awk -F':' '/^Server time offset:/{print $2}' | sed -e 's/^\s\+//;s/\s\+$//;')
     DOMAIN_STATUS="configured"
 }
 
 # get nss status; Does it use winbind database by getent cmd
-get_nss_groups(){
-    idmap_numbers=$(getent group | \
-        awk -v i=$idmap_id -F':' \
-        'BEGIN{ad_ids=0}{if ($3>10000) ad_ids++ }END{printf "%d", ad_ids}')
+get_nss_groups() {
+    idmap_numbers=$(getent group | awk -v i=$idmap_id -F':' 'BEGIN{ad_ids=0}{if ($3>10000) ad_ids++ }END{printf "%d", ad_ids}')
     [[ $idmap_numbers -gt 0 ]] && NSS_STATUS="configured"
 }
 
 # parse safe file, convert data to the safe value
-parse_data(){
+parse_data() {
     if [[ -n "$safe_file" ]]; then
         [[ -f $safe_file ]] || print "Not found file=$safe_file" error
-        ntlm_user=$(grep '# NTLM_USER' $safe_file -A 1 | tail -n1) 
-        ntlm_pass=$(grep '# NTLM_PASSWORD' $safe_file -A 1 | tail -n1) 
+        ntlm_user=$(grep '# NTLM_USER' $safe_file -A 1 | tail -n1)
+        ntlm_pass=$(grep '# NTLM_PASSWORD' $safe_file -A 1 | tail -n1)
 
-        ntlm_dps=$(grep '# NTLM_DPS' $safe_file -A 1 | tail -n1) 
-        ntlm_dnf=$(grep '# NTLM_DNF' $safe_file -A 1 | tail -n1) 
+        ntlm_dps=$(grep '# NTLM_DPS' $safe_file -A 1 | tail -n1)
+        ntlm_dnf=$(grep '# NTLM_DNF' $safe_file -A 1 | tail -n1)
 
         #ntlm_user=$(printf "%q" "$ntlm_user_file")
         #ntlm_pass=$(printf "%q" "$ntlm_pass_file")
@@ -117,7 +107,6 @@ if [[ "$state" == "status" ]]; then
     get_net_ads_info
     [[ $idmap_id -gt 0 ]] 2>/dev/null && get_nss_groups
     print "Found options"
-
 elif [[ "$state" == "join" ]]; then
     parse_data
     [[ -z $ntlm_pass ]] && print "You must set ntlm_pass=" error
@@ -135,7 +124,6 @@ elif [[ "$state" == "join" ]]; then
         debug "net ads join return=$net_join_code"
     fi
 
-    [[ $net_join_code -gt 0 ]] && \
-        print "Error: net ads join returned error=$net_join_code" error
+    [[ $net_join_code -gt 0 ]] && print "Error: net ads join returned error=$net_join_code" error
     print "Success join to domain" changed
 fi

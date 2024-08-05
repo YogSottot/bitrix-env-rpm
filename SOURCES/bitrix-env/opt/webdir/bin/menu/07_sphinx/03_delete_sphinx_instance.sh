@@ -1,3 +1,5 @@
+#!/usr/bin/bash
+#
 PROGNAME=$(basename $0)
 PROGPATH=$(dirname $0)
 [[ -z $DEBUG  ]] && DEBUG=0
@@ -5,7 +7,7 @@ PROGPATH=$(dirname $0)
 . $PROGPATH/functions.sh || exit 1
 logo=$(get_logo)
 
-delete_sphinx_instance(){
+delete_sphinx_instance() {
     local srv_name="$1"
 
     test_srv_name=$(echo "$SPHINX_SERVERS" | grep -c "^$srv_name:")
@@ -22,19 +24,17 @@ delete_sphinx_instance(){
             "" "" any_key && \
             return 2
 
-    task_exec="$bx_sphinx_script -a delete -s $srv_name -d $sphinx_dbname"
-    task_desc="$(get_text "$SPH0013" "$srv_name")"
+    #task_exec="$bx_sphinx_script -a delete -s $srv_name -d $sphinx_dbname"
+    #task_desc="$(get_text "$SPH0013" "$srv_name")"
 
-    [[ $DEBUG -gt 0  ]] && \
-        echo "task_exec=$task_exec"
-    exec_pool_task "$task_exec" "$task_desc"
+    #[[ $DEBUG -gt 0  ]] && \
+    #    echo "task_exec=$task_exec"
+    #exec_pool_task "$task_exec" "$task_desc"
 }
 
-sub_menu(){
+sub_menu() {
     menu_00="$SPH0201"
     menu_01="   $SPH0014"
-
-
 
     MENU_SELECT=
     until [[ -n "$MENU_SELECT" ]]; do
@@ -68,7 +68,7 @@ sub_menu(){
 
         case "$MENU_SELECT" in
             0) exit ;;
-            *) delete_sphinx_instance "$MENU_SELECT" ;;
+            #*) delete_sphinx_instance "$MENU_SELECT" ;;
         esac
         MENU_SELECT=
     done

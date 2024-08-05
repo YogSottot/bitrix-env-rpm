@@ -1,9 +1,9 @@
 ---
-- include: sites-gathering_facts-not_mandatory.yml
+- include_tasks: sites-gathering_facts-not_mandatory.yml
 
 # create  push settings from template
 - name: create push settings
-  template: 
+  template:
     src: push-settings.php.j2
     dest: /tmp/push-settings.php
   delegate_to: "{{ cluster_web_server }}"
@@ -14,9 +14,10 @@
   with_items: "{{ bx_sites_info }}"
   delegate_to: "{{ cluster_web_server }}"
   when: proccess_sites
-  bx_blockinfile: 
+  bx_blockinfile:
     insertafter='BEGIN GENERATED PUSH SETTINGS'
-    insertbefore='END GENERATED PUSH SETTINGS' state=delete
+    insertbefore='END GENERATED PUSH SETTINGS'
+    state=delete
     dest="{{ item.DocumentRoot }}/bitrix/.settings.php"
 
 # add template data to the site config
@@ -24,7 +25,8 @@
   with_items: "{{ bx_sites_info }}"
   delegate_to: "{{ cluster_web_server }}"
   when: proccess_sites
-  bx_blockinfile: from_file=/tmp/push-settings.php 
+  bx_blockinfile:
+    from_file=/tmp/push-settings.php 
     insertafter='return array' 
     dest="{{ item.DocumentRoot }}/bitrix/.settings.php"
 

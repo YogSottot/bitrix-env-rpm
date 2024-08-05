@@ -1,9 +1,12 @@
 ---
-
 - name: backup folders
   delegate_to: "{{ monitoring_server }}"
-  file: path={{ item }} state=directory
-    owner=bitrix group=bitrix mode=0770
+  file:
+    path={{ item }}
+    state=directory
+    owner=bitrix
+    group=bitrix
+    mode=0770
   with_items:
     - "/home/bitrix/backup"
     - "/home/bitrix/backup/archive"
@@ -12,7 +15,9 @@
 - name: create backup 
   delegate_to: "{{ monitoring_server }}"
   with_items: "{{ bx_sites_info }}"
-  mysql_db: name="{{ item.DBName }}" state=dump
+  mysql_db:
+    name="{{ item.DBName }}"
+    state=dump
     target="/home/bitrix/backup/archive/update_{{ item.DBName }}.sql.bz2"
     login_unix_socket="{{ mysql_socket }}"
   tags: backup

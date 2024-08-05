@@ -1,10 +1,12 @@
-#!/bin/bash
+#!/usr/bin/bash
+#
 # manage monitoring options 
 PROGNAME=$(basename $0)
 PROGPATH=$(dirname $0)
 [[ -z $DEBUG ]] && DEBUG=0
 
 . $PROGPATH/09_monitor/functions.sh || exit 1
+
 logo=$(get_logo)
 
 _configure_monitoring() {
@@ -22,12 +24,11 @@ _update_monitoring() {
 # print host menu
 _monitor_menu() {
     # Monitoring is disabled in the pool
-    menu_01="$MON0033"
+    #menu_01="$MON0033"
     # Monitoring is enabled in the pool
-    menu_02="$MON0034"
-    menu_03="$MON0035"
+    #menu_02="$MON0034"
+    #menu_03="$MON0035"
     menu_00="$MON0201"
-
 
     MONITOR_MENU_SELECT=
 
@@ -67,15 +68,15 @@ _monitor_menu() {
 
         # process selection
         case "$SUBMENU_SELECT" in
-        "1") _configure_monitoring;;
-        "2") _disable_monitoring ;;
-        "3") _update_monitoring ;;
+        #"1") _configure_monitoring;;
+        #"2") _disable_monitoring ;;
+        #"3") _update_monitoring ;;
         "0") exit ;;
-        *)   error_pick;;
+        *) error_pick ;;
         esac
         MONITOR_MENU_SELECT=
         POOL_MONITOR_SERVER=
-  done
+    done
 }
 
 _monitor_menu

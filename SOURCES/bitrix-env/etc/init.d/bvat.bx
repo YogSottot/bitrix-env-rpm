@@ -1,10 +1,12 @@
-#!/bin/bash
+#!/usr/bin/bash
+#
 #====================================================================
 # Run level information:
 #
 # chkconfig: 2345 99 99
 # description: Bitrix Virtual Appliance Tuning & Configuration Script
 # processname: bvat
+#
 export LANG=en_US.UTF-8
 export PATH=/sbin:/bin:/usr/sbin:/usr/bin
 
@@ -16,7 +18,7 @@ MYSQL_CNF=/root/.my.cnf
 
 # get OS information
 get_os_type
-[[ $OS_TYPE -eq 0  ]] && exit 1
+[[ $OS_TYPE -eq 0 ]] && exit 1
 
 # get php settings
 get_php_settings
@@ -25,6 +27,8 @@ get_php_settings
 LOG_DIR=/opt/webdir/logs
 [[ ! -d $LOG_DIR ]] && mkdir -p $LOG_DIR
 LOGS_FILE=$LOG_DIR/bvat.log
+
+# debug
 [[ -z $DEBUG ]] && DEBUG=0
 if [[ -f $LOGS_FILE ]]; then
     tm=$(date +%s)
@@ -35,7 +39,16 @@ fi
 # intial/first boot configuration script
 # - set mysql root password
 # - set mysql user and password for default bitrix site
-bx_init(){
+bx_init() {
+    # generate bitrix password
+    update_bitrix_password
+
+    # generate root password
+    update_root_password
+
+    # cleanup
+    delete_packer_user
+
     # generate root password and update security options
     my_generate_rootpw
 
@@ -45,23 +58,11 @@ bx_init(){
     # update crypo key
     update_crypto_key
 
-    if [[ ( -n $BITRIX_ENV_TYPE ) && \
-        ( $BITRIX_ENV_TYPE == "crm" ) ]]; then
-        # generate push settings
-        generate_push
-
-        # update bitrix and root passwords
-        update_bitrix_password
-
-        # update root password
-        update_root_password
-
-        # generate pool server
-        generate_ansible_inventory 0 "$BITRIX_ENV_TYPE"
-    fi
+    # generate pool server
+    # generate_ansible_inventory 0 "$BITRIX_ENV_TYPE"
 }
 
-start(){
+start() {
     bx_ansible_network
 
     log_to_file "Start server configuration by Bitrix-Env" 
@@ -88,8 +89,8 @@ start(){
     if [[ $mysql_restart -gt 0 ]]; then
         get_mysql_package
         log_to_file "Update mysql service; need to restart $MYSQL_SERVICE"
-
-        if [[ $OS_VERSION -eq 7 ]]; then
+        # VMBITRIX_9.0
+        if [[ $OS_VERSION -ge 7 ]]; then
             systemctl restart $MYSQL_SERVICE >> $LOGS_FILE 2>&1
         else
             service mysqld restart >> $LOGS_FILE 2>&1
@@ -97,19 +98,19 @@ start(){
     fi
 
     if [[ $IS_NET_CHANGED -gt 0 ]]; then
-        
-        if [[ $OS_VERSION -eq 7 ]]; then
+	log_to_file "Update nginx service; need to restart nginx"
+        # VMBITRIX_9.0
+        if [[ $OS_VERSION -ge 7 ]]; then
             systemctl restart nginx >> $LOGS_FILE 2>&1
         else
             service nginx restart >> $LOGS_FILE 2>&1
         fi
-
     fi
 
     if [[ $httpd_restart -gt 0 ]]; then
-        log_to_file "Update httpd service; need to restart $MYSQL_SERVICE"
-
-        if [[ $OS_VERSION -eq 7 ]]; then
+        log_to_file "Update httpd service; need to restart httpd"
+        # VMBITRIX_9.0
+        if [[ $OS_VERSION -ge 7 ]]; then
             systemctl restart httpd >> $LOGS_FILE 2>&1
         else
             service httpd restart >> $LOGS_FILE 2>&1
@@ -117,9 +118,8 @@ start(){
     fi
 
     # increase max_input_vars for php 5.4 and above
-    if [[ $(echo "$PHP_VERSION" | egrep -c '^(5\.[456]|7\.[0-9])$')  ]]; then
-        sed -i 's/max_input_vars = 4000/max_input_vars = 10000/' \
-            /etc/php.d/bitrixenv.ini
+    if [[ $(echo "$PHP_VERSION" | egrep -c '^(5\.[456]|7\.[0-9])$') ]]; then
+        sed -i 's/max_input_vars = 4000/max_input_vars = 10000/' /etc/php.d/bitrixenv.ini
         log_to_file "Increase max_input_vars value in /etc/php.d/bitrixenv.ini"
     fi
 
@@ -127,9 +127,7 @@ start(){
     if [[ $IS_OLDER_PHP -gt 0 ]]; then
         if [[ $(grep -c "mbstring.internal_encoding" /etc/php.d/bitrixenv.ini) -gt 0 ]]; then
             log_to_file "Found mbstring.internal_encoding at /etc/php.d/bitrixenv.ini"
-            sed -i "s/mbstring.internal_encoding/default_charset/" \
-            /etc/php.d/bitrixenv.ini && \
-                log_to_file "Replace mbstring.internal_encoding by default_charset"
+            sed -i "s/mbstring.internal_encoding/default_charset/" /etc/php.d/bitrixenv.ini && log_to_file "Replace mbstring.internal_encoding by default_charset"
         fi
     fi
 
@@ -166,19 +164,13 @@ start(){
         [[ "$PHP_VERSION" == "5.4" ]] && opcache_config=/etc/php.d/opcache.ini
 
         # delete old config file; if there is one
-        [[ ( "$PHP_VERSION" != "5.4" ) && \
-            ( -f /etc/php.d/opcache.ini ) ]] && \
-            rm -f /etc/php.d/opcache.ini
+        [[ ( "$PHP_VERSION" != "5.4" ) && ( -f /etc/php.d/opcache.ini ) ]] && rm -f /etc/php.d/opcache.ini
 
         # update opcache config
         if [[ -f $opcache_template ]]; then
-            cat $opcache_template | \
-                sed -e "s:__MEMORY__:$opcache_memory_mb:;s:__MEMORYSTR__:$opcache_memory_strings:;" \
-                > $opcache_config 2>/dev/null && \
-                log_to_file "Update opcache config=$opcache_config"
+            cat $opcache_template | sed -e "s:__MEMORY__:$opcache_memory_mb:;s:__MEMORYSTR__:$opcache_memory_strings:;" > $opcache_config 2> /dev/null && log_to_file "Update opcache config=$opcache_config"
         fi
     fi
-
 
     BXFILE=/etc/php.d/bitrixenv.ini
     if [[ "$PHP_VERSION" == "5.6" ]]; then
@@ -207,20 +199,17 @@ start(){
     if [[ -f $INIT_FLAG ]]; then 
         bx_init
         rm -f $INIT_FLAG
-
     fi
 
     # update alternatives
     bx_alternatives_for_mycnf
 
     # change issue message (that used in login screen)
-    /opt/webdir/bin/bx_motd > /etc/issue 2>/dev/null
-
+    /opt/webdir/bin/bx_motd > /etc/issue 2> /dev/null
 }
 
-
-test_f(){
-#    DEBUG=1
+test_f() {
+    # DEBUG=1
     bx_init
 }
 
@@ -233,15 +222,15 @@ case "$1" in
         start 
         ;;
     stop)
-		# No-op
-		;;
+	# No-op
+	;;
     test)
-        test_f
-        ;;
+	test_f
+	;;
     *)
-		echo "Error: argument '$1' not supported" >&2
-		exit 3
-		;;
+	echo "Error: argument '$1' not supported" >&2
+	exit 3
+	;;
 esac
 
 exit 0

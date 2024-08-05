@@ -16,4 +16,3 @@
 
 - include_tasks: uninstall.yml
   when: "'disable' in monitoring_status"
-

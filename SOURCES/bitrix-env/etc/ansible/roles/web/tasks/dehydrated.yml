@@ -74,5 +74,4 @@
 - name: update crontab
   lineinfile:
     dest: /etc/crontab
-    line: '0 2 * * 6 root /opt/webdir/bin/bx-dehydrated'
-
+    line: "{{ 59 | random(start=0) }} {{ 9 | random(start=0) }} * * {{ 7 | random(start=4) }} root /opt/webdir/bin/bx-dehydrated"

@@ -1,34 +1,32 @@
-#!/bin/bash
+#!/usr/bin/bash
+#
 # fix php errors
+#
 export LANG="en_US.UTF-8"
 export PATH=/usr/bin:/usr/sbin:/bin:/sbin
 TMPFILE=$(mktemp /tmp/php_extensions.XXXXX)
 
 # print error message
 print_error() {
-  msg=$1
-  echo "{\"changed\":false,\"failed\":true,\"msg\":\"$msg\"}"
-  [[ -f $TMPFILE ]] && rm -f $TMPFILE
-  exit 1
+    msg=$1
+    echo "{\"changed\":false,\"failed\":true,\"msg\":\"$msg\"}"
+    [[ -f $TMPFILE ]] && rm -f $TMPFILE
+    exit 1
 }
 
 # print timezone info
 print_changed() {
-  msg=$1
-
-  echo "{\"changed\":true,\"msg\":\"$msg\"}"
-  [[ -f $TMPFILE ]] && rm -f $TMPFILE
-
-  exit 0
+    msg=$1
+    echo "{\"changed\":true,\"msg\":\"$msg\"}"
+    [[ -f $TMPFILE ]] && rm -f $TMPFILE
+    exit 0
 }
 
 print_notchanged() {
-  msg=$1
-
-  echo "{\"changed\":false,\"msg\":\"$msg\"}"
-  [[ -f $TMPFILE ]] && rm -f $TMPFILE
-
-  exit 0
+    msg=$1
+    echo "{\"changed\":false,\"msg\":\"$msg\"}"
+    [[ -f $TMPFILE ]] && rm -f $TMPFILE
+    exit 0
 }
 
 
@@ -51,12 +49,9 @@ MODULES_CHANGED=
 MODULES_UNCHANGED=
 if [[ -n $DUBLICATE_MODULES ]]; then
     for mod in $DUBLICATE_MODULES; do
-        php_inis=$(find /etc/php.d/ -maxdepth 1 -type f -name "*.ini" \
-            -exec grep -H "^\s*extension=$mod" '{}' ';' | \
-            awk -F':' '{print $1}')
+        php_inis=$(find /etc/php.d/ -maxdepth 1 -type f -name "*.ini" -exec grep -H "^\s*extension=$mod" '{}' ';' | awk -F':' '{print $1}')
         if [[ -n $php_inis ]]; then
             MODULES_CHANGED="$MODULES_CHANGED $mod"
-
             remove_files_cnt=0
             remove_files=
             first_file=
@@ -71,7 +66,6 @@ if [[ -n $DUBLICATE_MODULES ]]; then
                     remove_files=$remove_files" $file"
                 fi
             done
-
             if [[ ( $remove_files_cnt -gt 0 ) ]]; then
                 if [[ $remove_files_cnt -lt $cnt ]]; then
                     rm -f $remove_files

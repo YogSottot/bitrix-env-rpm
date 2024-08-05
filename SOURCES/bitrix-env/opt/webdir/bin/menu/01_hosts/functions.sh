@@ -1,3 +1,5 @@
+#!/usr/bin/bash
+#
 BASE_DIR=/opt/webdir
 BIN_DIR=$BASE_DIR/bin
 
@@ -70,7 +72,7 @@ copy_sshkey() {
 # ANSIBLE_CHPWD_ERR
 # ANSIBLE_CHPWD_MSG
 # NEW_PASSWORD
-change_password_viassh(){
+change_password_viassh() {
     local ssh_server="$1"
     local ssh_user="$2"
     local current_password= "$3"
@@ -102,42 +104,41 @@ change_password_viassh(){
 }
 
 # add server idnetifier in configuration and configure monitoring settings
-add_server_to_pool(){
-    local host_ident=$1
-    local host_addr=$2
-
-    # add server to pool configuration file
-    local add_server_cmd="$ansible_wrapper -a add -H $host_ident -i $host_addr"
-    [[ $DEBUG -gt 0 ]] && echo "$add_server_cmd"
-    
-    ANSIBLE_ADD_INFO=$(eval "$add_server_cmd")
-    
-    ANSIBLE_ADD_ERR=$(echo "$ANSIBLE_ADD_INFO" | grep '^error:' | sed -e 's/^error://')
-    ANSIBLE_ADD_MSG=$(echo "$ANSIBLE_ADD_INFO" | grep '^message:' | sed -e 's/^message://')
-    if [[ $DEBUG -gt 0 ]]; then
-        echo "ANSIBLE_ADD_ERR=$ANSIBLE_ADD_ERR"
-        echo "ANSIBLE_ADD_MSG=$ANSIBLE_ADD_MSG"
-    fi
-    [[ -n "$ANSIBLE_ADD_ERR" ]] && return 1
-
-    # update monitoring
-    # Host::createHost: modification was successful, host_vars=yes, hosts=yes task_id=monitor_0786886321 task_pid=32039 task_status=running
-    task_id=$(echo "$ANSIBLE_ADD_MSG" | egrep -o "task_id=\S+" | awk -F'=' '{print $2}')
-    task_pid=$(echo "$ANSIBLE_ADD_MSG" | egrep -o "task_pid=\S+" | awk -F'=' '{print $2}')
-    task_status=$(echo "$ANSIBLE_ADD_MSG" | egrep -o "task_status=\S+" | awk -F'=' '{print $2}')
-    if [[ -n "$task_id" ]]; then
-        echo "Start job:"
-        printf "%-10s: %s\n" "JobID"  "$task_id"
-        printf "%-10s: %s\n" "PID"    "$task_pid"
-        echo "It will $_task_txt in the pool."
-        print_message "$HM0200" "" "" any_key
-    fi
-
-    return 0
-}
+#add_server_to_pool(){
+#    local host_ident=$1
+#    local host_addr=$2
+#
+#    # add server to pool configuration file
+#    local add_server_cmd="$ansible_wrapper -a add -H $host_ident -i $host_addr"
+#    [[ $DEBUG -gt 0 ]] && echo "$add_server_cmd"
+#
+#    ANSIBLE_ADD_INFO=$(eval "$add_server_cmd")
+#    ANSIBLE_ADD_ERR=$(echo "$ANSIBLE_ADD_INFO" | grep '^error:' | sed -e 's/^error://')
+#    ANSIBLE_ADD_MSG=$(echo "$ANSIBLE_ADD_INFO" | grep '^message:' | sed -e 's/^message://')
+#    if [[ $DEBUG -gt 0 ]]; then
+#        echo "ANSIBLE_ADD_ERR=$ANSIBLE_ADD_ERR"
+#        echo "ANSIBLE_ADD_MSG=$ANSIBLE_ADD_MSG"
+#    fi
+#    [[ -n "$ANSIBLE_ADD_ERR" ]] && return 1
+#
+#    # update monitoring
+#    # Host::createHost: modification was successful, host_vars=yes, hosts=yes task_id=monitor_0786886321 task_pid=32039 task_status=running
+#    task_id=$(echo "$ANSIBLE_ADD_MSG" | egrep -o "task_id=\S+" | awk -F'=' '{print $2}')
+#    task_pid=$(echo "$ANSIBLE_ADD_MSG" | egrep -o "task_pid=\S+" | awk -F'=' '{print $2}')
+#    task_status=$(echo "$ANSIBLE_ADD_MSG" | egrep -o "task_status=\S+" | awk -F'=' '{print $2}')
+#    if [[ -n "$task_id" ]]; then
+#        echo "Start job:"
+#        printf "%-10s: %s\n" "JobID"  "$task_id"
+#        printf "%-10s: %s\n" "PID"    "$task_pid"
+#        echo "It will $_task_txt in the pool."
+#        print_message "$HM0200" "" "" any_key
+#    fi
+#
+#    return 0
+#}
 
 # delete it from ansible configuration
-forget_server(){
+forget_server() {
     local host_ident="$1"
 
     cur_id=$(get_server_id "$host_ident")
@@ -169,28 +170,28 @@ forget_server(){
 }
 
 # clean options on the server and delete it from ansible configuration
-purge_server(){
-    local host_ident="$1"
-    local host_addr="$2"
-
-    cur_id=$(get_server_id "$host_ident")
-    cur_id_rtn=$?
-    if [[ $cur_id_rtn -eq 1  ]]; then
-        print_message "$HM0200" "$(get_text "$HM0013" "$host_ident")" "" any_key
-        return 1
-    
-    elif [[ $cur_id_rtn -eq 2 ]]; then
-        print_message "$HM0200" "$(get_text "$HM0012" "$host_ident")"
-        return 1
-    fi
-
-    local delete_cmd="$ansible_wrapper -a del"
-    delete_cmd=$delete_cmd" --host $cur_id --ip $host_addr"
-    if [[ $DEBUG -gt 0 ]]; then
-        echo "delete_cmd=$delete_cmd"
-    fi
-    exec_pool_task "$delete_cmd" "remove host=$host_ident"
-}
+#purge_server(){
+#    local host_ident="$1"
+#    local host_addr="$2"
+#
+#    cur_id=$(get_server_id "$host_ident")
+#    cur_id_rtn=$?
+#    if [[ $cur_id_rtn -eq 1  ]]; then
+#        print_message "$HM0200" "$(get_text "$HM0013" "$host_ident")" "" any_key
+#        return 1
+#
+#    elif [[ $cur_id_rtn -eq 2 ]]; then
+#        print_message "$HM0200" "$(get_text "$HM0012" "$host_ident")"
+#        return 1
+#    fi
+#
+#    local delete_cmd="$ansible_wrapper -a del"
+#    delete_cmd=$delete_cmd" --host $cur_id --ip $host_addr"
+#    if [[ $DEBUG -gt 0 ]]; then
+#        echo "delete_cmd=$delete_cmd"
+#    fi
+#    exec_pool_task "$delete_cmd" "remove host=$host_ident"
+#}
 
 # remove pool
 remove_pool() {
@@ -208,7 +209,7 @@ remove_pool() {
     return 0
 }
 
-test_main_module_for_php7(){
+test_main_module_for_php7() {
     cache_pool_sites
     MAIN_LOWER_VERSION="16.0.10"     # for all modules 16.5.0 
     MAIN_U=$(echo $MAIN_LOWER_VERSION | awk -F'.' '{print $1}')
@@ -291,7 +292,7 @@ test_main_module_for_php7(){
 #   255 - not supported case
 # PHP_MESSAGE - error message if return code is 255
 # PHP_VERSION - current php version
-test_php_version(){
+test_php_version() {
     local host_ident="${1:-localhost}"
     local host_info="$2"                # bx_variables for hosts (requested ones and can be reused)
 
@@ -327,7 +328,7 @@ test_php_version(){
     return $php_union
 }
 
-php_conditions(){
+php_conditions() {
     # test versions
     # unsupported version
     if [[ $php_upper -lt 5 ]]; then
@@ -376,7 +377,7 @@ php_conditions(){
 #   255 - not supported case
 # MYSQL_MESSAGE - error message if return code is 255
 # MYSQL_VERSION - current mysql version
-test_mysql_version(){
+test_mysql_version() {
     local host_ident="${1:-localhost}"
     local host_info="$2"                # bx_variables for hosts (requested ones and can be reused)
 
@@ -412,7 +413,7 @@ test_mysql_version(){
     return $mysql_union
 }
 
-mysql_conditions(){
+mysql_conditions() {
     # test versions
     # unsupported version of MySQL server
     if [[ $mysql_upper -lt 5 ]]; then
@@ -461,11 +462,9 @@ mysql_conditions(){
         MYSQL_MESSAGE="$(get_text "$HM0022" "$mysql_upper.$mysql_middle")"
         return 255
     fi
-
-
 }
 
-get_php_min_ver_in_pool(){
+get_php_min_ver_in_pool() {
     [[ -z $POOL_SERVER_LIST ]] && cache_pool_info
     [[ -z $BITRIX_ENV_TYPE ]] && get_os_type
 
@@ -483,12 +482,10 @@ get_php_min_ver_in_pool(){
         test_php_version "$srv_name" "$srv_info"
         php_version=$?
 
-        [[ $DEBUG -gt 0 ]] && \
-            echo "$srv_name => PHP version is $php_version"
+        [[ $DEBUG -gt 0 ]] && echo "$srv_name => PHP version is $php_version"
 
         # Find the smallest version of php in the pool
-        [[ $php_version -lt $PHP_MIN_VERSION ]] && \
-            PHP_MIN_VERSION=$php_version
+        [[ $php_version -lt $PHP_MIN_VERSION ]] && PHP_MIN_VERSION=$php_version
 
         # Save errors
         if [[ $php_version -eq 255 ]]; then
@@ -507,7 +504,7 @@ get_php_min_ver_in_pool(){
     return $PHP_MIN_VERSION
 }
 
-get_mysql_min_ver_in_pool(){
+get_mysql_min_ver_in_pool() {
     [[ -z $POOL_SERVER_LIST ]] && cache_pool_info
     [[ -z $BITRIX_ENV_TYPE ]] && get_os_type
 
@@ -524,15 +521,13 @@ get_mysql_min_ver_in_pool(){
     for srv_info in $POOL_SERVER_LIST; do
         srv_name=$(echo "$srv_info" | awk -F':' '{print $1}')
         itis_mysql=$(echo "$srv_info" | grep -c mysql)
-        [[ $itis_mysql -gt 0 ]] && \
-            MYSQL_INSTANCES=$(( $MYSQL_INSTANCES + 1 ))
+        [[ $itis_mysql -gt 0 ]] && MYSQL_INSTANCES=$(( $MYSQL_INSTANCES + 1 ))
 
         # 255, 51, 55, 56, 57
         test_mysql_version "$srv_name" "$srv_info"
         mysql_version=$?
 
-         [[ $DEBUG -gt 0 ]] && \
-            echo "$srv_name => MYSQL version is $mysql_version"
+         [[ $DEBUG -gt 0 ]] && echo "$srv_name => MYSQL version is $mysql_version"
 
         # Find the smallest version of php in the pool
         [[ $mysql_version -lt $MYSQL_MIN_VERSION ]] && \
@@ -555,7 +550,6 @@ get_mysql_min_ver_in_pool(){
     # return mysql minmum version
     return $MYSQL_MIN_VERSION
 }
-
 
 # return 
 # minimum ${mysqlVersion}${phpVersion}
@@ -580,7 +574,6 @@ test_upgrade_on_cluster() {
         return 255
 
     fi
-
 
     get_mysql_min_ver_in_pool
     mysql_min_version=$?
@@ -620,16 +613,14 @@ $TEST_PHP7_SKIP"
     return $CLUSTER_RTN
 }
 
-print_mysql_php_version(){
+print_mysql_php_version() {
     local filter_hname="${1}"
 
-    [[ -z "$POOL_SERVER_LIST" ]] && \
-        cache_pool_info
+    [[ -z "$POOL_SERVER_LIST" ]] && cache_pool_info
 
     print_header "Versions of installed software: MySQL and PHP."
     echo "$MENU_SPACER"
-    printf "%-25s| %-20s | %4s | %7s | %7s | %7s | %s \n" \
-        "ServerName" "NetAddress" "Conn" "Ver" "MySQL" "PHP" "Roles"
+    printf "%-25s| %-20s | %4s | %7s | %7s | %7s | %s \n" "ServerName" "NetAddress" "Conn" "Ver" "MySQL" "PHP" "Roles"
     echo "$MENU_SPACER"
 
     PHP_VERSION=
@@ -647,8 +638,7 @@ print_mysql_php_version(){
         hphp=$(echo "$hinfo" | awk -F: '{print $14}')
 
         if [[ -z "${filter_hname}" || ${filter_hname} == "all" ]]; then
-            printf "%-25s| %-20s | %4s | %7s | %7s | %7s | %s \n" \
-                "$hname" "$hip" "$hconn" "$hvmver" "$hmysql" "$hphp" "$hroles"
+            printf "%-25s| %-20s | %4s | %7s | %7s | %7s | %s \n" "$hname" "$hip" "$hconn" "$hvmver" "$hmysql" "$hphp" "$hroles"
             # get mysql version from master server
             if [[ $(echo "$hroles" | grep "mysql_master" -c) -gt 0 ]]; then
                 MYSQL_VERSION=$(echo "$hmysql" | awk -F. '{printf "%s%s",$1,$2}' )
@@ -659,8 +649,7 @@ print_mysql_php_version(){
             fi
         else
             if [[ ${filter_hname} == "${hname}" ]]; then
-                printf "%-25s| %-20s | %4s | %7s | %7s | %7s | %s \n" \
-                    "$hname" "$hip" "$hconn" "$hvmver" "$hmysql" "$hphp" "$hroles"
+                printf "%-25s| %-20s | %4s | %7s | %7s | %7s | %s \n" "$hname" "$hip" "$hconn" "$hvmver" "$hmysql" "$hphp" "$hroles"
                 MYSQL_VERSION=$(echo "$hmysql" | awk -F. '{printf "%s%s",$1,$2}' )
                 PHP_VERSION=$(echo "$hphp" | awk -F. '{printf "%s%s",$1,$2}')
             fi
@@ -670,4 +659,3 @@ print_mysql_php_version(){
 
     IFS=$IFS_BAK
 }
-

@@ -1,5 +1,6 @@
 CH000="0. Previous screen or exit"
-CH001="   Change hostname (current: __OPT1__)"
+#CH001="   Change hostname (current: __OPT1__)"
+CH001="Change hostname (current: __OPT1__)"
 CH002="Enter hostname or 0 for exit: "
 # обновлен файл
 CH003="Config file __OPT1__ has been updated"

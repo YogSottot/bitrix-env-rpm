@@ -335,11 +335,11 @@ sub apache_config_options {
             if ( $line =~ /^php_admin_value\s+upload_tmp_dir\s+(\S+)$/ ) {
                 $apache_options->{'phpUploadDir'} = $1;
             }
-            if ( $line =~
-                /^php_admin_value\s+mbstring.internal_encoding\s+(\S+)$/ )
-            {
-                $apache_options->{'SiteCharset'} = 'windows-1251';
-            }
+#            if ( $line =~
+#                /^php_admin_value\s+mbstring.internal_encoding\s+(\S+)$/ )
+#            {
+#                $apache_options->{'SiteCharset'} = 'windows-1251';
+#            }
             if ( $line =~
                 /^php_admin_value\s+sendmail_path\s+['"]msmtp([^'"]+)['"]$/ )
             {
@@ -1753,6 +1753,12 @@ sub enableSSLForSite {
         message => "$message_p: Can't create $site_ssl_switcher: $!"
       );
     close $sss;
+
+    # set rights to .htsecure file
+    my $uid = getpwnam 'bitrix';
+    my $gid = getgrnam 'bitrix';
+    chown $uid, $gid, $site_ssl_switcher;
+
     $logOutput->log_data("$message_p: created $site_ssl_switcher");
 
     # restart nginx

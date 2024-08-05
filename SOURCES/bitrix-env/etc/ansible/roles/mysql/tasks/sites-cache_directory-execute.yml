@@ -45,7 +45,6 @@
   with_items: "{{ bx_sites_info }}"
   delegate_to: "{{ php_server }}"
 
-
 - name: run php-script
   shell: php -f "{{ cache_directory }}/{{ item.SiteName }}-{{ bx_unique_id.stdout }}/{{ inventory_hostname }}/{{ php_script }}"
   become: yes

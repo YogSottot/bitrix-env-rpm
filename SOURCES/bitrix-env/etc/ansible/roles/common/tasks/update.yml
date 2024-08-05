@@ -22,7 +22,7 @@
   tags: net_configs
 
 - name: debug info
-  debug: msg="bx_ether_client={{ bx_ether_client }} 
+  debug: msg="bx_ether_client={{ bx_ether_client }}
     bx_netaddr_client={{ bx_netaddr_client }}
     bx_netaddr_server={{ bx_netaddr_server }}
     host_id={{ host_id }}
@@ -30,13 +30,12 @@
     bx_netname={{ bx_netname }}
     bx_host={{ bx_host| default(bx_hostname) }}"
   tags: net_configs
-
 ##
-##### /collect information on the current network configuration servers
+##### / collect information on the current network configuration servers
 
 ##### install packages (if add old machine)
 ##
-- name: install packages
+- name: install packages on Centos 7
   yum:
     pkg: "{{ packages }}"
     state: latest
@@ -46,7 +45,20 @@
       - etckeeper
       - bzip2
       - psmisc
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
 
+- name: install packages on Centos 9
+  dnf:
+    pkg: "{{ packages }}"
+    state: latest
+    update_cache: yes
+  vars:
+    packages:
+      - etckeeper
+      - bzip2
+      - psmisc
+      - procps-ng
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
 ##
 ##### / install packages (if add old machine)
 
@@ -56,99 +68,122 @@
 
 ##### iptables/firewalld settings
 ##
-- include: configure_firewall_service.yml
+- include_tasks: configure_firewall_service.yml
   when: configure_firewall
-
 ##
-##### iptables/firewalld settings
-
+##### / iptables/firewalld settings
 
 ##### hostname and network settings
 ##
-- include: hostnames.yml
+- include_tasks: hostnames.yml
   vars: 
     hostname: "{{ inventory_hostname }}"
   when: bx_host is undefined
 
-- include: hostnames.yml
+- include_tasks: hostnames.yml
   vars:
     hostname: "{{ bx_host }}"
   when: bx_host is defined
 
 ##
-##### / network settings
+##### / hostname and network settings
 
 ##### sudoers
 ##
-- name: update sudoers
-  template: src=bitrix_hosts.j2
-    dest=/etc/sudoers.d/bitrix_hosts
-    mode=0440
-    owner=root
-  tags: sudoers
-
-- name: delete BXANSIBLE
-  lineinfile: dest=/etc/sudoers.d/bitrix
-    regexp="BXANSIBLE"
-    state=absent
-  tags: sudoers
-
-##### /sudoers
+#- name: update sudoers
+#  template:
+#    src=bitrix_hosts.j2
+#    dest=/etc/sudoers.d/bitrix_hosts
+#    mode=0440
+#    owner=root
+#  tags: sudoers
+#
+#- name: delete BXANSIBLE
+#  lineinfile:
+#    dest=/etc/sudoers.d/bitrix
+#    regexp="BXANSIBLE"
+#    state=absent
+#  tags: sudoers
 ##
+##### / sudoers
 
-##
 ##### client configuration 
 ##
 - name: pool information for child
-  template: src=ansible-roles.j2 dest=/etc/ansible/ansible-roles 
-    owner=root group=root mode=0640
+  template:
+    src=ansible-roles.j2
+    dest=/etc/ansible/ansible-roles
+    owner=root
+    group=root
+    mode=0640
   tags: pool_configuration
 
 - name: configuration profile.d
-  template: src=profiled-bitrix.sh.j2 dest=/etc/profile.d/bitrix.sh owner=root group=root mode=0644
+  template:
+    src=profiled-bitrix.sh.j2
+    dest=/etc/profile.d/bitrix.sh
+    owner=root
+    group=root
+    mode=0644
   tags: profile
 
 - name: update host config by ether and netaddr
   delegate_to: 127.0.0.1
-  bx_conf: "hostname={{ inventory_hostname }} state=update 
-    bx_netaddr={{ bx_netaddr_client }} iface={{ bx_ether_client }} 
-    ifaddr={{ bx_netaddr_client }} 
-    host_id={{ host_id }} host_pass={{ host_pass }} bx_netname={{ bx_netname }}"
+  bx_conf: "hostname={{ inventory_hostname }}
+    state=update
+    bx_netaddr={{ bx_netaddr_client }}
+    iface={{ bx_ether_client }}
+    ifaddr={{ bx_netaddr_client }}
+    host_id={{ host_id }}
+    host_pass={{ host_pass }}
+    bx_netname={{ bx_netname }}"
   tags: network
-
 ##
 ##### / client configuration
 
 ##### time settings
 ##
-- include: time.yml
-
+- include_tasks: time.yml
 ##
 ##### / time settings
 
 ##### mysql
-- include: mysql.yml
-##### /mysql
+##
+- include_tasks: mysql.yml
+##
+##### / mysql
 
 ##### nginx configuration for master server
 ##
 - name: configure nginx server
-  template: src=pool_manager.conf.j2 dest=/etc/nginx/bx/site_avaliable/pool_manager.conf
-    owner=root group=root mode=0644
+  template:
+    src=pool_manager.conf.j2
+    dest=/etc/nginx/bx/site_avaliable/pool_manager.conf
+    owner=root
+    group=root
+    mode=0644
   tags: nginx
   when: inventory_hostname == monitoring_server
   notify: restart nginx
 
 - name: enable config for nginx
-  file: src=/etc/nginx/bx/site_avaliable/pool_manager.conf dest=/etc/nginx/bx/site_enabled/pool_manager.conf state=link
+  file:
+    src=/etc/nginx/bx/site_avaliable/pool_manager.conf
+    dest=/etc/nginx/bx/site_enabled/pool_manager.conf
+    state=link
   tags: nginx
   when: inventory_hostname == monitoring_server
   notify: restart nginx
 
 - name: create http password file
   delegate_to: 127.0.0.1
-  htpasswd: path={{ pool_passwords }} name={{ host_id }} password={{ host_pass }} 
-    state=present create=yes
+  shell: htpasswd -c -b {{ pool_passwords }} {{ host_id }} {{ host_pass }}
+  #htpasswd:
+  #path: "{{ pool_passwords }}"
+  #name: "{{ host_id }}"
+  #password: "{{ host_pass }}"
+  #state: present
+  #create: yes
   tags: nginx
   notify: restart nginx
 
@@ -158,8 +193,11 @@
   when: inventory_hostname == monitoring_server
 
 - name: set access rights for nginx configs
-  file: path={{ item }}
-    owner=bitrix group=root mode=0640
+  file:
+    path={{ item }}
+    owner=bitrix
+    group=root
+    mode=0640
   with_items:
    - "{{ pool_certificate }}"
    - "{{ pool_passwords }}"
@@ -167,17 +205,23 @@
   when: inventory_hostname == monitoring_server
 
 - name: create cron task for update network settings on client
-  template: src=cron-bx_network_updater.j2
+  template:
+    src=cron-bx_network_updater.j2
     dest=/etc/cron.d/bx_network_updater
-    owner=root group=root mode=0644
+    owner=root
+    group=root
+    mode=0644
   tags: network
   when: inventory_hostname == monitoring_server
 
 - name: test system files and create backup crontask for clients
   shell: /opt/webdir/bin/update_network.sh
-
 ##
-##### /nginx configuration for master server
+##### / nginx configuration for master server
 
 ##### etckeeper configuration
+##
 - include_tasks: etckeeper.yml
+##
+#### / etckeeper configuration
+

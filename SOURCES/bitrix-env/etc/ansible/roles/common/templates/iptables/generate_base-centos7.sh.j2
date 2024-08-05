@@ -1,9 +1,11 @@
-#!/bin/bash
+#!/usr/bin/bash
+#
 # {{ ansible_managed }}
 # configure firewalld on Centos7
 # 1. check the existence of zones: bx_trusted
 # 2. configure public zone
 # 3. configure trusted zone
+#
 set -e
 
 firewalld_status=$(firewall-cmd --state 1>/dev/null 2>&1 && echo $?  || echo $?)

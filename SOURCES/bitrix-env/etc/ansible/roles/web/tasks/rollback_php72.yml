@@ -28,11 +28,12 @@
     is_php71: false
     is_php56: false
 
-- include: php_ext_dublicates.yml
+- include_tasks: php_ext_dublicates.yml
 
 - name: convert extension names
   shell: /opt/webdir/bin/convert_phpd_files.sh
 
 - name: restart httpd
-  service: name=httpd state=restarted
-
+  service:
+    name=httpd
+    state=restarted

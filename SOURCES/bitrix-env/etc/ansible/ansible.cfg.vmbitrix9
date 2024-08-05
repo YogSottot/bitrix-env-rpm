@@ -1,0 +1,18 @@
+[defaults]
+private_key_file = /tmp/XXXXXXXXXXXX.key
+inventory = /etc/ansible/hosts
+collections_path=/root/.ansible/collections
+interpreter_python = /usr/bin/python3.11
+[privilege_escalation]
+[persistent_connection]
+[connection]
+[colors]
+[selinux]
+[diff]
+#always = True
+[galaxy]
+[inventory]
+[netconf_connection]
+[paramiko_connection]
+[jinja2]
+[tags]

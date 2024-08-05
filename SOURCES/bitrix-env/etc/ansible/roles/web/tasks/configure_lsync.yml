@@ -6,13 +6,19 @@
     backend_distribution_version: "{{ hostvars[new_web_server]['ansible_distribution_major_version'] }}"
 
 - name: install lsync
-  yum: name=lsyncd state=latest
+  yum:
+    name=lsyncd
+    state=latest
   when: "'bitrix-web' in group_names or inventory_hostname == new_web_server"
   tags: lsyncd
 
 # ssh keys
 - name: create ssh-key for bitrix user
-  user: name=bitrix generate_ssh_key=yes ssh_key_bits=2048 ssh_key_file=/home/bitrix/.ssh/id_rsa
+  user:
+    name=bitrix
+    generate_ssh_key=yes
+    ssh_key_bits=2048
+    ssh_key_file=/home/bitrix/.ssh/id_rsa
   when: "'bitrix-web' in group_names or inventory_hostname == new_web_server"
 
 - name: install balancer key on backend
@@ -70,7 +76,7 @@
   when: "inventory_hostname == cluster_web_server or inventory_hostname == new_web_server"
 
 # BALANCER
-- include: configs_lsyncd.yml
+- include_tasks: configs_lsyncd.yml
   vars:
     lsync_server: "{{ cluster_web_server }}"
     lsync_config: "balancer"
@@ -79,11 +85,10 @@
   when: "inventory_hostname == new_web_server"
 
 # BACKEND
-- include: configs_lsyncd.yml
+- include_tasks: configs_lsyncd.yml
   vars:
     lsync_server: "{{ new_web_server }}"
     lsync_config: "backend"
     lsync_started: false
     lsync_server_version: "{{ backend_distribution_version }}"
   when: "inventory_hostname == cluster_web_server"
-

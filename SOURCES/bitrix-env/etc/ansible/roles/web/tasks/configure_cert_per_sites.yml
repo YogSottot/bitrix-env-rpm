@@ -1,5 +1,5 @@
 ---
-- include: sites-gathering_facts_site_names.yml
+- include_tasks: sites-gathering_facts_site_names.yml
 
 - name: create directories
   file:
@@ -61,7 +61,9 @@
   with_items: "{{ bx_sites_info }}"
 
 - name: delete previously settings
-  bx_blockinfile: insertafter="CERTIFICATE ANSIBLE MANAGED BLOCK" state="delete"
+  bx_blockinfile:
+    insertafter="CERTIFICATE ANSIBLE MANAGED BLOCK"
+    state="delete"
     dest="{{ item.NginxHTTPSFullPath }}"
   with_items: "{{ bx_sites_info }}"
 
@@ -90,4 +92,4 @@
   with_items: "{{ bx_sites_info }}"
   when: certificate_chain is undefined
 
-- include: configure_cert_per_ntlm_sites.yml
+- include_tasks: configure_cert_per_ntlm_sites.yml

@@ -675,6 +675,9 @@ qq|ssh-keygen -t rsa -N "" -f $sshkey_sec -C "ANSIBLE_KEY_$hostname" >/dev/null 
     );
 }
 
+# VMBIRIX 9.0 + ANSIBLE 2.14
+# display_skipped_hosts remove at 2.12
+#
 # save ssh security key to ansible.cfg and set display_skipped_hosts to False
 sub update_ansible_main_config {
     my $self       = shift;
@@ -687,7 +690,7 @@ sub update_ansible_main_config {
     my $debug     = $self->debug;
     my $logOutput = Output->new( error => 0, logfile => $self->logfile );
 
-    my $display_skipped_hosts = 'False';
+    #my $display_skipped_hosts = 'False';
 
     # replace current ansible private key by new one
     # /etc/ansible/ansible.cfg
@@ -708,11 +711,11 @@ sub update_ansible_main_config {
 
     my %updates = (
         private_key_file      => [ $sshkey_sec,            0 ],
-        display_skipped_hosts => [ $display_skipped_hosts, 0 ],
+        #display_skipped_hosts => [ $display_skipped_hosts, 0 ],
     );
 
     my $new_key_is_set               = 0;
-    my $display_skipped_hosts_is_set = 0;
+    #my $display_skipped_hosts_is_set = 0;
     while (<$workh>) {
         chomp;
         my $line = $_;

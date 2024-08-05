@@ -3,14 +3,16 @@
 # personal vars - host_vars
 - name: update mysql vars to host_vars for new slave
   delegate_to: 127.0.0.1
-  bx_conf: hostname={{ old_master_server }}
+  bx_conf:
+    hostname={{ old_master_server }}
     mysql_replication_role=slave
     state=update
   tags: ansible_hosts
 
 - name: update mysql vars to host_vars for new master
   delegate_to: 127.0.0.1
-  bx_conf: hostname={{ new_master_server }}
+  bx_conf:
+    hostname={{ new_master_server }}
     mysql_replication_role=master
     state=update
   tags: ansible_hosts
@@ -18,15 +20,18 @@
 # group vars
 - name: update bitrix-mysql group
   delegate_to: 127.0.0.1
-  bx_conf: group=mysql state=update 
+  bx_conf:
+    group=mysql
+    state=update
     master_server={{ new_master_server }}
     master_server_netaddr={{ new_master_server_ip }}
   tags: ansible_hosts
 
 - name: update bitrix-web group
   delegate_to: 127.0.0.1
-  bx_conf: group=web state=update 
+  bx_conf:
+    group=web
+    state=update
     web_mysql_cluster_configure=enable
     web_mysql_server={{ new_master_server }}
   tags: ansible_hosts
-

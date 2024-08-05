@@ -24,9 +24,10 @@
     update_only: yes
   tags: php7
 
-- include: php_ext_dublicates.yml
+- include_tasks: php_ext_dublicates.yml
 
 - name: restart httpd
-  service: name=httpd state=restarted
+  service:
+    name=httpd
+    state=restarted
   tags: php7
-

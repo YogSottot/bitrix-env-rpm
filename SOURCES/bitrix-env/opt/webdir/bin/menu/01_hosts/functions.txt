@@ -13,21 +13,27 @@ HM0001="1. $HM1001"
 # Удаление сервера из пула серверов
 HM0002="2. $HM1002"
 # Перезагрузка сервера
-HM0003="3. $HM1003"
+#HM0003="3. $HM1003"
+HM0003="1. $HM1003"
 # Обновление сервера
-HM0004="4. $HM1004"
+#HM0004="4. $HM1004"
+HM0004="2. $HM1004"
 # Изменение пароля пользователя bitrix
-HM0005="5. $HM1005"
+#HM0005="5. $HM1005"
+HM0005="3. $HM1005"
 # Изменение временной зоны для пула серверов
-HM0006="6. $HM1006"
+#HM0006="6. $HM1006"
+HM0006="4. $HM1006"
 # Удаление пула серверов
-HM0007="7. $HM1007"
+#HM0007="7. $HM1007"
+HM0007="5. $HM1007"
 # Обновление php и/или MySQL
-HM0008="8. $HM1008"
+#HM0008="8. $HM1008"
+HM0008="6. $HM1008"
 # Переход на предыдущий экран или выход из меню
 HM0009="0. Previous screen or exit"
 # Заголовок таблицы
-# Управлние серверами в пуле
+# Управление серверами в пуле
 HM0010="Manage servers in the pool"
 # Выбирайте
 HM0011="Enter your choice: "
@@ -312,7 +318,7 @@ HM0043="Enter server address (IP address or domain name) or 0 for exit:"
 # Имя сервера не может быть пустым
 HM0044="Hostname cannot be empty."
 
-HM10001="   Update or rallback software on the server"
+HM10001="Update or rollback software on the server"
 # all - обновляет версию php для всех web серверов
 HM10002="
 all - will update php version on all hosts with WEB role;
@@ -324,4 +330,3 @@ HM0202="Enter 0 to exit: "
 HM0203="Do you want to try again? (y|N): "
 HM0204="Enter your choice: "
 HM0205="Enter hostname or 0 to exit: "
-

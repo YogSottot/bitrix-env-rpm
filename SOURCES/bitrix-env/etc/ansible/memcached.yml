@@ -1,23 +1,19 @@
 ---
 # This playbook manage memcached service on bitrix-hosts
 - hosts: bitrix-hosts
-
-# you can modify role by setting mysql_manage to:
-# remove => memcached remove from pool
-# cerate => memcached service created in the pool
+  # you can modify role by setting mysql_manage to:
+  # remove => memcached remove from pool
+  # cerate => memcached service created in the pool
   vars:
     memcached_mange: update
     memcached_server: NOT_DEFINED
     ansible_playbook_file: NOT_DEFINED
     ansible_playbook_debug: NOT_DEFINED
-
   roles:
   - memcached
 
 - hosts: bitrix-hosts
   vars:
     cache_directory: /opt/webdir/tmp
-
   roles:
     - cleaner
-

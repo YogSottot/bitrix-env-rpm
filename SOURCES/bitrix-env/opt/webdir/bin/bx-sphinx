@@ -1,9 +1,11 @@
 #!/usr/bin/perl
+#
 # start ansible playbook for:
 # 1. create sphinx server
 # 2. remove sphinx server
 # 4. view status of sphinx servers
 # this script is wrapper for ansible playbook ( we need json output for web-interface)
+#
 use strict;
 use warnings;
 
@@ -14,7 +16,6 @@ use Pool;
 use Data::Dumper;
 use Getopt::Long;
 use File::Basename qw( dirname basename );
-
 
 # program options
 my $prog_name = basename $0;
@@ -44,7 +45,6 @@ my $result_option = GetOptions(
   "r"     => \$o_reindex,       'reindex'   => \$o_reindex,
 ) or unknown_arg();
 
-
 # help message
 if ( $o_help ) { print_help($prog_name, 0) };
 # formt output
@@ -54,34 +54,34 @@ if ( $o_format =~ /^te?xt$/ ) { $o_format = "plain" };
 # process request
 my $confPool = bxSphinx->new();
 my $confSphinx = undef;
-if ($o_action =~ /^status$/i){
-  if ( not defined $o_sphinx_server ){
-    $confSphinx = Output->new(
-      error => 1,
-      message => "Ypu must defined server_name -s option",
-    );
-  }else{
-    $confSphinx = $confPool->serverOptions($o_sphinx_server);
-  }
-}elsif ($o_action =~ /^list$/){
-  $confSphinx = $confPool->serverList();
-}elsif ($o_action =~ /^create$/){
-  if (!$o_dbname || !$o_sphinx_server){
-    $confSphinx = Output->new(
-      error => 1,
-      message => "You must define server_name and dbname options"
-    );
-  }else{
-    $confSphinx = $confPool->createSphinx($o_sphinx_server,$o_dbname,$o_reindex);
-  }
-}elsif ($o_action =~ /^(remove|delete)$/){
-  $confSphinx = $confPool->removeSphinx($o_sphinx_server,$o_dbname);
-}else{
-  $confSphinx = Output->new( 
-    error => 1, 
-    message => "Unknown action option. PLease use -h for help message." 
-  );
-}
+#if ($o_action =~ /^status$/i){
+#  if ( not defined $o_sphinx_server ){
+#    $confSphinx = Output->new(
+#      error => 1,
+#      message => "Ypu must defined server_name -s option",
+#    );
+#  }else{
+#    $confSphinx = $confPool->serverOptions($o_sphinx_server);
+#  }
+#}elsif ($o_action =~ /^list$/){
+#  $confSphinx = $confPool->serverList();
+#}elsif ($o_action =~ /^create$/){
+#  if (!$o_dbname || !$o_sphinx_server){
+#    $confSphinx = Output->new(
+#      error => 1,
+#      message => "You must define server_name and dbname options"
+#    );
+#  }else{
+#    $confSphinx = $confPool->createSphinx($o_sphinx_server,$o_dbname,$o_reindex);
+#  }
+#}elsif ($o_action =~ /^(remove|delete)$/){
+#  $confSphinx = $confPool->removeSphinx($o_sphinx_server,$o_dbname);
+#}else{
+#  $confSphinx = Output->new(
+#    error => 1,
+#    message => "Unknown action option. PLease use -h for help message."
+#  );
+#}
 $confSphinx->print($o_format);
 
 # print usage
@@ -117,4 +117,3 @@ EOT
 ;
   exit;
 }
-

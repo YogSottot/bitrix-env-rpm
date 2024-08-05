@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/usr/bin/bash
+#
 # create directory backup and delete directory
 # directory  - path to directory that need backup
 # backup     - path where backup is saved ( default: dirname directory)
@@ -19,91 +20,91 @@ TMPDIR=/tmp
 LOGFILE=$TMP_DIR/bx_backup_directory_$$.log
 TMPFILE=$TMPDIR/bx_backup_directory_$$
 
-debug(){
-  mess=$1
-  [[ $DEBUG -gt 0 ]] && echo "$(date +%s) $mess" >> $LOGFILE
+debug() {
+    mess=$1
+    [[ $DEBUG -gt 0 ]] && echo "$(date +%s) $mess" >> $LOGFILE
 }
 
-error_message(){
-  mess=$1
-  debug "$mess"
-  echo "{\"changed\":false,\"failed\":true,\"msg\":\"$mess\"}"
-  rm -f $TMPFILE
-  exit 1
+error_message() {
+    mess=$1
+    debug "$mess"
+    echo "{\"changed\":false,\"failed\":true,\"msg\":\"$mess\"}"
+    rm -f $TMPFILE
+    exit 1
 }
 
-changed_message(){
-  mess=$1
-  file=$2
-  debug "$mess"
-  echo "{\"changed\":true,\"msg\":\"$mess\",\"archive\":\"$file\"}"
-  rm -f $TMPFILE
-  exit 0
+changed_message() {
+    mess=$1
+    file=$2
+    debug "$mess"
+    echo "{\"changed\":true,\"msg\":\"$mess\",\"archive\":\"$file\"}"
+    rm -f $TMPFILE
+    exit 0
 }
 
-notchanged_message(){
-  mess=$1
-  debug "$mess"
-  echo "{\"changed\":false,\"msg\":\"$mess\"}"
-  rm -f $TMPFILE
-  exit 0
+notchanged_message() {
+    mess=$1
+    debug "$mess"
+    echo "{\"changed\":false,\"msg\":\"$mess\"}"
+    rm -f $TMPFILE
+    exit 0
 }
 
 # test mandatory option and print error if not exists
 test_variables() {
-  # test variables
-  [[ -z "$directory" ]] && error_message "option directory= is mandatory for the plugin"
-  [[ -z "$backup" ]] && backup=$(dirname "$directory")
-  [[ -z "$delete" ]] && delete=no
-  [[ -z "$archive" ]] && archive=gzip
+    # test variables
+    [[ -z "$directory" ]] && error_message "option directory= is mandatory for the plugin"
+    [[ -z "$backup" ]] && backup=$(dirname "$directory")
+    [[ -z "$delete" ]] && delete=no
+    [[ -z "$archive" ]] && archive=gzip
 
-  debug "directory=$directory backup=$backup delete=$delete archive=$archive"
-  if [[ ! -d "$directory" ]]; then
-    notchanged_message "directory=$directory is not exist in the system"
-  fi
+    debug "directory=$directory backup=$backup delete=$delete archive=$archive"
+    if [[ ! -d "$directory" ]]; then
+	notchanged_message "directory=$directory is not exist in the system"
+    fi
 
-  # test if we can remove ( only direct path in /home/bitrix )
-  if [[ $(echo "$directory" | grep -v '\.\.' | grep -c '^/home/bitrix/\(www\|ext_www\)' ) -eq 0 ]]; then
-    notchanged_message "plugin cannot working with directory=$directory"
-  fi
+    # test if we can remove ( only direct path in /home/bitrix )
+    if [[ $(echo "$directory" | grep -v '\.\.' | grep -c '^/home/bitrix/\(www\|ext_www\)' ) -eq 0 ]]; then
+	notchanged_message "plugin cannot working with directory=$directory"
+    fi
 }
 
 # create backup for directory
 create_backup() {
-  date_mark=$(date +%Y%m%d%H%M%S)
-  util_mark="bx_backup"
+    date_mark=$(date +%Y%m%d%H%M%S)
+    util_mark="bx_backup"
 
-  tar_opt='czf'
-  tar_file=$backup/${date_mark}_${util_mark}_$(basename $directory).tar.gz
-  if [[ "$archive" == "bzip" ]]; then
-    tar_opt='cjf'
-    tar_file=$backup/${date_mark}_${util_mark}_$(basename $directory).tar.bz2
-  elif [[ "$archive" == "tar" ]]; then
-    tar_opt="cf"
-    tar_file=$backup/${date_mark}_${util_mark}_$(basename $directory).tar
-  fi
+    tar_opt='czf'
+    tar_file=$backup/${date_mark}_${util_mark}_$(basename $directory).tar.gz
+    if [[ "$archive" == "bzip" ]]; then
+	tar_opt='cjf'
+	tar_file=$backup/${date_mark}_${util_mark}_$(basename $directory).tar.bz2
+    elif [[ "$archive" == "tar" ]]; then
+	tar_opt="cf"
+	tar_file=$backup/${date_mark}_${util_mark}_$(basename $directory).tar
+    fi
 
-  if [[ -n "$backup_file" ]]; then
-    tar_file=$backup_file
-  fi
-  
-  base_directory=$(dirname "$directory")
-  name_directory=$(basename "$directory")
-  if [[ -f "$tar_file" ]]; then
-    rm -f $tar_file
-  fi
+    if [[ -n "$backup_file" ]]; then
+	tar_file=$backup_file
+    fi
 
-  tar $tar_opt "$tar_file" -C $base_directory "$name_directory" >> $TMPFILE 2>$TMPFILE
-  if [[ $? -gt 0 ]]; then
-    error_message "command tar $tar_opt on directory=$directory return error: $(tail -n 1 $TMPFILE)"
-  fi
+    base_directory=$(dirname "$directory")
+    name_directory=$(basename "$directory")
+    if [[ -f "$tar_file" ]]; then
+	rm -f $tar_file
+    fi
 
-  if [[ "$delete" == "yes" ]]; then
-    rm -rf $directory 
-    changed_message "create backup file=$tar_file and deleted directory=$directory" "$tar_file"
-  else
-    changed_message "create backup file=$tar_file" "$tar_file"
-  fi
+    tar $tar_opt "$tar_file" -C $base_directory "$name_directory" >> $TMPFILE 2>$TMPFILE
+    if [[ $? -gt 0 ]]; then
+	error_message "command tar $tar_opt on directory=$directory return error: $(tail -n 1 $TMPFILE)"
+    fi
+
+    if [[ "$delete" == "yes" ]]; then
+	rm -rf $directory
+	changed_message "create backup file=$tar_file and deleted directory=$directory" "$tar_file"
+    else
+	changed_message "create backup file=$tar_file" "$tar_file"
+    fi
 }
 
 # get options from file

@@ -1,10 +1,10 @@
-#!/bin/bash
+#!/usr/bin/bash
+#
 PROGNAME=$(basename $0)
 PROGPATH=$(dirname $0)
 
 . $PROGPATH/functions.sh || exit 1
 [[ -z $DEBUG ]] && DEBUG=0
-
 
 # return 0 - we will delete pool
 # return 1 - found mysql cluster
@@ -53,7 +53,6 @@ test_delete_conditions() {
 }
 
 warn_and_remove() {
-
     print_color_text "$HM0070" red
     echo "$HM0071"
     echo
@@ -61,25 +60,20 @@ warn_and_remove() {
     test_delete_conditions
     test_delete_conditions_rtn=$?
     if [[ $test_delete_conditions_rtn -gt 0 ]]; then
-        print_message "$HM0200" \
-            "$DESCRIBE_MESSAGE" "" any_key
+        print_message "$HM0200" "$DESCRIBE_MESSAGE" "" any_key
         return 1
     fi
-    
+
     # deletion process
     print_message "$HM0072" "" "" confirm 'n'
     [[ $DEBUG -gt 0 ]] && echo $confirm
     [[ $(echo "$confirm" | grep -iwc 'n') -gt 0 ]] && return 1
     remove_pool
     if [[ $? -gt 0 ]]; then
-        print_message "$HM0200" \
-            "$DELETE_MSG" \
-            "" any_key
+        print_message "$HM0200" "$DELETE_MSG" "" any_key
         return 1
     else
-        print_message "$HM0201" \
-            "$HM0073" \
-            "" any_key
+        print_message "$HM0201" "$HM0073" "" any_key
         exit
     fi
 }
@@ -91,14 +85,14 @@ menu_remove_pool() {
 
     HOST_MENU_SELECT=
     until [[ -n "$HOST_MENU_SELECT" ]]; do
-        clear
-        echo -e "\t\t\t" $logo
-        echo -e "\t\t\t" $host_logo
+        [[ $DEBUG -eq 0 ]] && clear
+        echo -e "\t\t" $logo
+        echo -e "\t\t" $host_logo
         echo
 
         print_pool_info
-        
-        menu_list="\n\t$menu_00\n\t$menu_01"
+
+        menu_list="$menu_01\n\t\t $menu_00"
         print_menu
 
         print_message "$HM0204" '' '' HOST_MENU_SELECT
@@ -112,4 +106,3 @@ menu_remove_pool() {
 }
 
 menu_remove_pool
-

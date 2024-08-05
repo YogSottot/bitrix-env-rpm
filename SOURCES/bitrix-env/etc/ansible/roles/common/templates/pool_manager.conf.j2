@@ -1,31 +1,29 @@
 # {{ ansible_managed }}
 # manager site
 server {
+    listen {{ pool_manager_ports[0] }} default_server ssl;
+    server_name _;
 
-  listen {{ pool_manager_ports[0] }} default_server ssl;
-  server_name _;
+    keepalive_timeout 70;
+    keepalive_requests  150;
 
-  keepalive_timeout 70;
-  keepalive_requests  150;
+    ssl_certificate {{ pool_certificate }};
+    ssl_certificate_key {{ pool_certificate }};
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 10m;
 
-  ssl_certificate {{ pool_certificate }};
-  ssl_certificate_key {{ pool_certificate }};
-  ssl_session_cache shared:SSL:10m;
-  ssl_session_timeout 10m;
+    access_log {{ pool_manager_log }} main;
+    error_log  /dev/null;
+    root /var/www/manager;
+    satisfy all;
 
-  access_log {{ pool_manager_log }} main;
-  error_log  /dev/null;
-  root /var/www/manager;
-  satisfy all;
+    location / {
+	auth_basic "pool manager";
+	auth_basic_user_file {{ pool_passwords }};
+	error_page 404 = @200ok;
+    }
 
-  location / {
-    auth_basic "pool manager";
-    auth_basic_user_file {{ pool_passwords }};
-    error_page 404 = @200ok;
-  }
-
-  location @200ok {
-    return 200;
-  }
-
+    location @200ok {
+	return 200;
+    }
 }

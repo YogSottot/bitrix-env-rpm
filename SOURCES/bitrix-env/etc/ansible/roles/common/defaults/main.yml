@@ -28,8 +28,8 @@ web_ports:
   - 8891
   - 8893
   - 8894
-  - 5222
-  - 5223
+#  - 5222
+#  - 5223
 
 service_ports:
   - 22
@@ -66,7 +66,7 @@ public_chain: bx_public
 trusted_chain: bx_trusted
 service_chain: bx_users
 
-# centos 7
+# centos 7 + centos stream 9
 public_zone: public
 trusted_zone: bx_trusted
 want_iptables: false

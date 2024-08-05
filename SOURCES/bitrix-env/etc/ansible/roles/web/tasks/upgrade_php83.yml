@@ -1,38 +1,87 @@
 ---
 #- fail:
-# upgrade php package from 80 to 81
+# upgrade php package from 82 to 83
+
+# CentOS 7
 - name: update remi-release
   yum:
     name: remi-release
     state: latest
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
 
 - name: disable remi php82 repository
-  ini_file: 
+  community.general.ini_file:
     dest: /etc/yum.repos.d/remi-php82.repo
     section: remi-php82
-    option: enabled 
+    option: enabled
     value: 0
   tags: remi
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
 
 - name: enable remi php83 repository
-  ini_file: 
+  community.general.ini_file:
     dest: /etc/yum.repos.d/remi-php83.repo
     section: remi-php83
-    option: enabled 
+    option: enabled
     value: 1
   tags: remi
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
 
 - name: update system by remi repository
-  yum: 
-    name: php* 
+  yum:
+    name: php*
     state: latest
     update_cache: yes
     update_only: yes
   tags: php83
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
 
-- include: php_ext_dublicates.yml
+- include_tasks: php_ext_dublicates.yml
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
 
 - name: restart httpd
-  service: name=httpd state=restarted
+  service:
+    name=httpd
+    state=restarted
   tags: php83
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
 
+# CentOS Stream 9
+- name: update remi-release
+  dnf:
+    name: remi-release
+    state: latest
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+
+- name: disable remi php82 repository
+  dnf:
+    name: '@php:remi-8.2'
+    state: absent
+  tags: remi
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+
+- name: enable remi php83 repository
+  dnf:
+    name: '@php:remi-8.3'
+    state: present
+  tags: remi
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+
+- name: update system by remi repository
+  dnf:
+    name: php*
+    state: latest
+    update_cache: yes
+    update_only: yes
+  tags: php83
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+
+- include_tasks: php_ext_dublicates.yml
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+
+- name: restart httpd
+  service:
+    name=httpd
+    state=restarted
+  tags: php83
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"

@@ -4,6 +4,9 @@
 {%- if ansible_distribution == 'CentOS' and ansible_distribution_major_version == '7' %}
 {%- set is_httpd24 = 1 %}
 {% endif %}
+{%- if ansible_distribution == 'CentOS' and ansible_distribution_major_version == '9' %}
+{%- set is_httpd24 = 1 %}
+{% endif %}
 
 Listen {{ apache_monitoring_netaddr }}:{{ apache_monitoring_port }}
 {% if is_httpd24 == 0 -%}

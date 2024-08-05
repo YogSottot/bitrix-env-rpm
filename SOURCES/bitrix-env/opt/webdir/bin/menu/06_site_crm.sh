@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/usr/bin/bash
+#
 # manage sites and site's options 
 #set -x
 PROGNAME=$(basename $0)
@@ -6,6 +7,7 @@ PROGPATH=$(dirname $0)
 [[ -z $DEBUG ]] && DEBUG=0
 
 . $PROGPATH/06_site/functions.sh || exit 1
+
 logo=$(get_logo)
 
 _ntlm_menu() {
@@ -51,13 +53,13 @@ _site_options() {
 # print host menu
 _menu_sites() {
   _menu_sites_00="$SM0201"
-  _menu_sites_01="$SM0133"
-  _menu_sites_02="$SM0134"
-  _menu_sites_03="$SM0135"
-  _menu_sites_04="$SM0136"
-  _menu_sites_05="$SM0137"
-  _menu_sites_06="$SM0139"
-  _menu_sites_07="$SM0138"
+  #_menu_sites_01="$SM0133"
+  #_menu_sites_02="$SM0134"
+  #_menu_sites_03="$SM0135"
+  #_menu_sites_04="$SM0136"
+  #_menu_sites_05="$SM0137"
+  #_menu_sites_06="$SM0139"
+  #_menu_sites_07="$SM0138"
 
   SITE_MENU_SELECT=
   until [[ -n "$SITE_MENU_SELECT" ]]; do
@@ -87,19 +89,18 @@ _menu_sites() {
 
     # process selection
     case "$SITE_MENU_SELECT" in
-      "1") _cron_site;;
-      "2") _email_site;;
-      "3") _http_site;;
-      "4") _backup_kernel;;
-      "5") _site_options;;
-      "6") _ntlm_menu;;
-      "7") print_pool_sites_error;;
+      #"1") _cron_site ;;
+      #"2") _email_site ;;
+      #"3") _http_site ;;
+      #"4") _backup_kernel ;;
+      #"5") _site_options ;;
+      #"6") _ntlm_menu ;;
+      #"7") print_pool_sites_error ;;
       "0") exit ;;
-      *)   error_pick;;
+      *) error_pick ;;
     esac
     SITE_MENU_SELECT=
   done
 }
 
 _menu_sites
-

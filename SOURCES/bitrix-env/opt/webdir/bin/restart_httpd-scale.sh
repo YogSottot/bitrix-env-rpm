@@ -1,5 +1,5 @@
-#!/bin/bash
-
+#!/usr/bin/bash
+#
 export LANG=en_US.UTF-8
 export TERM=linux
 export NOLOCALE=yes

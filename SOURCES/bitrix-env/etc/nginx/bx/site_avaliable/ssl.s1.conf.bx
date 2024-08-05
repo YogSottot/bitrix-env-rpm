@@ -1,22 +1,22 @@
 # Default SSL certificate enabled website
 server {
-    listen	443 default_server ssl;
+    listen 443 default_server ssl;
     server_name _;
 
     access_log /var/log/nginx/access.log main;
     error_log /var/log/nginx/error.log warn;
 
     # Enable SSL connection
-    include	bx/conf/ssl.conf;
-    server_name_in_redirect	off;
+    include bx/conf/ssl.conf;
+    server_name_in_redirect off;
 
-    proxy_set_header	X-Real-IP	$remote_addr;
-    proxy_set_header	X-Forwarded-For	$proxy_add_x_forwarded_for;
-    proxy_set_header	Host		$host:443;
-    proxy_set_header	HTTPS 		YES;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header Host $host:443;
+    proxy_set_header HTTPS YES;
 
-    set $proxyserver	"http://127.0.0.1:8888";
-    set $docroot		"/home/bitrix/www";
+    set $proxyserver "http://127.0.0.1:8888";
+    set $docroot "/home/bitrix/www";
 
     index index.php;
     root /home/bitrix/www;
@@ -29,5 +29,4 @@ server {
 
     # Include server monitoring API's
     include bx/server_monitor.conf;
-
 }

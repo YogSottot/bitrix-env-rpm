@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/usr/bin/bash
+#
 # manage sites and site's options
 #set -x
 PROGNAME=$(basename $0)
@@ -11,7 +12,7 @@ logo=$(get_logo)
 main() {
     local monitor_options=N
     monitoring_logo="$MON0027"
-    clear
+    [[ $DEBUG -eq 0 ]] && clear
     echo -e "\t\t\t" $logo
     echo -e "\t\t\t" $monitoring_logo
     echo
@@ -27,9 +28,8 @@ main() {
 
     monitor_options=Y
 
-    local monitor_cmd="$bx_monitor_script -a disable"
-    exec_pool_task "$monitor_cmd" "$MON0031"
-
+    #local monitor_cmd="$bx_monitor_script -a disable"
+    #exec_pool_task "$monitor_cmd" "$MON0031"
 }
 
 main

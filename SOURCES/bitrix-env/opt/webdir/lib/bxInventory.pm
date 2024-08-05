@@ -1,8 +1,7 @@
-package bxInventory;
-
 # 1. fill out information about pool status
 # 2. update/delete information for hosts groups and pool itself
 #
+package bxInventory;
 use Moose;
 use Moose::Exporter;
 use File::Basename qw( dirname basename );
@@ -1276,6 +1275,9 @@ sub get_pool_status {
     return $pool_status;
 }
 
+# VMBIRIX 9.0 + ANSIBLE 2.14
+# display_skipped_hosts remove at 2.12
+#
 # create new pool with default ansible configuration:
 # create ssh-key and groups definition in config file
 # INPUT:
@@ -1399,7 +1401,7 @@ sub create_pool {
     my $ansible_main_config = $ansible_options->{'main'};
     my $new_options         = {
         private_key_file      => $sshkey_sec,
-        display_skipped_hosts => 'True',
+        #display_skipped_hosts => 'True',
     };
 
     my $update_main_config =
@@ -1664,30 +1666,42 @@ sub update_php {
     my $cmd_playbook    = $ansible_options->{'playbook'};
     my ( $opts, $startProcess, $etc_playbook, $type_playbook );
 
-    if ( $type =~ /^(bx_php_upgrade|bx_php_upgrade_php56)$/ ) {
-        $etc_playbook =
-          ( $type eq "bx_php_upgrade_php56" )
-          ? catfile( $ansible_options->{'base'}, 'upgrade_php.yml' )
-          : catfile( $ansible_options->{'base'}, 'upgrade_mysql_php.yml' );
+#    if ( $type =~ /^(bx_php_upgrade|bx_php_upgrade_php56)$/ ) {
+#        $etc_playbook =
+#          ( $type eq "bx_php_upgrade_php56" )
+#          ? catfile( $ansible_options->{'base'}, 'upgrade_php.yml' )
+#          : catfile( $ansible_options->{'base'}, 'upgrade_mysql_php.yml' );
+#
+#    }
+#    elsif ( $type =~ /^(bx_php_upgrade_php7|bx_php_rollback_php7)$/ ) {
+#        $etc_playbook = catfile( $ansible_options->{'base'}, 'web.yml' );
+#        $opts =
+#            ( $type eq 'bx_php_upgrade_php7' )
+#          ? { manage_web => "upgrade_php", to_php_version => 70 }
+#          : { manage_web => "downgrade_php", to_php_version => 56 };
+#    }
+#    elsif ( $type =~ /^bx_php_upgrade_php(70|71|72|73|74|80|81|82|83)$/ ) {
+#        my $version = $1;
+#        $etc_playbook = catfile( $ansible_options->{'base'}, 'web.yml' );
+#        $opts = { manage_web => "upgrade_php", to_php_version => $version };
+#    }
+#    elsif ( $type =~ /^bx_php_rollback_php(70|71|72|73|74|80|81|82)$/ ) {
+#        my $version = $1;
+#        $etc_playbook = catfile( $ansible_options->{'base'}, 'web.yml' );
+#        $opts = { manage_web => "downgrade_php", to_php_version => $version };
+#    }
 
+    if ( $type =~ /^bx_php_upgrade_php(82|83)$/ ) {
+	my $version = $1;
+	$etc_playbook = catfile( $ansible_options->{'base'}, 'web.yml' );
+	$opts = { manage_web => "upgrade_php", to_php_version => $version };
     }
-    elsif ( $type =~ /^(bx_php_upgrade_php7|bx_php_rollback_php7)$/ ) {
-        $etc_playbook = catfile( $ansible_options->{'base'}, 'web.yml' );
-        $opts =
-            ( $type eq 'bx_php_upgrade_php7' )
-          ? { manage_web => "upgrade_php", to_php_version => 70 }
-          : { manage_web => "downgrade_php", to_php_version => 56 };
+    elsif ( $type =~ /^bx_php_rollback_php(81|82)$/ ) {
+	my $version = $1;
+	$etc_playbook = catfile( $ansible_options->{'base'}, 'web.yml' );
+	$opts = { manage_web => "downgrade_php", to_php_version => $version };
     }
-    elsif ( $type =~ /^bx_php_upgrade_php(70|71|72|73|74|80|81|82|83)$/ ) {
-        my $version = $1;
-        $etc_playbook = catfile( $ansible_options->{'base'}, 'web.yml' );
-        $opts = { manage_web => "upgrade_php", to_php_version => $version };
-    }
-    elsif ( $type =~ /^bx_php_rollback_php(70|71|72|73|74|80|81|82)$/ ) {
-        my $version = $1;
-        $etc_playbook = catfile( $ansible_options->{'base'}, 'web.yml' );
-        $opts = { manage_web => "downgrade_php", to_php_version => $version };
-    }
+
     if ( defined $inventory_host ) {
         $opts->{updated_hostname} = $inventory_host;
     }

@@ -3,32 +3,32 @@ server {
     listen 8895 default_server;
     server_name _;
 
-    # access_log  /var/log/nginx/access.log  main buffer=64k;
-    # access_log  /dev/shm/access.log simple;
-    # error_log  /var/log/nginx/error.log  warn;
+    # access_log /var/log/nginx/access.log main buffer=64k;
+    # access_log /dev/shm/access.log simple;
+    # error_log /var/log/nginx/error.log warn;
     access_log off;
 
     add_header "X-Content-Type-Options" "nosniff";
 
     location /server-stat {
-        access_log off;
-        proxy_pass http://nodejs_pub;
+	access_log off;
+	proxy_pass http://nodejs_pub;
     }
 
     location  /nginx_status {
-        stub_status on;
+	stub_status on;
     }
 
     location {{ nodejs_pub }} {
-        # IM doesn't wait
-        proxy_ignore_client_abort on;
-        proxy_pass http://nodejs_pub;
+	# IM doesn't wait
+	proxy_ignore_client_abort on;
+	proxy_pass http://nodejs_pub;
     }
 
-		include bx/conf/im_subscrider.conf;
+    include bx/conf/im_subscrider.conf;
 
     location / {
-        deny all;
+	deny all;
     }
 }
 
@@ -50,6 +50,7 @@ server {
     # Include im subscrider handlers
     include bx/conf/im_subscrider.conf;
     
-    location  /           { deny all; }
+    location / {
+	deny all;
+    }
 }
-

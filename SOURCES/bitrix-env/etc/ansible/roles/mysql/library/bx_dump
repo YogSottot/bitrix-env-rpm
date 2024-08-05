@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/usr/bin/bash
+#
 # create dump for database and upload it to local mysql
 # src=          server with source of db ( ip address or unix socket )
 # dst=          server with destination of db  
@@ -24,33 +25,27 @@ CACHE_DIR=$BASE_DIR/tmp
 [[ ! -d $CACHE_DIR ]] && mkdir -p -m 700 $CACHE_DIR
 CACHE_FILE=(mktemp $CACHE_DIR/.bx_dumpXXXXXX)
 
-save_log(){
+save_log() {
     message=$1
-
     printf "%-15s: [%s] %s\n" "$(date +%Y/%m/%d:%H:%M:%S)" "$$" "$message" >> $LOG_FILE
 }
 
-print_good(){
+print_good() {
     local msg="${1}"
     local changed="${2:-true}"
-
     save_log "$msg"
     echo "{\"changed\": $changed, \"msg\": \"$msg\"}"
     [[ -f $CACHE_FILE ]] && rm -f $CACHE_FILE
     exit
-
 }
 
-print_error(){
+print_error() {
     local msg="${1}"
-
     save_log "$msg"
     echo "{\"changed\": false, \"failed\": true, \"msg\": \"$msg\"}"
     [[ -f $CACHE_FILE ]] && rm -f $CACHE_FILE
     exit 1
-
 }
-
 
 # test mandatory option and print error if not exists
 test_variables() {
@@ -137,28 +132,24 @@ dump_db() {
             print_good "Database db=$db already exists. nothing to do!" "false"
         else
             save_log " REPLACE=$REPLACE and db will be replaced"
-            $dst_mysql_cmd -e "drop database $db;" >> $LOG_FILE 2>&1 || \
-                print_error "error occurred during deletion db=$db"
+            $dst_mysql_cmd -e "drop database $db;" >> $LOG_FILE 2>&1 || print_error "error occurred during deletion db=$db"
             if_db=0
         fi
     fi
 
     # create database
     save_log "create $db"
-    $dst_mysql_cmd -e "create database $db;" >> $LOG_FILE 2>&1 || \
-        print_error "error occurred during creation db=$db"
+    $dst_mysql_cmd -e "create database $db;" >> $LOG_FILE 2>&1 || print_error "error occurred during creation db=$db"
 
     # recovery database by mysqldump of it tables: one by one
     save_log "start recovery data from $db; BY_TABLE=$BY_TABLE"
     if [[ $BY_TABLE -eq 1 ]]; then
         #save_log "$src_mysql_cmd  -N -e \"show tables;\""
         # get list of tables from master
-        $src_mysql_cmd  -N -e "show tables;" >$CACHE_FILE 2>> $LOG_FILE || \
-            print_error "error occurred during getting list of tables db=$db"
+        $src_mysql_cmd  -N -e "show tables;" >$CACHE_FILE 2>> $LOG_FILE || print_error "error occurred during getting list of tables db=$db"
 
         table_list=$(cat $CACHE_FILE | awk '{print $1}')
-        [[ -z "$table_list" ]] && \
-            print_good "there are no tables in database db=$db. nothing to do!" "false"
+        [[ -z "$table_list" ]] && print_good "there are no tables in database db=$db. nothing to do!" "false"
 
         # process table one by one, exit if error happened
         for table in $table_list; do
@@ -166,13 +157,11 @@ dump_db() {
             #save_log " $src_mysqldump_cmd $table | $dst_mysql_cmd $db"
             $src_mysqldump_cmd $table | $dst_mysql_cmd $db >> $LOG_FILE 2>&1
             for rtn in ${PIPESTATUS[*]}; do
-                [[ $rtn -gt 0 ]] && \
-                    print_error "error occurred during recovery db=$db table=$table"
+                [[ $rtn -gt 0 ]] && print_error "error occurred during recovery db=$db table=$table"
             done
             save_log "  $db - create table $table complete"
         done
         err=0
-
         # recovery database by mysqldump of whole database
     else
         $src_mysqldump_cmd | $dst_mysql_cmd >> $LOG_FILE 2>&1
@@ -186,7 +175,6 @@ dump_db() {
     fi
 
     exit $err
-
 }
 
 # get options from file

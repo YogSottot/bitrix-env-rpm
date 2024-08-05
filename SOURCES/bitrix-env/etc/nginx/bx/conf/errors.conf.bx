@@ -9,10 +9,10 @@ error_page 503 /503.html;
 error_page 504 /504.html;
 
 # Custom pages for BitrixEnv errors
-location ^~ /500.html	{ root /var/www/bitrixenv_error; }
-location ^~ /502.html	{ root /var/www/bitrixenv_error; }
-location ^~ /503.html	{ root /var/www/bitrixenv_error; }
-location ^~ /504.html	{ root /var/www/bitrixenv_error; }
-location ^~ /403.html	{ root /var/www/bitrixenv_error; }
-location ^~ /404.html	{ root /var/www/bitrixenv_error; }
-location @fallback	{ proxy_pass $proxyserver; }
+location ^~ /500.html { root /var/www/bitrixenv_error; }
+location ^~ /502.html { root /var/www/bitrixenv_error; }
+location ^~ /503.html { root /var/www/bitrixenv_error; }
+location ^~ /504.html { root /var/www/bitrixenv_error; }
+location ^~ /403.html { root /var/www/bitrixenv_error; }
+location ^~ /404.html { root /var/www/bitrixenv_error; }
+location @fallback { proxy_pass $proxyserver; }

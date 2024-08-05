@@ -1,5 +1,7 @@
 #!/usr/bin/perl
+#
 # localhost info and options
+#
 use strict;
 use warnings;
 
@@ -100,4 +102,3 @@ EOT
 ;
   exit;
 }
-

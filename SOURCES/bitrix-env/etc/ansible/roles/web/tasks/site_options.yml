@@ -5,7 +5,12 @@
 # value: off|on
 - name: gathering facts about processed site
   delegate_to: "{{ cluster_web_server }}"
-  bx_facts: name=list password=0 site={{ web_site_name }} install='(kernel|link)' error=0
+  bx_facts:
+    name=list
+    password=0
+    site={{ web_site_name }}
+    install='(kernel|link)'
+    error=0
   tags: configure_site
 
 - name: create variable with site options
@@ -23,8 +28,11 @@
   when: value
 
 - name: delete option
-  lineinfile: dest={{ item.NginxHTTPDir   }}/{{ item.NginxHTTPConfig   }}
-    owner=root group=root mode=0664
+  lineinfile:
+    dest={{ item.NginxHTTPDir   }}/{{ item.NginxHTTPConfig   }}
+    owner=root
+    group=root
+    mode=0664
     regexp="{{ option  }} "
     state=absent
   tags: configure_site
@@ -32,8 +40,11 @@
   when: "inventory_hostname == cluster_web_server"
 
 - name: set option
-  lineinfile: dest={{ item.NginxHTTPDir  }}/{{ item.NginxHTTPConfig  }}
-    owner=root group=root mode=0664
+  lineinfile:
+    dest={{ item.NginxHTTPDir  }}/{{ item.NginxHTTPConfig  }}
+    owner=root
+    group=root
+    mode=0664
     line="{{ option }} {{ string_value }};"
     insertafter="^\s*root\s+"
   when: "inventory_hostname == cluster_web_server"
@@ -41,8 +52,11 @@
   with_items: "{{ bx_sites_info  }}"
 
 - name: delete option
-  lineinfile: dest={{ item.NginxHTTPDir   }}/{{ item.NginxHTTPSConfig   }}
-    owner=root group=root mode=0664
+  lineinfile:
+    dest={{ item.NginxHTTPDir   }}/{{ item.NginxHTTPSConfig   }}
+    owner=root
+    group=root
+    mode=0664
     regexp="{{ option  }} "
     state=absent
   tags: configure_site
@@ -50,8 +64,11 @@
   when: "inventory_hostname == cluster_web_server"
 
 - name: set option
-  lineinfile: dest={{ item.NginxHTTPDir  }}/{{ item.NginxHTTPSConfig  }}
-    owner=root group=root mode=0664
+  lineinfile:
+    dest={{ item.NginxHTTPDir  }}/{{ item.NginxHTTPSConfig  }}
+    owner=root
+    group=root
+    mode=0664
     line="{{ option }} {{ string_value }};"
     insertafter="^\s*root\s+"
   when: "inventory_hostname == cluster_web_server"
@@ -60,5 +77,7 @@
 
 - name: restart nginx
   tags: configure_site
-  service: name=nginx state=restarted
+  service:
+    name=nginx
+    state=restarted
   when: "'bitrix-web' in group_names"

@@ -5,11 +5,15 @@
   when: "inventory_hostname == slave_server"
 
 - name: install ca-certificates
-  yum: name=ca-certificates state=latest
+  yum:
+    name=ca-certificates
+    state=latest
 
 - name: configure master certificate
   delegate_to: "{{ cluster_web_server }}"
-  bx_ca: state=add hostname={{ item }}
+  bx_ca:
+    state=add
+    hostname={{ item }}
   with_items:
     - "{{ slave_server }}"
     - "{{ master_server }}"
@@ -49,9 +53,7 @@
 
 - name: enable update-ca-trust
   shell: update-ca-trust enable
-  when: ansible_distribution == "CentOS"
-    and ansible_distribution_major_version == "6"
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "6"
 
 - name: execute update-ca-trust
   shell: update-ca-trust
-

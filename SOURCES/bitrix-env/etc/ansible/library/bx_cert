@@ -1,9 +1,11 @@
-#!/bin/bash
+#!/usr/bin/bash
+#
 # state:
 #       check  ----- check certificate files by openssl
 # cert: certificate
 # chain: chain
 # key: provate key
+#
 export LANG=en_EN.UTF-8
 export NOLOCALE=yes
 export PATH=/sbin:/bin:/usr/sbin:/usr/bin
@@ -22,15 +24,13 @@ TMP_FILE=$(mktemp $TMP_DIR/bx_certXXXXX)
 
 #set -x
 
-log(){
+log() {
     mess=$1
-
     echo "$(date +%s) $mess" >> $LOG_FILE
 }
 
-debug(){
+debug() {
     mess=$1
-
     [[ $DEBUG -gt 0  ]] && log "$mess"
 }
 
@@ -46,17 +46,14 @@ print_error() {
 # print ok
 print_ok() {
     msg="$1"
-
     echo "{\"changed\":false,\"msg\":\"$msg\"}"
     debug "$msg"
     [[ -f $TMP_FILE ]] && rm -f $TMP_FILE
-
     exit 0
 }
 
 test_files() {
-    [[ -x $OPENSSL  ]] || \
-        print_error "Not found openssl command. Please run, yum install openssl." 
+    [[ -x $OPENSSL  ]] || print_error "Not found openssl command. Please run, dnf install openssl." 
 
     # test variables and file
     if [[ -z $cert ]]; then
@@ -67,53 +64,43 @@ test_files() {
     fi
 
     for file in "$cert" "$priv" "$chain"; do
-        [[ (-n $file) && ( ! -f $file ) ]] && \
-            print_error "Cannot find file=$file"
+        [[ (-n $file) && ( ! -f $file ) ]] && print_error "Cannot find file=$file"
     done
 
     # check rsa key
     if [[ $( grep -c "ENCRYPTED" $priv 2>/dev/null ) -gt 0 ]]; then
-        print_error \
-            "Unsupported private key format; Private key must be PEM-encoded and unencrypted"
+	print_error "Unsupported private key format; Private key must be PEM-encoded and unencrypted"
     fi
 
     $OPENSSL rsa -in "$priv" -check > $TMP_FILE 2>&1
     rsa_rtn=$?
-    [[ $rsa_rtn -gt 0 ]] && \
-        print_error "Testing private key=$priv return error: $rsa_rtn"
+    [[ $rsa_rtn -gt 0 ]] && print_error "Testing private key=$priv return error: $rsa_rtn"
 
     # check certificate and chain file
     if [[ -n $chain ]]; then
         $OPENSSL verify -untrusted $chain $cert >$TMP_FILE 2>&1
         ver_rtn=$?
-
         if [[ $ver_rtn -gt 0 ]]; then
             error_msg=$(tail -n1 $TMP_FILE)
             $OPENSSL verify -verbose -x509_strict -CAfile $chain $cert >$TMP_FILE 2>&1
             if [[ $? -gt 0 ]]; then
-                print_error \
-                    "Testing certificate and chain return error: $ver_rtn $error_msg"
+                print_error "Testing certificate and chain return error: $ver_rtn $error_msg"
             fi
         fi
     else
-        $OPENSSL x509 -in $cert -enddate -noout >$TMP_FILE 2>&1
+	$OPENSSL x509 -in $cert -enddate -noout >$TMP_FILE 2>&1
         ver_rtn=$?
-        [[ $ver_rtn -gt 0 ]] && \
-            print_error \
-            "Testing certificate return error: $ver_rtn $(head -n1 $TMP_FILE)"
+        [[ $ver_rtn -gt 0 ]] && print_error "Testing certificate return error: $ver_rtn $(head -n1 $TMP_FILE)"
         enddate=$(date -d "$(cat $TMP_FILE | cut -d'=' -f2)" +%s)
         date=$(date +%s)
-        [[ $enddate -le $date ]] &&
-            print_error \
-            "Certificate $cert has expired"
+        [[ $enddate -le $date ]] && print_error "Certificate $cert has expired"
     fi
 
     # check certificate and private key
     cert_md5=$($OPENSSL x509 -noout -modulus -in $cert | $OPENSSL md5)
     priv_md5=$($OPENSSL rsa  -noout -modulus -in $priv | $OPENSSL md5)
     if [[ $cert_md5 != "$priv_md5" ]]; then
-        print_error \
-        "The certificate and private key do not match."
+        print_error "The certificate and private key do not match."
     fi
     print_ok "The certificate and private key are good."
 }

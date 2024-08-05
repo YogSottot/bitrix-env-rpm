@@ -1,10 +1,8 @@
 ---
 # configure iptables service for Centos 6 
-- include: iptables-executer.yml
+- include_tasks: iptables-executer.yml
 
 - service:
     name: iptables
     enabled: yes
     state: started
-
-

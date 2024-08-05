@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/usr/bin/bash
+#
 PROGNAME=$(basename $0)
 PROGPATH=$(dirname $0)
 
@@ -8,8 +9,7 @@ updated_host() {
     local act_host="$1"
 
     if [[ -z "$act_host" ]]; then
-        print_message "$HM0200" \
-            "$HM0044" "" any_key
+        print_message "$HM0200" "$HM0044" "" any_key
         return 1
     fi
 
@@ -24,8 +24,7 @@ updated_host() {
         [[ $(echo "$answer" | grep -iwc "n") -gt 0 ]] && exit 1
         return 1
     fi
-    print_message "$HM0055" "$HM0056" "" \
-        bx_type "bitrix"
+    print_message "$HM0055" "$HM0056" "" bx_type "bitrix"
     bx_type=$(echo "$bx_type" | tr '[:upper:]' '[:lower:]')
 
     if [[ $bx_type == "bitrix" ]]; then
@@ -38,8 +37,7 @@ updated_host() {
     fi
 
     [[ $DEBUG -gt 0 ]] && echo "cmd=$cmd_exec"
-    exec_pool_task "$cmd_exec" \
-            "update packages on host=$host_iden"
+    exec_pool_task "$cmd_exec" "update packages on host=$host_iden"
     return 0
 }
 
@@ -47,25 +45,25 @@ updated_host() {
 sub_menu() {
     host_logo="$HM0058"
     menu_00="$HM0042"
-    menu_01="   $HM0058"
+    menu_01="$HM0058"
 
     HOST_MENU_SELECT=
     until [[ -n "$HOST_MENU_SELECT" ]]; do
-        clear
-        echo -e "\t\t\t" $logo
-        echo -e "\t\t\t" $host_logo
+        [[ $DEBUG -eq 0 ]] && clear
+        echo -e "\t\t" $logo
+        echo -e "\t\t" $host_logo
         echo
 
         print_pool_info
-        
+
         # is there some task which can interrupted by adding new host (iptables and so on)
         get_task_by_type '(common|monitor|mysql|update)' POOL_HOST_TASK_LOCK POOL_HOST_TASK_LIST
         print_task_by_type '(common|monitor|mysql|update)' "$POOL_HOST_TASK_LOCK" "$POOL_HOST_TASK_LIST"
 
         if [[ $POOL_HOST_TASK_LOCK -eq 1 ]]; then
-            local menu_list="\n\t$menu_00"
+            local menu_list="$menu_00"
         else
-            local menu_list="\n\t$menu_00\n\t$menu_01"
+            local menu_list="$menu_01\n\t\t $menu_00"
         fi
         print_menu
 
@@ -85,4 +83,3 @@ sub_menu() {
 }
 
 sub_menu
-

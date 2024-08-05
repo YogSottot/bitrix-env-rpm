@@ -1,5 +1,5 @@
-#!/bin/bash
-
+#!/usr/bin/bash
+#
 pushd /etc/php.d >/dev/null 2>&1
 for file in *.ini; do
     is_good=$(grep extension $file | grep -c '\.so')

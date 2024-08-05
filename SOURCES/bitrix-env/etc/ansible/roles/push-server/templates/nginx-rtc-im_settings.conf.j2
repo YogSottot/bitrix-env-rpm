@@ -3,31 +3,31 @@ log_format simple '$time_local $status $request';
 
 # if connection ti not set
 map $http_upgrade $connection_upgrade {
-  default upgrade;
-  '' 'close';
+    default upgrade;
+    '' 'close';
 }
 
 map $http_upgrade  $replace_upgrade {
-  default $http_upgrade;
-  ''      "websocket";
+    default $http_upgrade;
+    '' "websocket";
 }
 
 # sub services
 upstream nodejs_sub {
-  ip_hash;
-  keepalive 1024;
-  server {{ rtc_upstream }}:8010;
-  server {{ rtc_upstream }}:8011;
-  server {{ rtc_upstream }}:8012;
-  server {{ rtc_upstream }}:8013;
-  server {{ rtc_upstream }}:8014;
-  server {{ rtc_upstream }}:8015;
+    ip_hash;
+    keepalive 1024;
+    server {{ rtc_upstream }}:8010;
+    server {{ rtc_upstream }}:8011;
+    server {{ rtc_upstream }}:8012;
+    server {{ rtc_upstream }}:8013;
+    server {{ rtc_upstream }}:8014;
+    server {{ rtc_upstream }}:8015;
 }
 
 # pub services
 upstream nodejs_pub {
-  ip_hash;
-  keepalive 1024;
-  server {{ rtc_upstream }}:9010;
-  server {{ rtc_upstream }}:9011;
+    ip_hash;
+    keepalive 1024;
+    server {{ rtc_upstream }}:9010;
+    server {{ rtc_upstream }}:9011;
 }

@@ -1,11 +1,12 @@
-#!/bin/bash
+#!/usr/bin/bash
+#
 # restart slave sql process if error occure
-
+#
 # restart MySQL slave for defined replication errors
 #
 # chkconfig:   - 20 80
 # description: Restart replication
-
+#
 ### BEGIN INIT INFO
 # Provides: pt-heartbeat
 # Required-Start: $local_fs $network
@@ -16,7 +17,7 @@
 # Default-Stop: 0 1 2 3 4 5 6
 # Short-Description: start and stop percona pt-slave-restart daemon
 ### END INIT INFO
-
+#
 act=$1           # action: stop or start
 
 [[ -z $act ]] && act=start

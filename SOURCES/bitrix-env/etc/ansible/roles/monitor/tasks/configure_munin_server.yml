@@ -25,13 +25,11 @@
   copy:
     src: munin.conf
     dest: /etc/tmpfiles.d/munin.conf
-  when: ansible_distribution == "CentOS"
-    and ansible_distribution_major_version == "7"
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
 
 - name: Re-run systemd-tmpfiles
   shell: systemd-tmpfiles --create /etc/tmpfiles.d/munin.conf
-  when: ansible_distribution == "CentOS"
-    and ansible_distribution_major_version == "7"
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
 
 - name: Munin-master - create munin-master config
   template:
@@ -84,32 +82,24 @@
   copy:
     src: crond_munin
     dest: /etc/cron.d/munin
-  when: ansible_distribution == "CentOS"
-    and ansible_distribution_major_version == "6"
-
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "6"
 
 - name: "Munin-master - remove old cron file"
   file:
     path: /etc/cron.d/munin
     state: absent
-  when: ansible_distribution == "CentOS"
-    and ansible_distribution_major_version == "7"
-
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
 
 - name: "Munin-master - enable systemd service"
   service:
     name: munin.service
     state: started
     enabled: yes
-  when: ansible_distribution == "CentOS"
-    and ansible_distribution_major_version == "7"
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
 
 - name: "Munin-master - enable systemd timer"
   service:
     name: munin.timer
     state: started
     enabled: yes
-  when: ansible_distribution == "CentOS"
-    and ansible_distribution_major_version == "7"
-
-
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"

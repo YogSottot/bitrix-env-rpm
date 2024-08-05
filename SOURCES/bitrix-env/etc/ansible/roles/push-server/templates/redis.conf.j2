@@ -8,7 +8,6 @@ unixsocket {{ redis_socket }}
 pidfile {{ redis_pidfile }}
 logfile {{ redis_logfile }}
 dir {{ redis_datadir }}
-
 bind 127.0.0.1
 protected-mode yes
 port 6379
@@ -61,4 +60,3 @@ hz 10
 aof-rewrite-incremental-fsync yes
 maxmemory {{ redis_maxmemory_config }}mb
 maxmemory-policy allkeys-lru
-

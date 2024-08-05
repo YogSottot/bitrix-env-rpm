@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/usr/bin/bash
+#
 # manage host in the pool
 # ex.
 # add|create - add host vto the pool
@@ -48,16 +49,16 @@ menu_upgrade_php() {
 
 # print host menu
 menu_host() {
-    local menu_03="1. $HM1003"
-    local menu_04="2. $HM1004"
-    local menu_05="3. $HM1005"
-    local menu_06="4. $HM1006"
-    local menu_07="5. $HM1007"
-    local menu_08="6. $HM1008"
+    #local menu_03="1. $HM1003"
+    #local menu_04="2. $HM1004"
+    #local menu_05="3. $HM1005"
+    #local menu_06="4. $HM1006"
+    #local menu_07="5. $HM1007"
+    #local menu_08="6. $HM1008"
     local menu_00="$HM0009"
 
-
     HOST_MENU_SELECT=
+
     until [[ -n "$HOST_MENU_SELECT" ]]; do
         menu_logo="$HM0010"
         print_menu_header
@@ -81,18 +82,17 @@ menu_host() {
 
         # process selection
         case "$HOST_MENU_SELECT" in
-            "1") menu_reboot_host ;;
-            "2") menu_update_host ;;
-            "3") menu_passw_bitrix_host ;;
-            "4") menu_configure_tz ;;
-            "5") menu_remove_pool ;;
-            "6") menu_upgrade_php ;;
+            #"1") menu_reboot_host ;;
+            #"2") menu_update_host ;;
+            #"3") menu_passw_bitrix_host ;;
+            #"4") menu_configure_tz ;;
+            #"5") menu_remove_pool ;;
+            #"6") menu_upgrade_php ;;
             "0") exit ;;
-            *)   error_pick; HOST_MENU_SELECT=;;
+            *) error_pick; HOST_MENU_SELECT= ;;
         esac
         HOST_MENU_SELECT=
-  done
+    done
 }
 
 menu_host
-

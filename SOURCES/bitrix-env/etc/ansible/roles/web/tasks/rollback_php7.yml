@@ -4,14 +4,14 @@
 # 4. downgrade php version
 # 5. change httpd settings and php.d settings (Centos 6)
 # create list bx_sites_info
-- include: sites-gathering_facts-not_mandatory.yml
+- include_tasks: sites-gathering_facts-not_mandatory.yml
 
 # configure and upgrade remi
 - name: save list php disabled modules
   bx_php: action=safe70
   tags: php56
 
-- include: configure_remi_php56.yml
+- include_tasks: configure_remi_php56.yml
 
 - include_tasks: reinstall_php.yml
   vars:
@@ -41,10 +41,11 @@
   ignore_errors: True
 
 # configure apache service
-- include: configure_httpd_php56.yml
+- include_tasks: configure_httpd_php56.yml
 
-- include: php_ext_dublicates.yml
+- include_tasks: php_ext_dublicates.yml
 
 - name: restart httpd
-  service: name=httpd state=restarted
-
+  service:
+    name=httpd
+    state=restarted

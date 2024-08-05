@@ -1,3 +1,5 @@
+#!/usr/bin/bash
+#
 PROGNAME=$(basename $0)
 PROGPATH=$(dirname $0)
 [[ -z $DEBUG ]] && DEBUG=0
@@ -9,7 +11,7 @@ site_menu_fnc=$site_menu_dir/functions.sh
 
 logo=$(get_logo)
 
-sites_related_by_cert(){
+sites_related_by_cert() {
     https_cert="${1}"
     [[ -z $https_cert ]] && return 255
 
@@ -36,7 +38,7 @@ sites_related_by_cert(){
     fi
 }
 
-# return 
+# return
 # 1     - LE
 # 2     - Own
 # 3     - Standart
@@ -69,7 +71,6 @@ $POOL_SITES_LINK_LIST"
         echo "Key:   $https_key"
     fi
 
-
     if [[ ( $https_cert == "$https_key" ) && ( $https_cert == 'ssl/cert.pem' ) ]]; then
         return 3
     fi
@@ -86,7 +87,7 @@ $POOL_SITES_LINK_LIST"
     return 0
 }
 
-certs_status(){
+certs_status() {
     cert_path="${1}"
     [[ -z $cert_path ]] && return 255
     SITES_LIST=
@@ -99,7 +100,6 @@ certs_status(){
     SITES_LIST=$(echo "$cert_info" | grep 'site_certs:' | \
         awk -F':' '{print $3}')
     return 0
- 
 }
 
 sites_https_status() {
@@ -116,8 +116,7 @@ sites_https_status() {
         fi
         site_https_status "$sn"
         site_https_status_rtn=$?
-        [[ $site_https_status_rtn -gt $sites_https_status_rtn ]] && \
-            sites_https_status_rtn=$site_https_status_rtn
+        [[ $site_https_status_rtn -gt $sites_https_status_rtn ]] && sites_https_status_rtn=$site_https_status_rtn
         sites_https_cnt=$(( $sites_https_cnt + 1 ))
     done
     IFS=$IFS_BAK
@@ -126,27 +125,20 @@ sites_https_status() {
 }
 
 configure_le() {
-    print_message "$WEB0037" \
-        "$WEB0038" \
-        '' SITE_NAME "default"
-    print_message "$WEB0039" \
-        "$WEB0040" \
-        '' DNS_NAMES 
-    print_message "$WEB0041" \
-        '' '' EMAIL
+    print_message "$WEB0037" "$WEB0038" '' SITE_NAME "default"
+    print_message "$WEB0039" "$WEB0040" '' DNS_NAMES
+    print_message "$WEB0041" '' '' EMAIL
 
     if [[ -z $DNS_NAMES ]]; then
-        print_message "$WEB0200" \
-            $WEB0042 "" any_key
+        print_message "$WEB0200" $WEB0042 "" any_key
         return 1
     fi
 
     if [[ -z $EMAIL ]]; then
-        print_message "$WEB0200" \
-            "$WEB0043" "" any_key
+        print_message "$WEB0200" "$WEB0043" "" any_key
         return 1
     fi
-    
+
     if [[ $DEBUG -gt 0 ]]; then
         echo "Site:  $SITE_NAME"
         echo "DNS:   $DNS_NAMES"
@@ -160,40 +152,32 @@ configure_le() {
     fi
 
     if [[ $site_https_status_rtn -eq 255 ]]; then
-        print_message "$WEB0200" \
-            "$WEB0044 $SITE_NAME" \
-            "" any_key
+        print_message "$WEB0200" "$WEB0044 $SITE_NAME" "" any_key
         return 1
     fi
 
-    if [[ $(echo "$SITE_NAME" | grep -c "push-server" ) && $sites_https_cnt -eq 0  ]]; then
-        print_message  "$WEB0068" "$WEB0069" \
-            "" any_key
+    if [[ $(echo "$SITE_NAME" | grep -c "push-server" ) && $sites_https_cnt -eq 0 ]]; then
+        print_message  "$WEB0068" "$WEB0069" "" any_key
         return 1
     fi
 
     if [[ ( $site_https_status_rtn -eq 1 ) || ( $site_https_status_rtn -eq 2 ) ]]; then
-        print_message "$WEB0045" \
-            "Sites: $SITE_NAME" "" any_key "n"
+        print_message "$WEB0045" "Sites: $SITE_NAME" "" any_key "n"
     else
-        print_message "$WEB0046" \
-            "Sites: $SITE_NAME" "" any_key "y"
+        print_message "$WEB0046" "Sites: $SITE_NAME" "" any_key "y"
     fi
 
-    if [[ $(echo "$any_key" | grep -wci "y") -gt 0   ]]; then
+    if [[ $(echo "$any_key" | grep -wci "y") -gt 0 ]]; then
         task_exec="$bx_sites_script -a configure_le --site \"$SITE_NAME\" -r $site_root"
-        task_exec="$task_exec --email \"$EMAIL\" --dns \"$DNS_NAMES\"" 
-        [[ $DEBUG -gt 0 ]] && \
-            echo "task_exec=$task_exec"
+        task_exec="$task_exec --email \"$EMAIL\" --dns \"$DNS_NAMES\""
+        [[ $DEBUG -gt 0 ]] && echo "task_exec=$task_exec"
         exec_pool_task "$task_exec" "$WEB0047"
     fi
 }
 
 configure_own_cert() {
     NGINX_CERT_DIR=/etc/nginx/certs
-    print_message "$WEB0037" \
-        "$WEB0038" \
-        '' SITE_NAME "default"
+    print_message "$WEB0037" "$WEB0038" '' SITE_NAME "default"
 
     sites_https_status "$SITE_NAME"
     site_https_status_rtn=$?
@@ -202,9 +186,7 @@ configure_own_cert() {
     fi
 
     if [[ $site_https_status_rtn -eq 255 ]]; then
-        print_message "$WEB0200" \
-            "$WEB0044 $SITE_NAME" \
-            "" any_key
+        print_message "$WEB0200" "$WEB0044 $SITE_NAME" "" any_key
         return 1
     fi
 
@@ -222,71 +204,54 @@ configure_own_cert() {
 
     # test options
     if [[ ( -z $PrivateKey ) || ( -z $Certificate ) ]]; then
-        print_message "$WEB0200" \
-            "$WEB0052" \
-            "" any_key
+        print_message "$WEB0200" "$WEB0052" "" any_key
         return 1
     fi
 
     if [[ ! ( -f $PrivateKey ) && ! ( -f $NGINX_CERT_DIR/$PrivateKey ) ]]; then
-        print_message "$WEB0200" \
-            "$WEB0053 $PrivateKey" \
-            "" any_key
+        print_message "$WEB0200" "$WEB0053 $PrivateKey" "" any_key
         return 1
     fi
 
     if [[ ! ( -f $Certificate ) && ! ( -f $NGINX_CERT_DIR/$Certificate ) ]]; then
-        print_message "$WEB0200" \
-            "$WEB0054 $Certificate" \
-            "" any_key
+        print_message "$WEB0200" "$WEB0054 $Certificate" "" any_key
         return 1
     fi
 
-    if [[ ( -n $CertificateChain ) && \
-        ( ! ( -f $CertificateChain ) && ! ( -f $NGINX_CERT_DIR/$CertificateChain ) ) ]]; then
-        print_message "$WEB0200" \
-            "$WEB0055 $CertificateChain" \
-            "" any_key
+    if [[ ( -n $CertificateChain ) && ( ! ( -f $CertificateChain ) && ! ( -f $NGINX_CERT_DIR/$CertificateChain ) ) ]]; then
+        print_message "$WEB0200" "$WEB0055 $CertificateChain" "" any_key
         return 1
     fi
- 
 
     if [[ ( $site_https_status_rtn -eq 1 ) || ( $site_https_status_rtn -eq 2 ) ]]; then
-        print_message "$WEB0045" \
-            "Sites: $SITE_NAME" "" any_key "n"
+        print_message "$WEB0045" "Sites: $SITE_NAME" "" any_key "n"
     else
-        print_message "$WEB0046" \
-            "Sites: $SITE_NAME" "" any_key "y"
+        print_message "$WEB0046" "Sites: $SITE_NAME" "" any_key "y"
     fi
 
-    if [[ $(echo "$any_key" | grep -wci "y") -gt 0   ]]; then
+    if [[ $(echo "$any_key" | grep -wci "y") -gt 0 ]]; then
         task_exec="$bx_sites_script -a configure_cert --site \"$SITE_NAME\" -r $site_root"
-        task_exec="$task_exec --private_key $PrivateKey" 
+        task_exec="$task_exec --private_key $PrivateKey"
         task_exec="$task_exec --certificate $Certificate"
-        [[ -n $CertificateChain ]] && \
-            task_exec="$task_exec --certificate_chain $CertificateChain"
+        [[ -n $CertificateChain ]] && task_exec="$task_exec --certificate_chain $CertificateChain"
 
-        [[ $DEBUG -gt 0 ]] && \
-            echo "task_exec=$task_exec"
+        [[ $DEBUG -gt 0 ]] && echo "task_exec=$task_exec"
         exec_pool_task "$task_exec" "$WEB0056"
     fi
 }
 
 reset_cert() {
     NGINX_CERT_DIR=/etc/nginx/certs
-    print_message "$WEB0070" \
-        "" "" CERT_PATH
+    print_message "$WEB0070" "" "" CERT_PATH
 
     certs_status "$CERT_PATH"
     if [[ $? -gt 0 ]]; then
-        print_message "$WEB0200" \
-            "$(get_text "$WEB0072" "$CERT_PATH")"
+        print_message "$WEB0200" "$(get_text "$WEB0072" "$CERT_PATH")"
         return 1
     fi
 
     if [[ $CERT_PATH == "/etc/nginx/ssl/cert.pem" ]]; then
-        print_message "$WEB0200" \
-            "$(get_text "$WEB0073" "$SITES_LIST")"
+        print_message "$WEB0200" "$(get_text "$WEB0073" "$SITES_LIST")"
         return 1
     fi
 
@@ -299,52 +264,41 @@ reset_cert() {
     fi
 
     if [[ $site_https_status_rtn -eq 255 ]]; then
-        print_message "$WEB0200" \
-            "$WEB0044 $SITE_NAME" \
-            "" any_key
+        print_message "$WEB0200" "$WEB0044 $SITE_NAME" "" any_key
         return 1
     fi
 
-    if [[ $(echo "$SITE_NAME" | grep -wc "push-server") -gt 0 && \
-        -n "$PUSH_TYPE" && $PUSH_TYPE == "Custom" ]]; then
-        site_https_status_rtn=1
-    fi
+#    if [[ $(echo "$SITE_NAME" | grep -wc "push-server") -gt 0 && -n "$PUSH_TYPE" && $PUSH_TYPE == "Custom" ]]; then
+#        site_https_status_rtn=1
+#    fi
 
-    if [[ ( $site_https_status_rtn -eq 1 ) || \
-        ( $site_https_status_rtn -eq 2 ) ]]; then
-        print_message "$WEB0057" \
-            "Sites: $SITE_NAME" "" any_key "n"
+    if [[ ( $site_https_status_rtn -eq 1 ) || ( $site_https_status_rtn -eq 2 ) ]]; then
+        print_message "$WEB0057" "Sites: $SITE_NAME" "" any_key "n"
     else
-        print_message "$WEB0200" \
-            "$WEB0058 Sites: $SITE_NAME" "" any_key
+        print_message "$WEB0200" "$WEB0058 Sites: $SITE_NAME" "" any_key
         return 1
     fi
 
-    if [[ $(echo "$any_key" | grep -wci "y") -gt 0   ]]; then
+    if [[ $(echo "$any_key" | grep -wci "y") -gt 0 ]]; then
         task_exec="$bx_sites_script -a reset_cert --site \"$SITE_NAME\""
 
-        [[ $DEBUG -gt 0 ]] && \
-            echo "task_exec=$task_exec"
+        [[ $DEBUG -gt 0 ]] && echo "task_exec=$task_exec"
         exec_pool_task "$task_exec" "$WEB0157"
     fi
 }
 
-
-sub_menu(){
+sub_menu() {
     menu_00="$WEB0201"
     menu_01="$WEB0158"
-    menu_02="$WEB0059"
-    menu_03="$WEB0060"
-
-
+    menu_02=" $WEB0059"
+    menu_03=" $WEB0060"
 
     MENU_SELECT=
     until [[ -n "$MENU_SELECT" ]]; do
-
         menu_logo="$WEB0056"
         print_menu_header
 
-        # print sites 
+        # print sites
         #set -x
         print_site_list_point_https
 
@@ -354,17 +308,17 @@ sub_menu(){
 
         # background task or not found free servers in the pool
         if [[ ( $POOL_TASK_LOCK -eq 1 ) ]]; then
-            menu_list="\n\t$menu_00"
+            menu_list="$menu_00"
         else
-            menu_list="\n\t$menu_01\n\t$menu_02\n\t$menu_03\n\t$menu_00"
+            menu_list="$menu_01\n\t\t$menu_02\n\t\t$menu_03\n\t\t $menu_00"
         fi
-        
+
         print_menu
 
         if [[ $POOL_TASK_LOCK -gt 0 ]]; then
             print_message "$WEB0202" '' '' MENU_SELECT 0
         else
-            print_message "$WEB0205" '' '' MENU_SELECT 
+            print_message "$WEB0205" '' '' MENU_SELECT
         fi
 
         case "$MENU_SELECT" in

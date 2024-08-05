@@ -1,24 +1,23 @@
-#!/bin/bash
+#!/usr/bin/bash
+#
 PROGNAME=$(basename $0)
 PROGPATH=$(dirname $0)
 
 . $PROGPATH/functions.sh || exit 1
 
-configure_tz(){
+configure_tz() {
     local tz_file=/tmp/tzdata
     local tz_name=
     # get from user info about timezone string and saved it to user_tz_file
     tzselect > $tz_file
     if [[ $? -gt 0 ]]; then
-        print_message "$HM0200" "$HM0061" \
-            "" any_key
+        print_message "$HM0200" "$HM0061" "" any_key
         exit 1
     fi
     local tz_name=$(cat $tz_file)
     # Please confirm the installation timezone
     php_choice=0
-    print_message "$(get_text "$HM0062" "$tz_name")" \
-        "" "" php y
+    print_message "$(get_text "$HM0062" "$tz_name")" "" "" php y
     [[ $(echo "$php" | grep -iwc 'y') -gt 0 ]] && php_choice=1
 
     # Notification
@@ -38,7 +37,6 @@ configure_tz(){
     [[ $php_choice -eq 1 ]] && tz_task=$tz_task" --php"
     [[ $DEBUG -gt 0 ]] && echo "cmd=$tz_task"
     exec_pool_task "$tz_task" "setting timezone=$tz_name"
-
 }
 
 menu_configure_tz() {
@@ -48,14 +46,14 @@ menu_configure_tz() {
 
     HOST_MENU_SELECT=
     until [[ -n "$HOST_MENU_SELECT" ]]; do
-        clear
-        echo -e "\t\t\t" $logo
-        echo -e "\t\t\t" $host_logo
+        [[ $DEBUG -eq 0 ]] && clear
+        echo -e "\t\t" $logo
+        echo -e "\t\t" $host_logo
         echo
 
         print_pool_info
-        
-        menu_list="\n\t$menu_00\n\t$menu_01"
+
+        menu_list="$menu_01\n\t\t $menu_00"
         print_menu
 
         print_message "$HM0204" '' '' HOST_MENU_SELECT
@@ -69,4 +67,3 @@ menu_configure_tz() {
 }
 
 menu_configure_tz
-

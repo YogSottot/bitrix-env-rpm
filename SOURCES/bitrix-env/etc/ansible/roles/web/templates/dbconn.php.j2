@@ -2,31 +2,20 @@
 {% set charset = bitrix_site_charset|default('utf-8') -%}
 {% set web_site_dbpass_regexp = web_site_dbpass | regex_replace('([\'\\\\])','\\\\\\1') -%}
 {% set bitrix_type = bx_package_name | default('bitrix-env') %}
-<? define("SHORT_INSTALL_CHECK", true);?><?
+<?php
 /* {{ ansible_managed }} */
-define("DBPersistent", false);
-$DBType = "mysql";
-$DBHost = "{{ web_site_dbserv }}";
-$DBLogin = "{{ web_site_dbuser }}";
-$DBPassword = '{{ web_site_dbpass_regexp }}';
-$DBName = "{{ web_site_db }}";
+
 $DBDebug = false;
 $DBDebugToFile = false;
 
-define("DELAY_DB_CONNECT", true);
-define("CACHED_b_file", 3600);
-define("CACHED_b_file_bucket_size", 10);
-define("CACHED_b_lang", 3600);
-define("CACHED_b_option", 3600);
-define("CACHED_b_lang_domain", 3600);
-define("CACHED_b_site_template", 3600);
-define("CACHED_b_event", 3600);
-define("CACHED_b_agent", 3660);
-define("CACHED_menu", 3600);
+// need for old distros
+define('CACHED_b_lang', 3600);
+define('CACHED_b_agent', 3600);
+define('CACHED_b_lang_domain', 3600);
 
-define("BX_FILE_PERMISSIONS", 0664);
-define("BX_DIR_PERMISSIONS", 0775);
-@umask(~BX_DIR_PERMISSIONS);
+define("BX_FILE_PERMISSIONS", 0644);
+define("BX_DIR_PERMISSIONS", 0755);
+@umask(~(BX_FILE_PERMISSIONS|BX_DIR_PERMISSIONS)&0777);
 
 define("MYSQL_TABLE_TYPE", "INNODB");
 define("SHORT_INSTALL", true);

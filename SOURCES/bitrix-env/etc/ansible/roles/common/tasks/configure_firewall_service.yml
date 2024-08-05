@@ -6,7 +6,7 @@
 # firewalld_bx_type: installed or not_installed (configure bx_trusted or not)
 # 
 # want_iptables
-- include: firewall-service-tests.yml
+- include_tasks: firewall-service-tests.yml
 
 - name: disable firewalld service
   service:
@@ -15,44 +15,26 @@
     enabled: no
   when: iptables_status == 'disabled'
 
-- include: iptables-centos6.yml
-  when: ansible_distribution == "CentOS"
-    and ansible_distribution_major_version == "6"
-    and iptables_status != "disabled"
+- include_tasks: iptables-centos6.yml
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "6" and iptables_status != "disabled"
 
 # use iptables-services
-- include: iptables-centos7.yml
-  when: ansible_distribution == "CentOS"
-    and ansible_distribution_major_version == "7"
-    and iptables_status == "stateless"
+- include_tasks: iptables-centos7.yml
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7" and iptables_status == "stateless"
 
-- include: iptables-centos7.yml
-  when: ansible_distribution == "CentOS"
-    and ansible_distribution_major_version == "7"
-    and iptables_status != "disabled"
-    and want_iptables
+- include_tasks: iptables-centos7.yml
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7" and iptables_status != "disabled" and want_iptables
 
-- include: iptables-centos7.yml
-  when: ansible_distribution == "CentOS"
-    and ansible_distribution_major_version == "7"
-    and iptables_status == "stateful"
-    and firewalld_status == "not_running"
+- include_tasks: iptables-centos7.yml
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7" and iptables_status == "stateful" and firewalld_status == "not_running"
 
 # use firewalld
-- include: firewalld-centos7.yml
-  when: ansible_distribution == "CentOS"
-    and ansible_distribution_major_version == "7"
-    and iptables_status == "stateful"
-    and firewalld_status == "running"
-    and firewalld_tolerance == "compatible"
+- include_tasks: firewalld-centos7.yml
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7" and iptables_status == "stateful" and firewalld_status == "running" and firewalld_tolerance == "compatible"
 
-- include: iptables-centos7.yml
-  when: ansible_distribution == "CentOS"
-    and ansible_distribution_major_version == "7"
-    and iptables_status == "stateful"
-    and firewalld_status == "running"
-    and firewalld_tolerance == "non_compatible"
+- include_tasks: iptables-centos7.yml
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7" and iptables_status == "stateful" and firewalld_status == "running" and firewalld_tolerance == "non_compatible"
 
-
-
-
+# use firewalld for centos stream 9
+- include_tasks: firewalld-centos9.yml
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9" and iptables_status == "stateful" and firewalld_status == "running" and firewalld_tolerance == "compatible"

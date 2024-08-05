@@ -1,8 +1,10 @@
-#!/bin/bash
+#!/usr/bin/bash
+#
 # post installation script for bitrix-env
 # 1. create bitrix user
 # 2. configure mysql/mariadb service
 #set -x
+#
 export LANG=en_US.UTF-8
 export NOLOCALE=yes
 export PATH=/sbin:/bin:/usr/sbin:/usr/bin
@@ -13,8 +15,7 @@ BITRIX_ENV_TYPE=${3:-general}
 
 [[ $BITRIX_ENV_TYPE == "general" ]] && exit 0
 
-OS_VERSION=$(cat /etc/redhat-release | \
-    sed -e "s/CentOS Linux release//;s/CentOS release // " | cut -d'.' -f1)
+OS_VERSION=$(cat /etc/redhat-release | sed -e "s/CentOS Linux release//;s/CentOS release // " | cut -d'.' -f1)
 UPDATE_TM=$(date +'%Y%m%d%H%M')
 PHP_VERSION=$(php -v | grep ^PHP | awk '{print $2}' | awk -F'.' '{print $1}')
 NGINX_VERSION=$(nginx -v 2>&1 | grep "^nginx version" | awk -F'/' '{print $2}')
@@ -25,17 +26,14 @@ LOG_DIR=/opt/webdir/logs
 LOGS_FILE=$LOG_DIR/${RPM_ACTION}-${BITRIX_ENV_VER}.log
 [[ -z $DEBUG ]] && DEBUG=0
 
-log_to_file(){
-  log_message="${1}"
-  notice="${2:-INFO}"
-  printf "%20s: %5s [%s] %s\n" \
-      "$(date +"%Y/%m/%d %H:%M:%S")" $$ "$notice" "$log_message" >> $LOGS_FILE
-  [[ $DEBUG -gt 0 ]] && \
-    printf "%20s: %5s [%s] %s\n" \
-      "$(date +"%Y/%m/%d %H:%M:%S")" $$ "$notice" "$log_message" 1>&2
-
+log_to_file() {
+    log_message="${1}"
+    notice="${2:-INFO}"
+    printf "%20s: %5s [%s] %s\n" "$(date +"%Y/%m/%d %H:%M:%S")" $$ "$notice" "$log_message" >> $LOGS_FILE
+    [[ $DEBUG -gt 0 ]] && printf "%20s: %5s [%s] %s\n" "$(date +"%Y/%m/%d %H:%M:%S")" $$ "$notice" "$log_message" 1>&2
 }
-service_manage(){
+
+service_manage() {
     local service="${1}"
     local action="${2}"
     local restart_rtn=0
@@ -71,7 +69,7 @@ service_manage(){
     fi
 }
 
-configure_push(){
+configure_push() {
     INVENTORY_TEMP=/etc/ansible/hosts.push
     PLAYBOOK_OPTIONS=/etc/ansible/push.yml
     PLAYBOOK_FILE=/etc/ansible/push-server.yml
@@ -90,19 +88,16 @@ configure_push(){
     echo "hostname: localhost"              >> $PLAYBOOK_OPTIONS
     echo "is_rpm: True"                     >> $PLAYBOOK_OPTIONS
 
-    ansible-playbook $PLAYBOOK_FILE \
-        -i $INVENTORY_TEMP \
-        -e "ansible_playbook_file=$PLAYBOOK_OPTIONS" >> $LOGS_FILE 2>&1
+    ansible-playbook $PLAYBOOK_FILE -i $INVENTORY_TEMP -e "ansible_playbook_file=$PLAYBOOK_OPTIONS" >> $LOGS_FILE 2>&1
     if [[ $? -gt 0 ]]; then
         log_to_file "Cannot configure push server" "ERROR"
     else
         log_to_file "Configure push server"
         rm -f $INVENTORY_TEMP $PLAYBOOK_OPTIONS
     fi
-    
 }
 
-configure_memcached(){
+configure_memcached() {
     # memory
     mem=$(free | grep Mem | awk '{print $2}')
     mc_mem=$(( $mem / 8 ))
@@ -123,15 +118,12 @@ OPTIONS=\"-s /tmp/memcached.sock\"" > /etc/sysconfig/memcached
 
 # post installation action for install process; no previous installation bitrix-env
 install() {
-    
     export BITRIX_ENV_TYPE=$BITRIX_ENV_TYPE
-
     configure_push
-
     configure_memcached
 }
 
-upgrade(){
+upgrade() {
     export BITRIX_ENV_TYPE=$BITRIX_ENV_TYPE
 
     # http://jabber.bx/view.php?id=113476
@@ -147,7 +139,6 @@ upgrade(){
             rm -f $INVENTORY_TEMP $PLAYBOOK_OPTIONS
         fi
     fi
-
 }
 
 log_to_file "Start $RPM_ACTION for bitrix-env=$BITRIX_ENV_VER timestamp=$UPDATE_TM"

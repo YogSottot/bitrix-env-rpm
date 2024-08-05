@@ -15,7 +15,11 @@
 ####
 - name: gathering facts about kernel
   delegate_to: "{{ cluster_web_server }}"
-  bx_facts: name=status password=0 site={{ web_kernel_site }} site_dir={{ web_kernel_root }}
+  bx_facts:
+    name=status
+    password=0
+    site={{ web_kernel_site }}
+    site_dir={{ web_kernel_root }}
   tags: sites_facts
 
 - name: create variable with kernel options
@@ -32,7 +36,9 @@
 
 - name: create additional variables when they not defined in the input
   delegate_to: "{{ cluster_web_server }}"
-  bx_generate_site_vars: site_type={{ web_site_type }} site_name={{ web_site_name }}
+  bx_generate_site_vars:
+    site_type={{ web_site_type }}
+    site_name={{ web_site_name }}
     site_dir={{ web_site_dir }}
   register: site_vars
   tags: configure_site
@@ -46,20 +52,20 @@
     web_site_upld_dir: "{{ site_extentend_upload }}/{{ web_site_name }}"
   tags: configure_site
 
-- name: set charset options for new site
-  set_fact:
-    bitrix_site_encoding: cp1251
-    bitrix_site_collation: cp1251_general_ci
-    bitrix_site_php_internal: "php_admin_value mbstring.internal_encoding cp1251"
-  when: "kernel_default_charset == 'windows-1251'"
-
-- name: set charset options for new site
-  set_fact:
-    bitrix_site_php_internal: "php_admin_value default_charset cp1251"
-  when: "kernel_default_charset == 'windows-1251' and php_older_version == 1"
+#- name: set charset options for new site
+#  set_fact:
+#    bitrix_site_encoding: cp1251
+#    bitrix_site_collation: cp1251_general_ci
+#    bitrix_site_php_internal: "php_admin_value mbstring.internal_encoding cp1251"
+#  when: "kernel_default_charset == 'windows-1251'"
+#
+#- name: set charset options for new site
+#  set_fact:
+#    bitrix_site_php_internal: "php_admin_value default_charset cp1251"
+#  when: "kernel_default_charset == 'windows-1251' and php_older_version == 1"
 
 # defined is_cluster and bx_sites_info variables
-- include: bx_sites_info.yml
+- include_tasks: bx_sites_info.yml
 
 ####
 ######## /load variables from groups config file
@@ -69,7 +75,7 @@
 ######## 2. directories:  document root, sessions and uploads
 ######## 3. kernel contains bitrix, upload and images directory
 ####
-- include: test_site_exist.yml
+- include_tasks: test_site_exist.yml
 
 # test images, upload and bitrix directories
 - name: check directory bitrix exists
@@ -107,18 +113,17 @@
 
 ######## create site directories on all web servers in the pool
 ####
-- name: test cp1251 locale
-  shell: "locale -a | grep ru_RU.cp1251 -ic"
-  register: locale_cmd
-  ignore_errors: true
-  when: "kernel_default_charset == 'windows-1251'"
+#- name: test cp1251 locale
+#  shell: "locale -a | grep ru_RU.cp1251 -ic"
+#  register: locale_cmd
+#  ignore_errors: true
+#  when: "kernel_default_charset == 'windows-1251'"
+#
+#- name: ensure locale exists
+#  shell: localedef -c -i ru_RU -f CP1251 ru_RU.CP1251
+#  when: kernel_default_charset == 'windows-1251' and locale_cmd.stdout == "0"
 
-- name: ensure locale exists
-  shell: localedef -c -i ru_RU -f CP1251 ru_RU.CP1251
-  when: kernel_default_charset == 'windows-1251'
-    and locale_cmd.stdout == "0"
-
-- include: create_basic_dirs.yml
+- include_tasks: create_basic_dirs.yml
 
 - name: create folder for temporary files
   file:
@@ -162,10 +167,10 @@
 
 ######## create csync configuration and sync data for site between nodes for new site
 ####
-- include: create_csync2_site.yml
+- include_tasks: create_csync2_site.yml
   when: "cluster_web_configure == 'enable' and fstype == 'csync'"
 
-- include: configs_lsyncd_create_site.yml
+- include_tasks: configs_lsyncd_create_site.yml
   when: "cluster_web_configure == 'enable' and fstype =='lsync'"
 
 ####
@@ -173,7 +178,7 @@
 
 ######## create configs for web services
 ####
-- include: create_web_configs.yml
+- include_tasks: create_web_configs.yml
   when: "'bitrix-web' in group_names"
 
 - name: create custom nginx config

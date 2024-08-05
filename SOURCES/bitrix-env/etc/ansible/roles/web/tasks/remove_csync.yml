@@ -1,7 +1,9 @@
 ---
 # configure csync 
 - name: create csync2-global lock
-  file: path=/etc/csync2/csync2.lock state=touch
+  file:
+    path=/etc/csync2/csync2.lock
+    state=touch
   when: "'bitrix-web' in group_names"
   tags: csync
 
@@ -34,7 +36,9 @@
   tags: csync
 
 - name: restart xinetd
-  service: name=xinetd state=restarted
+  service:
+    name=xinetd
+    state=restarted
   when: "inventory_hostname == delete_web_server"
   tags: csync
 
@@ -68,24 +72,29 @@
 # recreate csync2 configs on balancer host
 # expect csync synchronyze configs fo other nodes
 - name: csync-config for /etc synchronize
-  template: src="csync2/bx_cluster_config.cfg.j2"
+  template:
+    src="csync2/bx_cluster_config.cfg.j2"
     dest="{{ csync_configdir }}/csync2_bxcluster.cfg"
-    owner={{ site_root }} group={{ site_bitrix }}
+    owner={{ site_root }}
+    group={{ site_bitrix }}
     mode=0640
   tags: csync
   when: "inventory_hostname == cluster_web_server"
 
 - name: create csync-config for site document roots
-  template: src="csync2/bx_cluster_site.cfg.j2"
+  template:
+    src="csync2/bx_cluster_site.cfg.j2"
     dest="{{ csync_configdir }}/csync2_{{ item.SiteCsync2 }}.cfg"
-    owner={{ site_root }} group={{ site_bitrix }}
+    owner={{ site_root }}
+    group={{ site_bitrix }}
     mode=0640
   with_items: "{{ bx_sites_info }}"
   tags: csync
   when: "inventory_hostname == cluster_web_server"
 
 - name: remove csync2-global lock
-  file: path=/etc/csync2/csync2.lock state=absent
+  file:
+    path=/etc/csync2/csync2.lock
+    state=absent
   when: "'bitrix-web' in group_names"
   tags: csync
-

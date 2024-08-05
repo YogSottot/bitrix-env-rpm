@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/usr/bin/bash
+#
 export LANG=en_US.UTF-8
 export TERM=linux
 PROGNAME=$(basename $0)
@@ -13,7 +14,6 @@ LOGS_FILE=$LOGS_DIR/pool_menu.log
 . $PROGPATH/bitrix_utils.sh || exit 1
 
 logo=$(get_logo)
-
 
 ansible_wrapper=$PROGPATH/wrapper_ansible_conf # parse config file, add and change data in the ansible configuration
 bx_monotor_script=$PROGPATH/bx-monitor         # manage monitoring 
@@ -68,12 +68,12 @@ menu_default_exit="0.  $MM0007."
 # all action do wrapper, but it can return error
 # CREATE_POOL
 create_pool_1() {
-    clear
+    [[ $DEBUG -eq 0 ]] && clear
   
     POOL_CREATE_OPTION_INT=
     POOL_CREATE_OPTION_HOST=
     until [[ ( -n "$POOL_CREATE_OPTION_INT" ) && ( -n "$POOL_CREATE_OPTION_HOST" )  ]]; do
-        clear;
+        [[ $DEBUG -eq 0 ]] && clear;
         # print header
         echo -e "\t\t\t" $logo
         echo -e "\t\t\t" "$MM0021"
@@ -218,7 +218,6 @@ transformer_service(){
 
 # main menu for pool manage
 menu_server_list(){
-  
   logo_msg="$MM0033"
   test_passw_bitrix_localhost
 
@@ -226,7 +225,7 @@ menu_server_list(){
   POOL_MAIN_CONFIG=/etc/ansible/group_vars/bitrix-hosts.yml
   POLL_HOST_CONFIG=/etc/ansible/ansible-roles
   until [[ "$POOL_SELECTION" == "0" ]]; do
-    clear;
+    [[ $DEBUG -eq 0 ]] && clear;
     # print header
     echo -e "\t\t\t" $logo
     echo -e "\t\t\t" $logo_msg
@@ -244,21 +243,20 @@ menu_server_list(){
         if [[ $HOST_NETWORK -gt 0 ]]; then
           print_color_text "$MM0036" red
           echo "$BU0029"
-          echo -e "\t\t " $menu_create_pool_1
-          echo -e "\t\t " $menu_local_2
+          #echo -e "\t\t " $menu_create_pool_1
+          #echo -e "\t\t " $menu_local_2
           echo -e "\t\t " $menu_default_exit
         else
           echo "$BU0029"
-          echo -e "\t\t " $menu_local_2
+          #echo -e "\t\t " $menu_local_2
           echo -e "\t\t " $menu_default_exit
         fi
       fi
-      print_message "$MM0037" \
-          '' '' POOL_SELECTION
+      print_message "$MM0037" '' '' POOL_SELECTION
 
       case "$POOL_SELECTION" in
-        "1") create_pool_1; HOST_NETWORK=; HOST_NETWORK_INFO=;;
-        "2") localhost_manage;;
+        #"1") create_pool_1; HOST_NETWORK=; HOST_NETWORK_INFO=;;
+        #"2") localhost_manage;;
         "0") exit;;
         *)   error_pick;;
       esac
@@ -267,25 +265,24 @@ menu_server_list(){
       print_pool_info
 
       echo "$BU0029"
-      echo -e "\t\t" $menu_hosts_manage_1
-      echo -e "\t\t" $menu_local_2
-      echo -e "\t\t" $menu_monitoring_3
-      echo -e "\t\t" $menu_sites_4
-      echo -e "\t\t" $menu_web_5
-      echo -e "\t\t" $menu_push_6
-      echo -e "\t\t" $menu_jobs_7
+      #echo -e "\t\t" $menu_hosts_manage_1
+      #echo -e "\t\t" $menu_local_2
+      #echo -e "\t\t" $menu_monitoring_3
+      #echo -e "\t\t" $menu_sites_4
+      #echo -e "\t\t" $menu_web_5
+      #echo -e "\t\t" $menu_push_6
+      #echo -e "\t\t" $menu_jobs_7
       echo -e "\t\t" $menu_default_exit
-      print_message "$MM0037" \
-          '' '' POOL_SELECTION
+      print_message "$MM0037" '' '' POOL_SELECTION
 
       case "$POOL_SELECTION" in 
-        "1"|a)  hosts_manage; POOL_SERVER_LIST=;;
-        "2"|c)  localhost_manage;;
-        "3"|d)  hosts_monitoring;;
-        "4"|e)  sites_manage;;
-        "5"|l)  hosts_web;;
-        "6"|g)  push_service;;
-        "7"|i)  hosts_tasks; POOL_SERVER_LIST=;;
+        #"1"|a)  hosts_manage; POOL_SERVER_LIST=;;
+        #"2"|c)  localhost_manage;;
+        #"3"|d)  hosts_monitoring;;
+        #"4"|e)  sites_manage;;
+        #"5"|l)  hosts_web;;
+        #"6"|g)  push_service;;
+        #"7"|i)  hosts_tasks; POOL_SERVER_LIST=;;
         0|z)  exit;;
         *)    error_pick;;
       esac
@@ -294,7 +291,6 @@ menu_server_list(){
     fi
  done
 }
-
 
 # action part
 menu_server_list

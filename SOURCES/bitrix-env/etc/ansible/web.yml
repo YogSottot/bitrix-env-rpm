@@ -2,9 +2,8 @@
 # This playbook manage web servers on bitrix-hosts hosts
 - hosts: bitrix-hosts
   any_errors_fatal: true
-
-# you can modify role by setting manage_web to:
-# update - update settings for all web servers
+  # you can modify role by setting manage_web to:
+  # update - update settings for all web servers
   vars:
     manage_web: NOT_DEFINED
     new_web_server: NOT_DEFINED
@@ -43,6 +42,5 @@
 - hosts: bitrix-hosts
   vars:
     cache_directory: /opt/webdir/tmp
-
   roles:
     - cleaner

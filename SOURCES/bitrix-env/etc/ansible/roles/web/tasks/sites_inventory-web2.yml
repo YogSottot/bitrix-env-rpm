@@ -41,5 +41,3 @@
     state: update
     group: web
   tags: ansible_hosts
-
-

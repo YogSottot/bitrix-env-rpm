@@ -16,5 +16,7 @@
 
 # configure modules by bvat
 - name: bitrix settings
-  service: name=bvat state=restarted
+  service:
+    name=bvat
+    state=restarted
   tags: php7

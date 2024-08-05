@@ -16,23 +16,30 @@ include bx/conf/im_subscrider.conf;
 # Deny external access to critical areas
 include bx/conf/bitrix_block.conf;
 
+# Fix xss on svg files in /upload/*
+location ~* ^/upload/.+\.svg$ {
+    add_header Content-Security-Policy "default-src 'none'; style-src 'unsafe-inline'; sandbox";
+}
+
 # Intenal locations
-location ^~ /upload/support/not_image	{ internal; }
+location ^~ /upload/support/not_image {
+    internal;
+}
 
 # scale location
 include bx/conf/bitrix_scale.conf;
 
 # Cache location: composite and general site
 location ~* @.*\.html$ {
-  internal;
-  # disable browser cache, php manage file
-  expires -1y;
-  add_header X-Bitrix-Composite "Nginx (file)";
+    internal;
+    # disable browser cache, php manage file
+    expires -1y;
+    add_header X-Bitrix-Composite "Nginx (file)";
 }
 
 # Player options, disable no-sniff
 location ~* ^/bitrix/components/bitrix/player/mediaplayer/player$ {
-  add_header Access-Control-Allow-Origin *;
+    add_header Access-Control-Allow-Origin *;
 }
 
 # Process dav request on
@@ -41,71 +48,79 @@ location ~* ^/bitrix/components/bitrix/player/mediaplayer/player$ {
 # additional departments
 # locations that ends with / => directly to apache 
 location ~ ^(/[^/]+)?(/docs|/workgroups|/company/profile|/bitrix/tools|/company/personal/user|/mobile/webdav|/contacts/personal).*/$ {
-  proxy_pass $proxyserver;
+    proxy_pass $proxyserver;
 }
 
 # Add / to request
 location ~ ^(/[^/]+)?(/docs|/workgroups|/company/profile|/bitrix/tools|/company/personal/user|/mobile/webdav|/contacts/personal) {
-
-  set $addslash "";
-  if (-d $request_filename)   { set $addslash "${addslash}Y"; }
-  if ($is_args != '?')    { set $addslash "${addslash}Y"; }
-  if ($addslash = "YY" )    { proxy_pass $proxyserver$request_uri/; }
-
-  proxy_pass $proxyserver;
+    set $addslash "";
+    if (-d $request_filename) {
+	set $addslash "${addslash}Y";
+    }
+    if ($is_args != '?') {
+	set $addslash "${addslash}Y";
+    }
+    if ($addslash = "YY" ) {
+	proxy_pass $proxyserver$request_uri/;
+    }
+    proxy_pass $proxyserver;
 }
 
 # Accept access for merged css and js
 location ~* ^/bitrix/cache/(css/.+\.css|js/.+\.js)$ {
-  expires 30d; 
-  error_page 404 /404.html;
+    expires 30d;
+    error_page 404 /404.html;
 }
 
 # Disable access for other assets in cache location
-location ~* ^/bitrix/cache		{ deny all; }
+location ~* ^/bitrix/cache {
+    deny all;
+}
 
 # Excange and Outlook
-location ~ ^/bitrix/tools/ws_.*/_vti_bin/.*\.asmx$	{ proxy_pass $proxyserver; }
+location ~ ^/bitrix/tools/ws_.*/_vti_bin/.*\.asmx$ {
+    proxy_pass $proxyserver;
+}
 
 # Groupdav
-location ^~ /bitrix/groupdav.php 			{ proxy_pass $proxyserver; }
+location ^~ /bitrix/groupdav.php {
+    proxy_pass $proxyserver;
+}
 
 # Use nginx to return static content from s3 cloud storage
 # /upload/bx_cloud_upload/<schema>.<backet_name>.<s3_point>.amazonaws.com/<path/to/file>
 location ^~ /upload/bx_cloud_upload/ {
-	# Amazon
-    location ~ ^/upload/bx_cloud_upload/(http[s]?)\.([^/:\s]+)\.(s3|us-east-2|us-east-1|us-west-1|us-west-2|af-south-1|ap-east-1|ap-south-1|ap-northeast-3|ap-northeast-2|ap-southeast-1|ap-southeast-2|ap-northeast-1|ca-central-1|cn-north-1|cn-northwest-1|eu-central-1|eu-west-1|eu-west-2|eu-south-1|eu-west-3|eu-north-1|me-south-1|sa-east-1)\.amazonaws\.com/([^\s]+)$ {
-        internal;
-        resolver 8.8.8.8 ipv6=off;
-        proxy_method GET;
-        proxy_set_header	X-Real-IP		$remote_addr;
-        proxy_set_header	X-Forwarded-For		$proxy_add_x_forwarded_for;
-        proxy_set_header	X-Forwarded-Server	$host;
-        #proxy_max_temp_file_size 0;
-        more_clear_input_headers 'Authorization';
-        proxy_set_header "cookie" "";
-        proxy_set_header "content-type" "";
-        proxy_set_header "content-length" "";
-        proxy_pass $1://$2.$3.amazonaws.com/$4;
-    }
-
-	# Rackspace
-    location ~ ^/upload/bx_cloud_upload/(http[s]?)\.([^/:\s]+)\.([^/:\s]+)\.([^/:\s]+)\.rackcdn\.com/([^\s]+)$ {
-        internal;
-        resolver 8.8.8.8 ipv6=off;
-        proxy_method GET;
+    # Amazon
+    location ~ ^/upload/bx_cloud_upload/(http[s]?)\.([^/:\s]+)\.(s3|af-south-1|ap-east-1|ap-south-1|ap-south-2|ap-southeast-1|ap-southeast-2|ap-southeast-3|ap-southeast-4|ap-northeast-1|ap-northeast-2|ap-northeast-3|ca-central-1|ca-west-1|cn-north-1|cn-northwest-1|eu-central-1|eu-central-2|eu-west-1|eu-west-2|eu-west-3|eu-south-1|eu-south-2|eu-north-1|il-central-1|me-south-1|me-central-1|sa-east-1|us-east-1|us-east-2|us-west-1|us-west-2|us-gov-east-1|us-gov-west-1)\.amazonaws\.com/([^\s]+)$ {
+	internal;
+	resolver 8.8.8.8 ipv6=off;
+	proxy_method GET;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Server $host;
-        more_clear_input_headers 'Authorization';
-        proxy_set_header "cookie" "";
-        proxy_set_header "content-type" "";
-        proxy_set_header "content-length" "";
-        #proxy_max_temp_file_size 0;
-        proxy_pass $1://$2.$3.$4.rackcdn.com/$5;
+	proxy_set_header X-Forwarded-Server $host;
+	#proxy_max_temp_file_size 0;
+	more_clear_input_headers 'Authorization';
+	proxy_set_header "cookie" "";
+	proxy_set_header "content-type" "";
+	proxy_set_header "content-length" "";
+	proxy_pass $1://$2.$3.amazonaws.com/$4;
     }
-
-	# Clodo
+    # Rackspace
+    location ~ ^/upload/bx_cloud_upload/(http[s]?)\.([^/:\s]+)\.([^/:\s]+)\.([^/:\s]+)\.rackcdn\.com/([^\s]+)$ {
+	internal;
+	resolver 8.8.8.8 ipv6=off;
+	proxy_method GET;
+	proxy_set_header X-Real-IP $remote_addr;
+	proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+	proxy_set_header X-Forwarded-Server $host;
+	more_clear_input_headers 'Authorization';
+	proxy_set_header "cookie" "";
+	proxy_set_header "content-type" "";
+	proxy_set_header "content-length" "";
+	#proxy_max_temp_file_size 0;
+	proxy_pass $1://$2.$3.$4.rackcdn.com/$5;
+    }
+    # Clodo
     location ~ ^/upload/bx_cloud_upload/(http[s]?)\.([^/:\s]+)\.clodo\.ru\:(80|443)/([^\s]+)$ {
         internal;
         resolver 8.8.8.8 ipv6=off;
@@ -120,8 +135,7 @@ location ^~ /upload/bx_cloud_upload/ {
         #proxy_max_temp_file_size 0;
         proxy_pass $1://$2.clodo.ru:$3/$4;
     }
-
-	# Google
+    # Google
     location ~ ^/upload/bx_cloud_upload/(http[s]?)\.([^/:\s]+)\.commondatastorage\.googleapis\.com/([^\s]+)$ {
         internal;
         resolver 8.8.8.8 ipv6=off;
@@ -136,8 +150,7 @@ location ^~ /upload/bx_cloud_upload/ {
         #proxy_max_temp_file_size 0;
         proxy_pass $1://$2.commondatastorage.googleapis.com/$3;
     }
-
-	# Selectel
+    # Selectel
     location ~ ^/upload/bx_cloud_upload/(http[s]?)\.([^/:\s]+)\.selcdn\.ru/([^\s]+)$ {
         internal;
         resolver 8.8.8.8 ipv6=off;
@@ -152,9 +165,8 @@ location ^~ /upload/bx_cloud_upload/ {
         #proxy_max_temp_file_size 0;
         proxy_pass $1://$2.selcdn.ru/$3;
     }
-
-	# Yandex
-	location ~ ^/upload/bx_cloud_upload/(http[s]?)\.([^/:\s]+)\.storage\.yandexcloud\.net/([^\s]+)$ {
+    # Yandex
+    location ~ ^/upload/bx_cloud_upload/(http[s]?)\.([^/:\s]+)\.storage\.yandexcloud\.net/([^\s]+)$ {
         internal;
         resolver 8.8.8.8 ipv6=off;
         proxy_method GET;
@@ -168,8 +180,7 @@ location ^~ /upload/bx_cloud_upload/ {
         #proxy_max_temp_file_size 0;
         proxy_pass $1://$2.storage.yandexcloud.net/$3;
     }
-
-	# Yandex second option
+    # Yandex second option
     location ~ ^/upload/bx_cloud_upload/(http[s]?)\.storage\.yandexcloud\.net/([^\s].+)$ {
         internal;
         resolver 8.8.8.8 ipv6=off;
@@ -184,8 +195,7 @@ location ^~ /upload/bx_cloud_upload/ {
         proxy_set_header "content-length" "";
         proxy_pass $1://storage.yandexcloud.net/$2;
     }
-
-	# HotBox
+    # HotBox
     location ~ ^/upload/bx_cloud_upload/(http[s]?)\.([^/:\s]+)\.hb\.bizmrg\.com/([^\s]+)$ {
         internal;
         resolver 8.8.8.8 ipv6=off;
@@ -215,7 +225,7 @@ location ^~ /upload/bx_cloud_upload/ {
         proxy_set_header "content-length" "";
         proxy_pass $1://hb.bizmrg.com/$2;
     }
-	# Clodo.ru
+    # Clodo.ru
     location ~ ^/upload/bx_cloud_upload/(http[s]?)\.([^/:\s]+)\.clodo\.ru/([^\s]+)$ {
         internal;
         resolver 8.8.8.8 ipv6=off;
@@ -230,42 +240,44 @@ location ^~ /upload/bx_cloud_upload/ {
         proxy_set_header "content-length" "";
         proxy_pass $1://$2.clodo.ru/$3;
     }
-
-    location ~* .*$	{ deny all; }
+    location ~* .*$ {
+	deny all;
+    }
 }
 
 # Static content
 location ~* ^/(upload|bitrix/images|bitrix/tmp) { 
-  if ( $upstream_http_x_accel_redirect = ''  ) {
-          expires 30d;
-  }
+    if ( $upstream_http_x_accel_redirect = '' ) {
+	expires 30d;
+    }
 }
 
 location  ~* \.(css|js|gif|png|jpg|jpeg|ico|ogg|ttf|woff|eot|otf|svg|woff2|mp3|mp4|avi|flv|tar|gz|zip|rar|map|wav|7z)$ {
-  error_page 404 /404.html;
-  expires 30d;
+    error_page 404 /404.html;
+    expires 30d;
 }
 
 # Nginx server status page
 location ^~ /nginx-status {
-  stub_status on;
-  allow 127.0.0.0/24;
-  deny all;
+    stub_status on;
+    allow 127.0.0.0/24;
+    deny all;
 }
 
 # pub & online
 # telephony and voximplant
 location ~* ^/(pub/|online/|services/telephony/info_receiver.php|/bitrix/tools/voximplant/) {
-
     add_header X-Frame-Options '' always;
     location ~* ^/(pub/imconnector/|pub/imbot.php|services/telephony/info_receiver.php|bitrix/tools/voximplant/) {
-        proxy_ignore_client_abort on;
-        proxy_pass $proxyserver;
+	proxy_ignore_client_abort on;
+	proxy_pass $proxyserver;
     }
-
     proxy_pass $proxyserver;
 }
 
 # Bitrix setup script
-location ^~ ^(/bitrixsetup\.php)$ { proxy_pass $proxyserver; proxy_buffering off; }
+location ^~ ^(/bitrixsetup\.php)$ {
+    proxy_pass $proxyserver;
+    proxy_buffering off;
+}
 

@@ -1,3 +1,5 @@
+#!/usr/bin/bash
+#
 BASE_DIR=/opt/webdir
 BIN_DIR=$BASE_DIR/bin
 
@@ -24,8 +26,8 @@ site_menu_fnc=$site_menu_dir/functions.sh
 # SPHINX_SERVERS_CN
 # NOSPHINX_SERVERS - list of servers whithout
 # NOSPHINX_SERVERS_CN - 
-get_sphinx_servers_status(){
-    [[ -z "$POOL_SERVER_LIST"  ]] && cache_pool_info
+get_sphinx_servers_status() {
+    [[ -z "$POOL_SERVER_LIST" ]] && cache_pool_info
 
     [[ $DEBUG -gt 0 ]] && \
         echo "POOL_SERVER_LIST=$POOL_SERVER_LIST"
@@ -57,7 +59,7 @@ get_sphinx_servers_status(){
     IFS_BAK=
 }
 
-cache_sphinx_servers_status(){
+cache_sphinx_servers_status() {
     SPHINX_SERVERS=
     SPHINX_SERVERS_CN=0
     NOSPHINX_SERVERS=
@@ -85,8 +87,7 @@ cache_sphinx_servers_status(){
     fi
 }
 
-
-print_sphinx_servers_status(){
+print_sphinx_servers_status() {
     local type=${1:-all}
 
     cache_sphinx_servers_status
@@ -131,5 +132,3 @@ print_sphinx_servers_status(){
     IFS_BAK=
     echo $MENU_SPACER
 }
-
-

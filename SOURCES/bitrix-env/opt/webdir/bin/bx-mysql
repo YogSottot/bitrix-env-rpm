@@ -1,10 +1,12 @@
 #!/usr/bin/perl
+#
 # start ansible playbook for:
 # 1. add slave server
 # 2. remove slave server
 # 3. change master
 # 4. view server status
 # this script is wrapper for ansible playbook ( we need json output for web-interface)
+#
 use strict;
 use warnings;
 
@@ -84,15 +86,15 @@ if ( $o_action eq "status" ) {
 elsif ( $o_action eq "list" ) {
     $confMysql = $confPool->serverList();
 }
-elsif ( $o_action eq "slave" ) {
-    $confMysql = $confPool->slave($o_mysql_server);
-}
-elsif ( $o_action eq "master" ) {
-    $confMysql = $confPool->master($o_mysql_server);
-}
-elsif ( $o_action eq "remove" ) {
-    $confMysql = $confPool->remove($o_mysql_server);
-}
+#elsif ( $o_action eq "slave" ) {
+#    $confMysql = $confPool->slave($o_mysql_server);
+#}
+#elsif ( $o_action eq "master" ) {
+#    $confMysql = $confPool->master($o_mysql_server);
+#}
+#elsif ( $o_action eq "remove" ) {
+#    $confMysql = $confPool->remove($o_mysql_server);
+#}
 elsif ( $o_action eq "update" ) {
     $confMysql = $confPool->update();
 }

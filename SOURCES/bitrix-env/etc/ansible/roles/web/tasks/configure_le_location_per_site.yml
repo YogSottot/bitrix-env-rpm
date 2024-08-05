@@ -30,4 +30,3 @@
     insertbefore: "bx/conf/bitrix"
     line: "include bx/conf/letsencrypt-challenge-tokens.conf;"
   with_items: "{{ bx_sites_info }}"
-

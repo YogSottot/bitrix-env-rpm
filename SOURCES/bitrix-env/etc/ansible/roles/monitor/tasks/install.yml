@@ -82,7 +82,4 @@
     state: update 
     notify_nagios: "{{ notify_nagios }}"
     monitor_email: "{{ monitor_email }}"
-  when: notify_nagios is defined 
-    and notify_nagios 
-    and inventory_hostname == monitoring_server
-
+  when: notify_nagios is defined and notify_nagios and inventory_hostname == monitoring_server

@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+#
 # generate mysql vars
 # input: super_login, super_password, cluster_login, cluster_password, replica_login, replica_password
 
@@ -112,4 +113,3 @@ sub parse_ansible_argv {
   
   return [ 0, $r ];
 }
-

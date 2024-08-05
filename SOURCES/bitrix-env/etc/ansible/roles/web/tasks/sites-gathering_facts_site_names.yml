@@ -2,7 +2,10 @@
 # get info about site installed on localhost
 # save info to: bx_sites_info
 - name: gathering facts about installed sites
-  bx_facts: name=list password=0 site="{{ sites_filter }}"
+  bx_facts:
+    name=list
+    password=0
+    site="{{ sites_filter }}"
   delegate_to: "{{ cluster_web_server }}"
   tags: gathering_facts
 
@@ -10,4 +13,3 @@
   set_fact:
     bx_sites_info: "{{ hostvars[inventory_hostname]['bx_sites'] }}"
   tags: gathering_facts
-

@@ -26,4 +26,3 @@ bx_netname: {{ host_netname }}
 #  The interface where the all servers listen: nrpe, mysql and other
 iface: {{ local_interface }}
 ifaddr: {{ host_ip_address }}
-

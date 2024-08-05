@@ -1,10 +1,16 @@
 ---
 ## restart mysql servers
 - name: restart mysqld
-  service: name=mysqld state=restarted
+  service:
+    name=mysqld
+    state=restarted
 
 - name: restart mariadb
-  service: name=mariadb state=restarted
+  service:
+    name=mariadb
+    state=restarted
 
 - name: restart httpd
-  service: name=httpd state=restarted
+  service:
+    name=httpd
+    state=restarted

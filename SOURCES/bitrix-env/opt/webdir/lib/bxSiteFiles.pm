@@ -167,11 +167,12 @@ sub bx_test_mysql_opts {
     if ( $sth->execute ) {
         while ( my $row = $sth->fetchrow_hashref() ) {
             my $create_db_str = $row->{'Create Database'};
-            if ( $create_db_str =~ /\s+cp1251\s+/ ) {
-                $bx_options->{'SiteCharset'} =
-                    'windows-1251';
-                }
-            elsif ( $create_db_str =~ /\s+utf8\s+/ ) {
+#            if ( $create_db_str =~ /\s+cp1251\s+/ ) {
+#                $bx_options->{'SiteCharset'} =
+#                    'windows-1251';
+#                }
+#            elsif ( $create_db_str =~ /\s+utf8\s+/ ) {
+	    if ( $create_db_str =~ /\s+utf8\s+/ ) {
                 $bx_options->{'SiteCharset'} = 'utf-8';
             }
             else {

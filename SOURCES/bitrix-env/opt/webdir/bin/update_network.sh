@@ -1,6 +1,8 @@
-#!/bin/bash
+#!/usr/bin/bash
+#
 # send info with new network settings on client
 # script used like ifup-local, we will create symblic link on it
+#
 export LANG=en_US.UTF-8
 export TERM=linux
 PROGNAME=$(basename $0)
@@ -16,13 +18,7 @@ LOGS_FILE=$LOGS_DIR/update_network.log
 CLIENT_CONFIG=/etc/ansible/ansible-roles
 bx_network_script=$BASE_DIR/bin/bx-node
 
-# change issue message (that used in login screen)
-update_issue(){
-    /opt/webdir/bin/bx_motd > /etc/issue.new 2>/dev/null
-    mv -f /etc/issue.new /etc/issue
-}
-
-update_interface_in_pool(){
+update_interface_in_pool() {
     # get current host ip address
     # ex.
     # /opt/webdir/bin/bx-node -a ip -i eth1
@@ -71,8 +67,7 @@ update_interface_in_pool(){
     fi
 }
 
-update_system_settings(){
-
+update_system_settings() {
     [[ $IN_POOL -eq 0 ]] && exit 1
     if [[ ( ! -f /etc/cron.d/bx_network_updater ) || \
         ( $(grep -c "/opt/webdir/bin/update_network.sh" \
@@ -87,12 +82,11 @@ update_system_settings(){
         print_log "Add /opt/webdir/bin/update_network.sh to /etc/rc.local" $LOGS_FILE
     fi
     exit 0
-
 }
+
 # exit if not client
 [[ ! -f $CLIENT_CONFIG ]] && exit 0
 INTERFACE=$1			# interface name, while ifup system get it to the script
-
 
 # get client info from config file
 # variables CLIENT_ID, CLIENT_PASSWD, CLIENT_INT, CLIENT_IP
@@ -114,4 +108,3 @@ else
     # test current setings and update pool
     update_interface_in_pool
 fi
-

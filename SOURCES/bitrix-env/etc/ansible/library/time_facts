@@ -1,100 +1,86 @@
-#!/bin/bash
+#!/usr/bin/bash
+#
 # get info about time zone and ntpd status
 # options:
 # action=status
+#
 export LANG="en_US.UTF-8"
 
-CFG_SYSCLOCK="/etc/sysconfig/clock" # file controls the interpretation of values read from the system hardware clock
-CFG_LOCALTIME="/etc/localtime"      # file configures the system-wide timezone of the local system
-                                    # that is used by applications for presentation to the user
-TZ_DB="/usr/share/zoneinfo"         # standart path for timezone database
-
-TZ_DEFAULT="UTC"          # default timezone ( use if not found the settings in the system )
-
-CFG_PHP="/etc/php.d/bitrixenv.ini"   # bitrixenv php file
+CFG_SYSCLOCK="/etc/sysconfig/clock"    # file controls the interpretation of values read from the system hardware clock
+CFG_LOCALTIME="/etc/localtime"         # file configures the system-wide timezone of the local system that is used by applications for presentation to the user
+TZ_DB="/usr/share/zoneinfo"            # standart path for timezone database
+TZ_DEFAULT="UTC"                       # default timezone ( use if not found the settings in the system )
+CFG_PHP="/etc/php.d/bitrixenv.ini"     # bitrixenv php file
 
 # get config form sysconfig
 get_current_timezone_from_clock() {
-  TZ_CLOCK=""
-  if [[ -f $CFG_SYSCLOCK ]]; then
-    TZ_CLOCK=$(grep -v '^#\|^$' $CFG_SYSCLOCK | awk -F'=' '/ZONE=/{print $2}' | sed -e "s:[\"\' ]::g" )
-  else
-    TZ_CLOCK="SYSCLOCK_NOT_FOUND"
-  fi
-
-  echo -n $TZ_CLOCK
-
+    TZ_CLOCK=""
+    if [[ -f $CFG_SYSCLOCK ]]; then
+	TZ_CLOCK=$(grep -v '^#\|^$' $CFG_SYSCLOCK | awk -F'=' '/ZONE=/{print $2}' | sed -e "s:[\"\' ]::g" )
+    else
+	TZ_CLOCK="SYSCLOCK_NOT_FOUND"
+     fi
+    echo -n $TZ_CLOCK
 }
 
 # get current timezone from localtime
 get_current_timzone() {
-
-  TZ_TIME=""
-
-  # link
-  if [[ -L $CFG_LOCALTIME ]]; then
-    TZ_TIME=$(readlink -f $CFG_LOCALTIME | sed -e "s:^$TZ_DB/::")
-  else
-    # file
-    if [[ -f $CFG_LOCALTIME ]]; then
-      MD5_LOCALTIME="$(md5sum $CFG_LOCALTIME | awk '{print $1}')"
-
-      # check the md5sum of all files in a directory
-      while read LINE; do
-        MD5_FOUND="$(md5sum "${LINE}" | awk '{print $1}')"
-        #echo ${LINE} ${MD5_FOUND}
-
-        if [[ "${MD5_LOCALTIME}" == "${MD5_FOUND}" ]]; then
-          TZ_TIME=$(echo "${LINE}" | sed -e "s:^$TZ_DB/::" )
-        fi
-
-      done < <( find $TZ_DB -type f )
-
-      # if not found
-      [[ -z "$TZ_TIME" ]] && TZ_TIME="LOCALTIME_NOT_FOUND"
-
-    # not exists
+    TZ_TIME=""
+    # link
+    if [[ -L $CFG_LOCALTIME ]]; then
+	TZ_TIME=$(readlink -f $CFG_LOCALTIME | sed -e "s:^$TZ_DB/::")
     else
-      TZ_TIME="LOCALTIME_NOT_FOUND"
+    # file
+	if [[ -f $CFG_LOCALTIME ]]; then
+	    MD5_LOCALTIME="$(md5sum $CFG_LOCALTIME | awk '{print $1}')"
+	    # check the md5sum of all files in a directory
+	    while read LINE; do
+		MD5_FOUND="$(md5sum "${LINE}" | awk '{print $1}')"
+		#echo ${LINE} ${MD5_FOUND}
+		if [[ "${MD5_LOCALTIME}" == "${MD5_FOUND}" ]]; then
+		    TZ_TIME=$(echo "${LINE}" | sed -e "s:^$TZ_DB/::" )
+		fi
+	    done < <( find $TZ_DB -type f )
+	    # if not found
+	    [[ -z "$TZ_TIME" ]] && TZ_TIME="LOCALTIME_NOT_FOUND"
+	    # not exists
+	else
+	    TZ_TIME="LOCALTIME_NOT_FOUND"
+	fi
     fi
-  fi
-
-  echo -n $TZ_TIME
+    echo -n $TZ_TIME
 }
 
 # get tz from bitrixenv
 get_php_tz() {
-  PHP_TZ=""
-  if [[ -f $CFG_PHP ]]; then
-    PHP_TZ=$(grep '^date.timezone' $CFG_PHP | awk -F'=' '{print $2}' | sed -s 's/^\s\+//;s/\s\+$//')
-  fi
-  if [[ -z "$PHP_TZ" ]]; then
-    echo "not_defined"
-  else
-    echo $PHP_TZ
-  fi
+    PHP_TZ=""
+    if [[ -f $CFG_PHP ]]; then
+	PHP_TZ=$(grep '^date.timezone' $CFG_PHP | awk -F'=' '{print $2}' | sed -s 's/^\s\+//;s/\s\+$//')
+    fi
+    if [[ -z "$PHP_TZ" ]]; then
+	echo "not_defined"
+    else
+	echo $PHP_TZ
+    fi
 }
-
 
 # print error message
 print_error() {
-  msg=$1
-  echo "{\"changed\":false,\"failed\":true,\"msg\":\"$msg\"}"
-  exit 1
+    msg=$1
+    echo "{\"changed\":false,\"failed\":true,\"msg\":\"$msg\"}"
+    exit 1
 }
 
 # print timezone info
 print_message() {
-  tz=$1
-  tz_php=$2
-  changed=$3
-  default=$4
-
-  [[ -z "$changed" ]] && changed="false"
-  [[ -z "$default" ]] && default="false"
-
-  echo "{\"changed\":$changed,\"ansible_facts\":{\"tz\":\"$tz\",\"tz_php\":\"$tz_php\",\"tz_default\":$default}}"
-  exit 0
+    tz=$1
+    tz_php=$2
+    changed=$3
+    default=$4
+    [[ -z "$changed" ]] && changed="false"
+    [[ -z "$default" ]] && default="false"
+    echo "{\"changed\":$changed,\"ansible_facts\":{\"tz\":\"$tz\",\"tz_php\":\"$tz_php\",\"tz_default\":$default}}"
+    exit 0
 }
 
 # get ansible options
@@ -106,18 +92,17 @@ source ${1}
 
 # start process
 case $action in
-"status")
-  TZ1=$(get_current_timzone)
-  TZ2=$(get_current_timezone_from_clock)
-  TZ_PHP=$(get_php_tz)
-  
-  # test if TZ found
-  [[ $( echo "$TZ1" | grep -c 'NOT_FOUND') -eq 0 ]] && print_message "$TZ1" "$TZ_PHP"
-  [[ $( echo "$TZ2" | grep -c 'NOT_FOUND') -eq 0 ]] && print_message "$TZ2" "$TZ_PHP"
-  print_message "$TZ_DEFAULT" "$TZ_PHP" "" "true"
-;;
-*)
-  print_error "Option action=$action is not valid"
-;;
+    "status")
+	TZ1=$(get_current_timzone)
+	TZ2=$(get_current_timezone_from_clock)
+	TZ_PHP=$(get_php_tz)
+	# test if TZ found
+	[[ $( echo "$TZ1" | grep -c 'NOT_FOUND') -eq 0 ]] && print_message "$TZ1" "$TZ_PHP"
+	[[ $( echo "$TZ2" | grep -c 'NOT_FOUND') -eq 0 ]] && print_message "$TZ2" "$TZ_PHP"
+	print_message "$TZ_DEFAULT" "$TZ_PHP" "" "true"
+    ;;
+    *)
+	print_error "Option action=$action is not valid"
+    ;;
 esac
 

@@ -1,7 +1,7 @@
-#!/bin/bash
-
+#!/usr/bin/bash
+#
 file=perf.csv
-
+#
 # general
 IFS_BAK=$IFS
 IFS=$IFS_BAK

@@ -1,12 +1,12 @@
-#!/bin/bash
+#!/usr/bin/bash
+#
 # create information about system
- 
+#
 SETCOLOR_GREEN="echo -en \\033[1;32m"
 SETCOLOR_RED="echo -en \\033[1;31m"
 SETCOLOR_NORMAL="echo -en \\033[0;39m"
  
-SYSTEM_INTERFACES=$(ip link show | egrep -o '^[0-9]+:\s+\S+' | \
-  awk '{print $2}' | sed -e 's/://g;s/\s\+//g;' | grep -v '^lo$' | sort)
+SYSTEM_INTERFACES=$(ip link show | egrep -o '^[0-9]+:\s+\S+' | awk '{print $2}' | sed -e 's/://g;s/\s\+//g;' | grep -v '^lo$' | sort)
 SYSTEM_INTERFACES_COUNT=$(echo "$SYSTEM_INTERFACES" | wc -l)
 
 SYSTEM_HOSTNAME=$(hostname)
@@ -14,8 +14,7 @@ SYSTEM_KERNEL=$(uname -r)
 SYSTEM_MEMORY=$(grep MemTotal /proc/meminfo | awk {'printf "%s kB", $2'})
 SYSTEM_CPU=$(grep 'model name' /proc/cpuinfo | sed -e 's/model name\s*:\s*//' | head -1)
 SYSTEM_CPU_COUNT=$(grep 'model name' -c /proc/cpuinfo )
-SYSTEM_BX_VERSION=$(egrep -o "BITRIX_VA_VER=\S+" /root/.bash_profile | \
- awk -F"=" '{print $2}' | sed -e 's/"//g' )
+SYSTEM_BX_VERSION=$(egrep -o "BITRIX_VA_VER=\S+" /root/.bash_profile | awk -F"=" '{print $2}' | sed -e 's/"//g' )
 SYSTEM_OS=$(cat /etc/redhat-release)
 
 ROOTPASSWORD=/root/ROOT_PASSWORD
@@ -42,18 +41,15 @@ if [[ $SYSTEM_INTERFACES_COUNT -gt 0 ]]; then
         $SETCOLOR_NORMAL
 
         interface_info=$(ip addr show $int)
-        ether_addr=$(echo "$interface_info" | \
-            egrep -o "ether\s+\S+" | awk '{print $2}')
-        inet4_addr=$(echo "$interface_info" | \
-            egrep -o "inet\s+\S+" | sed -e 's/^inet\s\+//;s:/[0-9]\+$::;')
+        ether_addr=$(echo "$interface_info" | egrep -o "ether\s+\S+" | awk '{print $2}')
+        inet4_addr=$(echo "$interface_info" | egrep -o "inet\s+\S+" | sed -e 's/^inet\s\+//;s:/[0-9]\+$::;')
         [[ -z "$ether_addr" ]] && ether_addr="undefined"
         [[ -z "$inet4_addr" ]] && inet4_addr="undefined"
         echo "              MAC: $ether_addr" 
         echo "              IP4: $inet4_addr"
         echo
 
-        if [[ ( $inet4_addr != "undefined" ) && \
-            ( -z $FIRST_IP ) ]]; then
+        if [[ ( $inet4_addr != "undefined" ) && ( -z $FIRST_IP ) ]]; then
             FIRST_IP=$inet4_addr
         fi
     done
@@ -62,10 +58,12 @@ $SETCOLOR_RED
 echo "+++++++++++++++++: Options :+++++++++++++++++++"
 $SETCOLOR_NORMAL
 if [[ -f $ROOTPASSWORD ]]; then
-    echo "    root password: $(cat $ROOTPASSWORD)"
     $SETCOLOR_RED
-    echo "You have to change it at next logon!!!!"
+    echo "--------------------------------------------"
+    echo "You must change the password at next login."
+    echo "--------------------------------------------"
     $SETCOLOR_NORMAL
+    echo "    root password: $(cat $ROOTPASSWORD)"
 fi
 
 if [[ -n $FIRST_IP ]]; then
@@ -73,4 +71,3 @@ if [[ -n $FIRST_IP ]]; then
     echo "       bitrix url: http://$FIRST_IP/"
     $SETCOLOR_NORMAL
 fi
-

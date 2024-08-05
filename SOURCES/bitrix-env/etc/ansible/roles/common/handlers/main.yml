@@ -1,18 +1,26 @@
 ---
 # restart network
 - name: restart network
-  service: name=network state=restarted
+  service:
+    name=network
+    state=restarted
   tags: service
 
 - name: restart nginx
-  service: name=nginx state=restarted
+  service:
+    name=nginx
+    state=restarted
   tags: service
 
 - name: restart httpd
-  service: name=httpd state=restarted
+  service:
+    name=httpd
+    state=restarted
   tags: httpd
 
 - name: restart mysqld
-  service: name=mysqld state=restarted
+  service:
+    name=mysqld
+    state=restarted
   tags: mysqld
 

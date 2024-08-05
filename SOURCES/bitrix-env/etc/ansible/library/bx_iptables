@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/usr/bin/bash
+#
 #   get iptables status
 #   
 export LANG=en_EN.UTF-8
@@ -10,12 +11,11 @@ MYSQL_CNF=/root/.my.cnf
 TMP_DIR=/opt/webdir/tmp
 [[ ! -d $TMP_DIR ]] && mkdir -m 700 $TMP_DIR
 LOG_FILE=$TMP_DIR/bx_iptables_$$.log
-debug(){
-    mess=$1
 
+debug() {
+    mess=$1
     [[ $DEBUG -gt 0 ]] && echo "$(date +%s) $mess" >> $LOG_FILE
 }
-
 
 check_iptables_status() {
     iptables_status='disabled'
@@ -34,32 +34,27 @@ check_iptables_status() {
     done
 
     # iptables working (stateless)
-    iptables -I INPUT -p tcp \
-        --dport $iptables_test_port -j ACCEPT > $iptables_tmp 2>&1
+    iptables -I INPUT -p tcp --dport $iptables_test_port -j ACCEPT > $iptables_tmp 2>&1
     if [[ $? -eq 0 ]]; then
         iptables_status='stateless'
-        iptables -D INPUT -p tcp \
-            --dport $iptables_test_port -j ACCEPT > $iptables_tmp 2>&1
+        iptables -D INPUT -p tcp --dport $iptables_test_port -j ACCEPT > $iptables_tmp 2>&1
     fi
 
     # iptables working (stateful)
     if [[ $iptables_status == "stateless" ]]; then
-        iptables -I INPUT -m state --state NEW \
-            -p tcp --dport $iptables_test_port -j ACCEPT > $iptables_tmp 2>&1
+        iptables -I INPUT -m state --state NEW -p tcp --dport $iptables_test_port -j ACCEPT > $iptables_tmp 2>&1
         if [[ $? -eq 0 ]]; then
             iptables_status='stateful'
-            iptables -D INPUT -m state --state NEW \
-                -p tcp --dport $iptables_test_port -j ACCEPT > $iptables_tmp 2>&1
+            iptables -D INPUT -m state --state NEW -p tcp --dport $iptables_test_port -j ACCEPT > $iptables_tmp 2>&1
         fi
     fi
     rm -f $iptables_tmp
 }
 
-check_firewalld_status(){
+check_firewalld_status() {
     firewalld_package="not_installed"
     firewalld_status="not_running"
     firewalld_bx_type="not_installed"
-
     firewalld_tmp=$(mktemp $TMP_DIR/firewalld.XXXXX)
     rpm -qi firewalld > $firewalld_tmp 2>&1
     if [[ $? -gt 0 ]]; then
@@ -67,7 +62,6 @@ check_firewalld_status(){
         return 0
     fi
     firewalld_package="installed"
-
     firewall-cmd --state > $firewalld_tmp 2>&1
     if [[ $? -gt 0 ]]; then
         rm -f $firewalld_tmp
@@ -82,7 +76,6 @@ check_firewalld_status(){
     fi
     rm -f $firewalld_tmp
 }
-
 
 debug "get iptables status"
 check_iptables_status

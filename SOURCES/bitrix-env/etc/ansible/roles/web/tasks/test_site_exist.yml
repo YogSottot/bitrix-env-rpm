@@ -5,7 +5,8 @@
 ####
 - name: check that site does not exist in configs
   delegate_to: "{{ cluster_web_server }}"
-  bx_test_site_in_config: search=server_name\s+{{ web_site_name }}
+  bx_test_site_in_config:
+    search=server_name\s+{{ web_site_name }}
   register: site_config_status
   tags: configure_site
 
@@ -30,4 +31,3 @@
   tags: configure_site
 ####
 ######## /testing input options - to avoid the situation with overwriting existing data
-

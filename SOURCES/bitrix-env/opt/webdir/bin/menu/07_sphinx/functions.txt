@@ -46,4 +46,3 @@ SPH0207="Cannot find Sphinx/searchd server __OPT1__ in the pool."
 SPH0208="Cannot find configured Sphinx/searchd services in the pool"
 # Не найдено подходящих серверов для настройки Sphinx службы
 SPH0209="No suitable servers were found to configure the Sphinx service"
-

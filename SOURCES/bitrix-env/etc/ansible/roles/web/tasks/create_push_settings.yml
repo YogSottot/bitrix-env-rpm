@@ -14,12 +14,14 @@
 - name: delete site configs
   bx_blockinfile: 
     insertafter='BEGIN GENERATED PUSH SETTINGS'
-    insertbefore='END GENERATED PUSH SETTINGS' state=delete
+    insertbefore='END GENERATED PUSH SETTINGS'
+    state=delete
     dest="{{ web_site_root_dir }}/bitrix/.settings.php"
 
 # add template data to the site config
 - name: create site configs
-  bx_blockinfile: from_file=/tmp/push-settings.php
+  bx_blockinfile:
+    from_file=/tmp/push-settings.php
     insertafter='return array'
     dest="{{ web_site_root_dir }}/bitrix/.settings.php"
 

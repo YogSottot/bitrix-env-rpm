@@ -61,10 +61,14 @@
   when: monitoring_status == 'enable'
 
 - name: remove pool information for child
-  file: path=/etc/ansible/ansible-roles state=absent
+  file:
+    path=/etc/ansible/ansible-roles
+    state=absent
   tags: pool_configuration
 
 - name: remove ansible key from root directory
-  lineinfile: dest=/root/.ssh/authorized_keys regexp="ANSIBLE_KEY_" state=absent
+  lineinfile:
+    dest=/root/.ssh/authorized_keys
+    regexp="ANSIBLE_KEY_"
+    state=absent
   tags: pool_configuration
-

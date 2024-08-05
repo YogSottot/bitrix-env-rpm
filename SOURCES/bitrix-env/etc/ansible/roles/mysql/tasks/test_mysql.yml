@@ -4,7 +4,10 @@
     proccess_sites: True
 
 - name: gathering facts about installed sites
-  bx_facts: name=list password=0 status=finished
+  bx_facts:
+    name=list
+    password=0
+    status=finished
   delegate_to: "{{ cluster_web_server }}"
   tags: gathering_facts
   ignore_errors: yes
@@ -23,4 +26,3 @@
 
 - debug: msg="False"
   when: proccess_sites
-

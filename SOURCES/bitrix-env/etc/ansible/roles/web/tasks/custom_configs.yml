@@ -19,8 +19,7 @@
     owner: bitrix
     group: bitrix
   loop: "{{ bx_sites_info }}"
-  when: item.SiteInstall != 'ext_kernel'
-    and item.nginx_custom_settings == 'off'
+  when: item.SiteInstall != 'ext_kernel' and item.nginx_custom_settings == 'off'
 
 - name: update nginx http-config
   blockinfile:
@@ -30,8 +29,7 @@
     path: "{{ item.NginxHTTPEDir }}/{{ item.NginxHTTPConfig }}"
     insertbefore: "Include parameters common to all website"
   loop: "{{ bx_sites_info }}"
-  when: item.SiteInstall != 'ext_kernel'
-    and item.nginx_custom_settings == 'off'
+  when: item.SiteInstall != 'ext_kernel' and item.nginx_custom_settings == 'off'
 
 - name: update nginx https-config
   blockinfile:
@@ -41,8 +39,7 @@
     path: "{{ item.NginxHTTPEDir }}/{{ item.NginxHTTPSConfig }}"
     insertbefore: "Include parameters common to all website"
   loop: "{{ bx_sites_info }}"
-  when: item.SiteInstall != 'ext_kernel'
-    and item.nginx_custom_settings == 'off'
+  when: item.SiteInstall != 'ext_kernel' and item.nginx_custom_settings == 'off'
 
 - name: create custom nginx config bx_temp_files
   template:
@@ -51,9 +48,7 @@
     owner: bitrix
     group: bitrix
   loop: "{{ bx_sites_info }}"
-  when: option == 'dbconn_temp_files'
-    and item.SiteInstall != 'ext_kernel'
-    and item.nginx_bx_temp_files == 'off'
+  when: option == 'dbconn_temp_files' and item.SiteInstall != 'ext_kernel' and item.nginx_bx_temp_files == 'off'
 
 - name: create BX_TEMPORARY_FILES_DIRECTORY directory
   file:
@@ -79,8 +74,7 @@
     path: "{{ item.DocumentRoot }}/bitrix/php_interface/dbconn.php"
     line: "define(\"BX_TEMPORARY_FILES_DIRECTORY\", \"/home/bitrix/.bx_temp/{{ item.DBName }}/\");"
     insertbefore: 'BX_FILE_PERMISSIONS'
-  when: option == 'dbconn_temp_files' 
-    and item.dbconn_BX_TEMPORARY_FILES_DIRECTORY == ''
+  when: option == 'dbconn_temp_files' and item.dbconn_BX_TEMPORARY_FILES_DIRECTORY == ''
   loop: "{{ bx_sites_info }}"
 
 - name: reload nginx

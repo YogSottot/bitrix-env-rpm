@@ -13,12 +13,10 @@ use Pool;
 use Host;
 use bxDaemon;
 
-
 # basic path for site
 has 'config', is => 'ro', default => '/etc/ansible/group_vars/bitrix-sphinx.yml';
 has 'group', is => 'ro', default => 'sphinx';
 has 'debug', is => 'rw', default => '0';
-
 
 # get default options from group
 sub groupOptions{
@@ -63,7 +61,6 @@ sub groupOptions{
     data  => [$message_t, $group_options]
   );
 }
-
 
 ## get server options 
 sub serverOptions{
@@ -169,103 +166,103 @@ sub serverList{
 }
 
 ## create sphinx service on the server
-# input: 
+# input:
 # hostname in pool - host ip address
 # *password options mandatory, but can be defined inf config file
-sub createSphinx{
-  my ($self, $server_name, $dbname, $reindex) = @_;
-
-  my $message_p = (caller(0))[3];
-  my $message_t = __PACKAGE__;
-  my $group = $self->group;
-
-  ( $server_name ) or 
-    return Output->new(error=>1, message=>"$message_p: server_name is is mandatory");
-
-  ( $dbname ) 
-    or return Output->new(error=>1, message=>"$message_p: dbname is madatory");
-  
-  my $reindex_mark = 'N';
-  if ( defined $reindex && $reindex == 1 ){
-    $reindex_mark = 'Y';
-  }
- 
-  # test server in the pool
-  my $host = Host->new( host =>$server_name );
-  my $is_host_in_pool = $host->host_in_pool();
-  if ($is_host_in_pool->is_error){
-    return Output->new(
-      error => 1,
-      message => "$message_p: $server_name not in the pool"
-    );
-  }
-
-  # create ansible task options
-  my $po  = Pool->new();
-  my $ansData = $po->ansible_conf;
-  my $cmd_play = $ansData->{'playbook'};
-  my $cmd_conf = catfile($ansData->{'base'},"$group.yml");
-  my $cmd_opts = {
-    'manage_sphinx'   => 'create',
-    'manage_node'     => $server_name,
-    'manage_kernel'   => $dbname,
-    'manage_reindex'  => $reindex_mark
-  };
-
-  # run as daemon in background
-  my $dh = bxDaemon->new(
-    debug => $self->debug,
-    task_cmd => qq($cmd_play $cmd_conf) 
-  );
-  my $created_process = $dh->startAnsibleProcess(
-    $group,
-    $cmd_opts
-  );
-
-  return $created_process;  
-}
+#sub createSphinx{
+#  my ($self, $server_name, $dbname, $reindex) = @_;
+#
+#  my $message_p = (caller(0))[3];
+#  my $message_t = __PACKAGE__;
+#  my $group = $self->group;
+#
+#  ( $server_name ) or
+#    return Output->new(error=>1, message=>"$message_p: server_name is is mandatory");
+#
+#  ( $dbname )
+#    or return Output->new(error=>1, message=>"$message_p: dbname is madatory");
+#
+#  my $reindex_mark = 'N';
+#  if ( defined $reindex && $reindex == 1 ){
+#    $reindex_mark = 'Y';
+#  }
+#
+#  # test server in the pool
+#  my $host = Host->new( host =>$server_name );
+#  my $is_host_in_pool = $host->host_in_pool();
+#  if ($is_host_in_pool->is_error){
+#    return Output->new(
+#      error => 1,
+#      message => "$message_p: $server_name not in the pool"
+#    );
+#  }
+#
+#  # create ansible task options
+#  my $po  = Pool->new();
+#  my $ansData = $po->ansible_conf;
+#  my $cmd_play = $ansData->{'playbook'};
+#  my $cmd_conf = catfile($ansData->{'base'},"$group.yml");
+#  my $cmd_opts = {
+#    'manage_sphinx'   => 'create',
+#    'manage_node'     => $server_name,
+#    'manage_kernel'   => $dbname,
+#    'manage_reindex'  => $reindex_mark
+#  };
+#
+#  # run as daemon in background
+#  my $dh = bxDaemon->new(
+#    debug => $self->debug,
+#    task_cmd => qq($cmd_play $cmd_conf)
+#  );
+#  my $created_process = $dh->startAnsibleProcess(
+#    $group,
+#    $cmd_opts
+#  );
+#
+#  return $created_process;
+#}
 
 ## remove sphinx service from server
-# input: 
+# input:
 # hostname in pool - host ip address
 # *password options mandatory, but can be defined inf config file
-sub removeSphinx{
-  my ($self, $server_name, $dbname) = @_;
-
-  my $message_p = (caller(0))[3];
-  my $message_t = __PACKAGE__;
-  my $group = $self->group;
-
-  ( $server_name ) 
-    or return Output->new(error=>1, message=>"$message_p: server_name is is mandatory");
- # test server in the pool
-  my $host = Host->new( host =>$server_name );
-  my $is_host_in_pool = $host->host_in_pool($group);
-  if ($is_host_in_pool->is_error){
-    return Output->new(
-      error => 1,
-      message => "$message_p: $server_name not in the $group group");
-  }
-
-  # create ansible task options
-  my $po = Pool->new();
-  my $ansData = $po->ansible_conf;
-  my $cmd_play = $ansData->{'playbook'};
-  my $cmd_conf = catfile($ansData->{'base'},"$group.yml");
-  my $cmd_opts = {
-    'manage_sphinx' => 'delete',
-    'manage_node'   => $server_name,
-    'manage_kernel' => $dbname 
-  };
-
-  # run as daemon in background
-  my $dh = bxDaemon->new( 
-    'debug' => $self->debug,
-    'task_cmd' => qq($cmd_play $cmd_conf) 
-  );
-  my $created_process = $dh->startAnsibleProcess($group, $cmd_opts);
-
-  return $created_process;  
-}
+#sub removeSphinx{
+#  my ($self, $server_name, $dbname) = @_;
+#
+#  my $message_p = (caller(0))[3];
+#  my $message_t = __PACKAGE__;
+#  my $group = $self->group;
+#
+#  ( $server_name )
+#    or return Output->new(error=>1, message=>"$message_p: server_name is is mandatory");
+# # test server in the pool
+#  my $host = Host->new( host =>$server_name );
+#  my $is_host_in_pool = $host->host_in_pool($group);
+#  if ($is_host_in_pool->is_error){
+#    return Output->new(
+#      error => 1,
+#      message => "$message_p: $server_name not in the $group group");
+#  }
+#
+#  # create ansible task options
+#  my $po = Pool->new();
+#  my $ansData = $po->ansible_conf;
+#  my $cmd_play = $ansData->{'playbook'};
+#  my $cmd_conf = catfile($ansData->{'base'},"$group.yml");
+#  my $cmd_opts = {
+#    'manage_sphinx' => 'delete',
+#    'manage_node'   => $server_name,
+#    'manage_kernel' => $dbname
+#  };
+#
+#  # run as daemon in background
+#  my $dh = bxDaemon->new(
+#    'debug' => $self->debug,
+#    'task_cmd' => qq($cmd_play $cmd_conf)
+#  );
+#  my $created_process = $dh->startAnsibleProcess($group, $cmd_opts);
+#
+#  return $created_process;
+#}
 
 1;

@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/usr/bin/bash
+#
 printf "%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s\n" \
     "type" \
     "openvz" \

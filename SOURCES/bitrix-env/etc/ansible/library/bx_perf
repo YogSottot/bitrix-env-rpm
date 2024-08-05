@@ -1,6 +1,8 @@
-#!/bin/bash
-#   Generate performance options for configs
+#!/usr/bin/bash
+#
+# Generate performance options for configs
 #set -x
+#
 export LANG=en_EN.UTF-8
 export NOLOCALE=yes
 export PATH=/sbin:/bin:/usr/sbin:/usr/bin
@@ -14,48 +16,38 @@ VARS80="table_open_cache;thread_cache_size;max_heap_table_size;tmp_table_size;ke
 MYSQL_CONFIG=/etc/mysql/conf.d/bvat.cnf
 MYSQL_CONFIG_TEMPLATE=/etc/ansible/templates/bx_perf-bvat.cnf.j2
 MYSQL_CONFIG_TEMPLATE80=/etc/ansible/templates/bx_perf-bvat_my80.cnf.j2
- 
-OS_VERSION=$(cat /etc/redhat-release | \
-    sed -e "s/CentOS Linux release//;s/CentOS release // " | cut -d'.' -f1)
+OS_VERSION=$(cat /etc/redhat-release | sed -e "s/CentOS Stream release//;s/CentOS release // " | cut -d'.' -f1)
 
-
-error(){
+error() {
     msg="$1"
     echo "{\"changed\":false,\"failed\":true,\"msg\":\"$msg\"}"
     exit 1
 }
 
-get_column_number(){
+get_column_number() {
     name="${1}"
     [[ -z $name ]] && error "get_column_number; you must define column name"
 
-    num=$(head -1 $PERF  | \
-        awk -F';' ' { for (i = 1; i <= NF; ++i) printf "%d:%s\n", i, $i; exit  }' | \
-        grep ":$name$" | awk -F':' '{print $1}')
+    num=$(head -1 $PERF | \
+	awk -F';' ' { for (i = 1; i <= NF; ++i) printf "%d:%s\n", i, $i; exit  }' | \
+	grep ":$name$" | awk -F':' '{print $1}')
     [[ -z $num ]] && error "get_column_number; not found column number for $name"
     return $num
 }
 
-get_os_type(){
+get_os_type() {
     OS_TYPE=$(cat /etc/redhat-release | grep CentOS -c)
-
-    OS_VERSION=$(cat /etc/redhat-release | \
-        sed -e "s/CentOS Linux release//;s/CentOS release // " | \
-        cut -d'.' -f1 |sed -e "s/\s\+//")
-
+    OS_VERSION=$(cat /etc/redhat-release | sed -e "s/CentOS Stream release//;s/CentOS release // " | cut -d'.' -f1 |sed -e "s/\s\+//")
     # is OpenVZ installation
     IS_OPENVZ=$( [[ -f /proc/user_beancounters  ]] && echo 1 || echo 0  )
-
     # Hardware type
     HW_TYPE=general
     [[ $IS_OPENVZ -gt 0  ]] && HW_TYPE=openvz
-
     # x86_64 or i386
     IS_X86_64=$(uname -a | grep -wc 'x86_64')
-
 }
 
-get_mysql_package(){
+get_mysql_package() {
     [[ -n $MYSQL_PACKAGE ]] && return 0
 
     PACKAGES_LIST=$(rpm -qa)
@@ -65,21 +57,17 @@ get_mysql_package(){
     if [[ $(echo "$PACKAGES_LIST" | grep -c '^mysql-community-server') -gt 0 ]]; then
         MYSQL_PACKAGE=mysql-community-server
         MYSQL_SERVICE=mysqld
-
     # Percona 5.6 && 5.7
     elif [[ $(echo "$PACKAGES_LIST" | grep -c '^Percona-Server-server') -gt 0 ]]; then
         MYSQL_PACKAGE=Percona-Server-server
         MYSQL_SERVICE=mysqld
-
     # Percona 8.0
     elif [[ $(echo "$PACKAGES_LIST" | grep -c '^percona-server-server') -gt 0  ]]; then
         MYSQL_PACKAGE=percona-server-server
         MYSQL_SERVICE=mysqld
-
     elif [[ $(echo "$PACKAGES_LIST" | grep -c '^MariaDB-server') -gt 0 ]]; then
         MYSQL_PACKAGE=MariaDB-server
         MYSQL_SERVICE=mariadb
-
     elif [[ $(echo "$PACKAGES_LIST" | grep -c '^mariadb-server') -gt 0 ]]; then
         MYSQL_PACKAGE=mariadb-server
         MYSQL_SERVICE=mariadb
@@ -89,47 +77,48 @@ get_mysql_package(){
     else
         return 1
     fi
-    MYSQL_VERSION=$(rpm -qa --queryformat '%{version}' ${MYSQL_PACKAGE}* | \
-        head -1 | awk -F'.' '{printf "%d.%d", $1,$2}' )
+    MYSQL_VERSION=$(rpm -qa --queryformat '%{version}' ${MYSQL_PACKAGE}* | head -1 | awk -F'.' '{printf "%d.%d", $1,$2}' )
     MYSQL_MID_VERSION=$(echo "$MYSQL_VERSION" | awk -F'.' '{print $2}')
     MYSQL_UNI_VERSION=$(echo "$MYSQL_VERSION" | awk -F'.' '{printf "%s%s", $1,$2}')
 
     # mysql status
     [[ -z $OS_VERSION ]] && get_os_type
     MYSQL_STATUS=
-    if [[ $OS_VERSION -eq 7 ]]; then
-        systemctl is-active $MYSQL_SERVICE >/dev/null 2>&1
+
+    # VMBITRIX_9.0
+    if [[ $OS_VERSION -eq 9 ]]; then
+        systemctl is-active $MYSQL_SERVICE > /dev/null 2>&1
+        status_rtn=$?
+    elif [[ $OS_VERSION -eq 7 ]]; then
+        systemctl is-active $MYSQL_SERVICE > /dev/null 2>&1
         status_rtn=$?
     else
         MYSQL_INIT_SCRIPT=/etc/init.d/mysqld
         MYSQL_SERVICE_NAME=mysqld
-
         if [[ -f /etc/init.d/mysql ]]; then
             MYSQL_INIT_SCRIPT=/etc/init.d/mysql
             MYSQL_SERVICE_NAME=mysql
         fi
-        $MYSQL_INIT_SCRIPT status | grep -wc running >/dev/null 2>&1
+        $MYSQL_INIT_SCRIPT status | grep -wc running > /dev/null 2>&1
         status_rtn=$?
     fi
+
     if [[ $status_rtn -gt 0 ]]; then
         MYSQL_STATUS="stopped"
     else
         MYSQL_STATUS="running"
     fi
-
 }
 
 # get available memory on board
-get_available_memory(){
+get_available_memory() {
     [[ -z $IS_X86_64 ]] && get_os_type
 
     AVAILABLE_MEMORY=$(free | grep Mem | awk '{print $2}')
     if [[ $IS_OPENVZ -gt 0 ]]; then
         if [[ -z $AVAILABLE_MEMORY ]]; then
-            mem4kblock=`cat /proc/user_beancounters | \
-                grep vmguarpages|awk '{print $4}'`
-            mem4kblock2=`cat /proc/user_beancounters | \
-                grep privvmpages|awk '{print $4}'`
+            mem4kblock=`cat /proc/user_beancounters | grep vmguarpages|awk '{print $4}'`
+            mem4kblock2=`cat /proc/user_beancounters | grep privvmpages|awk '{print $4}'`
             if [[ ${mem4kblock2} -gt ${mem4kblock} ]]; then
                 AVAILABLE_MEMORY=$(echo "${mem4kblock} * 4"|bc)
             else
@@ -140,63 +129,49 @@ get_available_memory(){
 
     AVAILABLE_MEMORY_MB=$(( $AVAILABLE_MEMORY / 1024 ))
 
-    [[ ( $IS_X86_64 -eq 0 ) && ( $AVAILABLE_MEMORY_MB -gt 4096 ) ]] && \
-        AVAILABLE_MEMORY_MB=4096
+    [[ ( $IS_X86_64 -eq 0 ) && ( $AVAILABLE_MEMORY_MB -gt 4096 ) ]] && AVAILABLE_MEMORY_MB=4096
 }
 
-get_memory_limits(){
+get_memory_limits() {
     get_column_number Memory
     memory_column=$?
     
-    MEMORY_LIMITS=$(cat $PERF | grep ";$HW_TYPE;" | \
-        awk -F';' -v col=$memory_column '{print $col}')
+    MEMORY_LIMITS=$(cat $PERF | grep ";$HW_TYPE;" | awk -F';' -v col=$memory_column '{print $col}')
     MIN_MEMORY_MB=0
-
     MAX_MB=
     for max_mb in $MEMORY_LIMITS; do
-        if [[ ( $AVAILABLE_MEMORY_MB -gt $MIN_MEMORY_MB ) && \
-             ( $AVAILABLE_MEMORY_MB -le $max_mb ) && ( -z $MAX_MB ) ]]; then
+        if [[ ( $AVAILABLE_MEMORY_MB -gt $MIN_MEMORY_MB ) && ( $AVAILABLE_MEMORY_MB -le $max_mb ) && ( -z $MAX_MB ) ]]; then
             MAX_MB=$max_mb
         fi
         MIN_MEMORY_MB=$max_mb
     done
     
     # maximum
-    [[ $AVAILABLE_MEMORY_MB -gt $max_mb ]] && \
-        MAX_MB=$max_mb
+    [[ $AVAILABLE_MEMORY_MB -gt $max_mb ]] && MAX_MB=$max_mb
 
     # minimum
     [[ -z $MAX_MB ]] && MAX_MB=512
 }
 
-get_mysql_options(){
-
+get_mysql_options() {
     # simple variables
     VARS_TEXT=
 
     for v in $(echo $VARS | sed -e "s/;/ /g"); do
-        [[ -n $VARS_TEXT ]] && \
-            VARS_TEXT="${VARS_TEXT},"
-
+        [[ -n $VARS_TEXT ]] && VARS_TEXT="${VARS_TEXT},"
         get_column_number $v
         p=$?
-
-        s=$(cat $PERF | grep ";$MAX_MB;$HW_TYPE;" | \
-            awk -F';' -v col=$p '{print $col}')
-
+        s=$(cat $PERF | grep ";$MAX_MB;$HW_TYPE;" | awk -F';' -v col=$p '{print $col}')
         VARS_TEXT="${VARS_TEXT}\"$v\":$s"
     done
 
     # max_connection
-    [[ -n $VARS_TEXT ]] && \
-        VARS_TEXT="${VARS_TEXT},"
+    [[ -n $VARS_TEXT ]] && VARS_TEXT="${VARS_TEXT},"
 
     get_column_number "PHP_threads"
     php_threads_col=$?
 
-    php_threads=$(cat $PERF | grep ";$MAX_MB;$HW_TYPE;" | \
-        awk -F';' -v col=$php_threads_col '{print $col}')
-
+    php_threads=$(cat $PERF | grep ";$MAX_MB;$HW_TYPE;" | awk -F';' -v col=$php_threads_col '{print $col}')
     max_connections=$(( $php_threads + 25 ))
     start_servers=$php_threads
 
@@ -205,17 +180,15 @@ get_mysql_options(){
     VARS_TEXT="${VARS_TEXT}\"max_connections\":$max_connections,"
     VARS_TEXT="${VARS_TEXT}\"https_servers\":$start_servers"
 
-
     # print ansible facts
     echo '{"ansible_facts":{'
     echo $VARS_TEXT
     echo '}}'
 }
 
-update_config(){
+update_config() {
     orig=${1}
     new=${2}
-
     # test md5 summ
     orig_md5_summ=0
     temp_md5_summ=$(md5sum $new | awk '{print $1}')
@@ -230,22 +203,16 @@ update_config(){
         rm -f $new
         echo "{\"changed\":false,\"msg\":\"Config $orig is ok\"}"
     fi
-
-
-
 }
 
-update_configs_mysql(){
+update_configs_mysql() {
     # update mysql config
     MYSQL_CONFIG_TMP=$MYSQL_CONFIG.tmp
     cp -f $MYSQL_CONFIG_TEMPLATE $MYSQL_CONFIG_TMP
     for v in $(echo $VARS | sed -e "s/;/ /g"); do
         get_column_number $v
         p=$?
-
-        s=$(cat $PERF | grep ";$MAX_MB;$HW_TYPE;" | \
-            awk -F';' -v col=$p '{print $col}')
-
+        s=$(cat $PERF | grep ";$MAX_MB;$HW_TYPE;" | awk -F';' -v col=$p '{print $col}')
         sed -i "s/{{\s*$v\s*}}/$s/" $MYSQL_CONFIG_TMP
     done
 
@@ -253,36 +220,32 @@ update_configs_mysql(){
     get_column_number "PHP_threads"
     php_threads_col=$?
 
-    php_threads=$(cat $PERF | grep ";$MAX_MB;$HW_TYPE;" | \
-        awk -F';' -v col=$php_threads_col '{print $col}')
-
+    php_threads=$(cat $PERF | grep ";$MAX_MB;$HW_TYPE;" | awk -F';' -v col=$php_threads_col '{print $col}')
     max_connections=$(( $php_threads + 25 ))
     start_servers=$php_threads
 
     sed -i "s/{{\s*max_connections\s*}}/$max_connections/" $MYSQL_CONFIG_TMP
     sed -i "s/{{\s*max_memory\s*}}/$MAX_MB/" $MYSQL_CONFIG_TMP
-   
 
     update_config "$MYSQL_CONFIG" "$MYSQL_CONFIG_TMP"
 }
 
-update_configs_apache(){
-
+update_configs_apache() {
     # update apache config
     APACHE_CONFIG=/etc/httpd/bx/conf/prefork.conf
     APACHE_CONFIG_TMP=$APACHE_CONFIG.tmp
     APACHE_CONFIG_TEMPLATE=/etc/ansible/templates/bx_perf-prefork22.conf.j2
-    [[ $OS_VERSION -eq 7 ]] && \
-        APACHE_CONFIG_TEMPLATE=/etc/ansible/templates/bx_perf-prefork24.conf.j2
+
+    # VMBITRIX_9.0
+    [[ $OS_VERSION -eq 9 ]] && APACHE_CONFIG_TEMPLATE=/etc/ansible/templates/bx_perf-prefork24.conf.j2
+    [[ $OS_VERSION -eq 7 ]] && APACHE_CONFIG_TEMPLATE=/etc/ansible/templates/bx_perf-prefork24.conf.j2
+
     cp -f $APACHE_CONFIG_TEMPLATE $APACHE_CONFIG_TMP
  
     # max_connection
     get_column_number "PHP_threads"
     php_threads_col=$?
-
-    php_threads=$(cat $PERF | grep ";$MAX_MB;$HW_TYPE;" | \
-        awk -F';' -v col=$php_threads_col '{print $col}')
-
+    php_threads=$(cat $PERF | grep ";$MAX_MB;$HW_TYPE;" | awk -F';' -v col=$php_threads_col '{print $col}')
     start_servers=$php_threads
 
     sed -i "s/{{\s*start_servers\s*}}/$start_servers/" $APACHE_CONFIG_TMP
@@ -298,8 +261,7 @@ else
     state="$opt"
 fi
 
-[[ ! -f $PERF ]] && \
-    error "Not found config file=$PERF"
+[[ ! -f $PERF ]] && error "Not found config file=$PERF"
 
 # get mysql info
 get_mysql_package
@@ -312,7 +274,7 @@ fi
 # get installed memory size
 get_available_memory
 
-# 
+# get memory limits
 get_memory_limits
 
 # generate config

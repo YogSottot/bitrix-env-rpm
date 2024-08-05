@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/usr/bin/bash
+#
 # manage sites and site's options
 #set -x
 PROGNAME=$(basename $0)
@@ -12,8 +13,7 @@ main() {
     local monitor_options=N
     monitoring_logo="$MON0027"
 
-
-    clear
+    [[ $DEBUG -eq 0 ]] && clear
     echo -e "\t\t\t" $logo
     echo -e "\t\t\t" $monitoring_logo
     echo
@@ -47,34 +47,32 @@ main() {
         echo "EMAIL Login:     $EMAIL_LOGIN"
     fi
 
-    local monitor_cmd="$bx_monitor_script -a enable"
-    if [[ $get_monitoring_auth_options_rtn -eq 0 ]]; then
-        monitor_cmd=$monitor_cmd" --nagios_user=$NAGIOS_USER"
-        monitor_cmd=$monitor_cmd" --nagios_password=$(printf "%q" "$NAGIOS_PASSWORD")"
-        monitor_cmd=$monitor_cmd" --munin_user=$MUNIN_USER"
-        monitor_cmd=$monitor_cmd" --munin_password=$(printf "%q" "$MUNIN_PASSWORD")"
-    fi
+    #local monitor_cmd="$bx_monitor_script -a enable"
+    #if [[ $get_monitoring_auth_options_rtn -eq 0 ]]; then
+        #monitor_cmd=$monitor_cmd" --nagios_user=$NAGIOS_USER"
+        #monitor_cmd=$monitor_cmd" --nagios_password=$(printf "%q" "$NAGIOS_PASSWORD")"
+        #monitor_cmd=$monitor_cmd" --munin_user=$MUNIN_USER"
+        #monitor_cmd=$monitor_cmd" --munin_password=$(printf "%q" "$MUNIN_PASSWORD")"
+    #fi
 
-    if [[ $get_email_options_rtn -eq 0 ]]; then
-        monitor_cmd=$monitor_cmd" --notify_nagios"
-        monitor_cmd=$monitor_cmd" --monitor_email=$EMAIL"
-        monitor_cmd=$monitor_cmd" --smtphost=$EMAIL_SERVER --smtpport=$EMAIL_PORT"
+    #if [[ $get_email_options_rtn -eq 0 ]]; then
+        #monitor_cmd=$monitor_cmd" --notify_nagios"
+        #monitor_cmd=$monitor_cmd" --monitor_email=$EMAIL"
+        #monitor_cmd=$monitor_cmd" --smtphost=$EMAIL_SERVER --smtpport=$EMAIL_PORT"
 
-        if [[ -n "$EMAIL_LOGIN" ]]; then
-            monitor_cmd=$monitor_cmd" --smtppass=$(printf "%q" "$EMAIL_PASSWORD")"
-            monitor_cmd=$monitor_cmd" --smtplogin=$EMAIL_LOGIN"
-        fi
+        #if [[ -n "$EMAIL_LOGIN" ]]; then
+            #monitor_cmd=$monitor_cmd" --smtppass=$(printf "%q" "$EMAIL_PASSWORD")"
+            #monitor_cmd=$monitor_cmd" --smtplogin=$EMAIL_LOGIN"
+        #fi
         
-        [[ $(echo "$EMAIL_TLS" | grep -iwc 'y') -gt 0 ]] && \
-            monitor_cmd=$monitor_cmd" --smtptls"
-        [[ -n $EMAIL_METHOD ]] && \
-            monitor_cmd=$monitor_cmd" --smtpmethod=$EMAIL_METHOD"
-    fi
+        #[[ $(echo "$EMAIL_TLS" | grep -iwc 'y') -gt 0 ]] && monitor_cmd=$monitor_cmd" --smtptls"
+        #[[ -n $EMAIL_METHOD ]] && monitor_cmd=$monitor_cmd" --smtpmethod=$EMAIL_METHOD"
+    #fi
 
-    if [[ $DEBUG -gt 0 ]]; then
-        echo "$monitor_cmd"
-    fi
-    exec_pool_task "$monitor_cmd" "$MON0027"
+    #if [[ $DEBUG -gt 0 ]]; then
+        #echo "$monitor_cmd"
+    #fi
+    #exec_pool_task "$monitor_cmd" "$MON0027"
 }
 
 main

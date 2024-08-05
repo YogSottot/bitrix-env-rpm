@@ -1,6 +1,7 @@
-#!/bin/bash
+#!/usr/bin/bash
+#
 # insert block of line into the file
-
+#
 export LANG=en_EN.UTF-8
 export PATH=$PATH:/sbin:/usr/sbin
 
@@ -11,38 +12,32 @@ LOG=$TMP/bx_blocklines.log
 
 debug() {
     msg=$1
-
     [[ $DEBUG -gt 1  ]] && printf "%s: %d: %s\n" "$(date +%F-%H-%M-%S)" "$$" "$msg" >> $LOG
 }
 
 # print error message
 print_error() {
-  msg=$1
-  echo "{\"changed\":false,\"failed\":true,\"msg\":\"$msg\"}"
-  exit 1
+    msg=$1
+    echo "{\"changed\":false,\"failed\":true,\"msg\":\"$msg\"}"
+    exit 1
 }
 
 # print timezone info
 print_ok() {
-  msg=$1
-
-  echo "{\"changed\":true,\"msg\":\"$msg\"}"
-  exit 0
+    msg=$1
+    echo "{\"changed\":true,\"msg\":\"$msg\"}"
+    exit 0
 }
 
 print_notchanged() {
-  msg=$1
-
-  echo "{\"changed\":false,\"msg\":\"$msg\"}"
-  exit 0
-
+    msg=$1
+    echo "{\"changed\":false,\"msg\":\"$msg\"}"
+    exit 0
 }
 
-update_file(){
-
+update_file() {
     [[ -z $from_file ]] && print_error "No defined the file with block of strings from_file= opt."
-    insertafter_line=$(grep -n "$insertafter" $dest | \
-        head -n 1 | awk -F':' '{print $1}')
+    insertafter_line=$(grep -n "$insertafter" $dest | head -n 1 | awk -F':' '{print $1}')
     if [[ -z $insertafter_line ]]; then
         print_error "Not found insertafter=$insertafter in the file=$dest"
     fi
@@ -56,17 +51,15 @@ update_file(){
     print_ok "Update file dest=$dest"
 }
 
-delete_file(){
-    insertafter_line=$(grep -n "$insertafter" $dest | \
-        head -n 1 | awk -F':' '{print $1}')
+delete_file() {
+    insertafter_line=$(grep -n "$insertafter" $dest | head -n 1 | awk -F':' '{print $1}')
     if [[ -z $insertafter_line ]]; then
         print_notchanged "Not found insertafter=$insertafter in the file=$dest"
     fi
 
     [[ -z $insertbefore ]] && insertbefore="${insertafter}" 
 
-    insertbefore_line=$(grep -n "$insertbefore" $dest | \
-        tail -n 1 | awk -F':' '{print $1}')
+    insertbefore_line=$(grep -n "$insertbefore" $dest | tail -n 1 | awk -F':' '{print $1}')
     if [[ -z $insertbefore_line ]]; then
         print_notchanged "Not found insertafter=$insertbefore_line in the file=$dest"
     fi
@@ -79,10 +72,9 @@ delete_file(){
     print_ok "Update file dest=$dest"
 }
 
-dest_link(){
+dest_link() {
     if [[ -L $dest ]]; then
-        orig_file=$(file $dest | \
-            grep "symbolic link to" | awk -F'`' '{print $2}' | sed -e "s/'$//" )
+        orig_file=$(file $dest | grep "symbolic link to" | awk -F'`' '{print $2}' | sed -e "s/'$//" )
         dest="$orig_file"
     fi
 }
@@ -103,8 +95,8 @@ dn_dest=$(dirname "$dest")
 tmp_dest="${dn_dest}/$(date +%s)_${bn_dest}"
 
 case "$state" in
-    "update") update_file;;
-    "delete") delete_file;;
-    *) print_error "Unknown state option";;
+    "update") update_file ;;
+    "delete") delete_file ;;
+    *) print_error "Unknown state option" ;;
 esac
 

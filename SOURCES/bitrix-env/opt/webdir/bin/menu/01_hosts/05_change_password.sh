@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/usr/bin/bash
+#
 PROGNAME=$(basename $0)
 PROGPATH=$(dirname $0)
 
@@ -9,8 +10,7 @@ change_bitrix_password() {
     local act_user="${2:-bitrix}"
 
     if [[ -z "$act_host" ]]; then
-        print_message "$HM0200" \
-            "$HM0044" "" any_key
+        print_message "$HM0200" "$HM0044" "" any_key
         return 1
     fi
 
@@ -29,14 +29,12 @@ change_bitrix_password() {
     ask_password_rtn=$?
     [[ $ask_password_rtn -gt 0 ]] && exit 1
 
-    print_message "$(get_text "$HM0059" "$act_user" "$host_iden") (y|N): " \
-        "" "" _confirm 'n'
+    print_message "$(get_text "$HM0059" "$act_user" "$host_iden") (y|N): " "" "" _confirm 'n'
     if [[ $( echo "$_confirm" | grep -wci 'y' ) -gt 0 ]]; then
         cmd="$ansible_wrapper -a bx_passwd -H $host_iden"
         cmd=$cmd" -u $act_user -P $(printf "%q" "$new_password")"
         [[ $DEBUG -gt 0 ]] && echo "$cmd"
-        exec_pool_task "$cmd" \
-            "change $act_user password on host=$host_iden"
+        exec_pool_task "$cmd" "change $act_user password on host=$host_iden"
     fi
     return 0
 }
@@ -44,13 +42,13 @@ change_bitrix_password() {
 sub_menu() {
     host_logo="$HM0060"
     menu_00="$HM0042"
-    menu_01="   $HM0060"
+    menu_01="$HM0060"
 
     HOST_MENU_SELECT=
     until [[ -n "$HOST_MENU_SELECT" ]]; do
-        clear
-        echo -e "\t\t\t" $logo
-        echo -e "\t\t\t" $host_logo
+        [[ $DEBUG -eq 0 ]] && clear
+        echo -e "\t\t" $logo
+        echo -e "\t\t" $host_logo
         echo
 
         print_pool_info
@@ -60,9 +58,9 @@ sub_menu() {
         print_task_by_type '(common|monitor|mysql|update)' "$POOL_HOST_TASK_LOCK" "$POOL_HOST_TASK_LIST"
 
         if [[ $POOL_HOST_TASK_LOCK -eq 1 ]]; then
-            local menu_list="\n\t$menu_00"
+            local menu_list="$menu_00"
         else
-            local menu_list="\n\t$menu_00\n\t$menu_01"
+            local menu_list="$menu_01\n\t\t $menu_00"
         fi
         print_menu
 
@@ -82,4 +80,3 @@ sub_menu() {
 }
 
 sub_menu
-

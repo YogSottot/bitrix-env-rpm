@@ -29,4 +29,3 @@
     - "{{ nginx_config_name_http }}"
     - "{{ nginx_config_name_https }}"
   notify: restart nginx
-

@@ -3,24 +3,39 @@
 #
 
 # ht(passwd|access)
-location ~* /\.ht  { deny all; }
+location ~* /\.ht {
+    deny all;
+}
 
 # repositories
-location ~* /\.(svn|hg|git) { deny all; }
+location ~* /\.(svn|hg|git) {
+    deny all;
+}
 
 # bitrix internal locations
 location ~* ^/bitrix/(modules|local_cache|stack_cache|managed_cache|php_interface) {
-  deny all;
+    deny all;
 }
-
 location ~* ^/bitrix/\.settings\.php {
+    deny all;
+}
+location ~* ^/bitrix/\.settings_extra\.php {
     deny all;
 }
 
 # upload files
-location ~* ^/upload/1c_[^/]+/ { deny all; }
+location ~* ^/upload/1c_[^/]+/ {
+    deny all;
+}
 
 # use the file system to access files outside the site (cache)
-location ~* /\.\./ { deny all; }
-location ~* ^/bitrix/html_pages/\.config\.php { deny all; }
-location ~* ^/bitrix/html_pages/\.enabled { deny all; }
+location ~* /\.\./ {
+    deny all;
+}
+location ~* ^/bitrix/html_pages/\.config\.php {
+    deny all;
+}
+location ~* ^/bitrix/html_pages/\.enabled {
+    deny all;
+}
+

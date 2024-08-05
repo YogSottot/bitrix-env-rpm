@@ -199,4 +199,3 @@
   service:
     name: munin-node
     state: restarted 
-

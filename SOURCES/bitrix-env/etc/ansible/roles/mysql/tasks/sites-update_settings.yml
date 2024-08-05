@@ -1,12 +1,12 @@
 ---
 # update site's config: dbconn.php and .settings.php
 # Note: we need to consider the possibility of usage site's user, rather than cluster's user
-- include: sites-cache_directory-execute.yml
+- include_tasks: sites-cache_directory-execute.yml
   vars:
     php_script: mysql_dbconn.php
     php_server: "{{ cluster_web_server }}"
 
-- include: sites-cache_directory-execute.yml
+- include_tasks: sites-cache_directory-execute.yml
   vars:
     php_script: mysql_settings.php
     php_server: "{{ cluster_web_server }}"

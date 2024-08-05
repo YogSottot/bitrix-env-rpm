@@ -1,6 +1,6 @@
 ---
 # 1. set time on poll machine by master server value
-# 2. run ntpd daemon
+# 2. run ntpd / chronyd daemon
 # !!! replica, csync, ntlm depends on it
 - name: timezone - get information for pool
   time_facts: option=status
@@ -29,6 +29,7 @@
   tags: timezone
   notify: restart mysqld
 
+# CentOS 7 - ntpd
 - name: ntpd - install packages
   yum:
     pkg: "{{ packages }}"
@@ -38,14 +39,43 @@
       - ntp
       - ntpdate
   tags: ntpd
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
 
 - name: ntpd - ensure service started
   service: name=ntpd state=started enabled=yes
   tags: ntpd
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
 
 - name: ntpd - restarted
   service: name=ntpd state=restarted
   tags: ntpd
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
+
+# CentOS Stream 9 - chronyd
+- name: chrony - install packages
+  dnf:
+    pkg: "{{ packages }}"
+    state: present
+  vars:
+    packages:
+      - chrony
+  tags: chronyd
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+
+- name: chronyd - ensure service started
+  service:
+    name: chronyd
+    state: started
+    enabled: yes
+  tags: chronyd
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+
+- name: chronyd - restarted
+  service:
+    name: chronyd
+    state: restarted
+  tags: chronyd
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
 
 # php configuration
 - name: create update time string
@@ -61,15 +91,13 @@
   when: "'bitrix-web' in group_names and bx_tz != bx_tz_php"
 
 - name: update /etc/php.d/bitrixenv.ini - ansible comment
-  lineinfile: dest=/etc/php.d/bitrixenv.ini state=present regexp='date.timezone'
-    line=';set timezone={{ bx_tz }} by ansible manager at {{ phpupdate_date.stdout }}'
+  lineinfile: dest=/etc/php.d/bitrixenv.ini state=present regexp='date.timezone' line=';set timezone={{ bx_tz }} by ansible manager at {{ phpupdate_date.stdout }}'
   tags: php_configure
   notify: restart httpd
   when: "'bitrix-web' in group_names and bx_tz != bx_tz_php"
 
 - name: update /etc/php.d/bitrixenv.ini - time string
-  lineinfile: dest=/etc/php.d/bitrixenv.ini state=present regexp='date.timezone'
-    line='date.timezone = {{ bx_tz }}'
+  lineinfile: dest=/etc/php.d/bitrixenv.ini state=present regexp='date.timezone' line='date.timezone = {{ bx_tz }}'
   tags: php_configure
   notify: restart httpd
   when: "'bitrix-web' in group_names and bx_tz != bx_tz_php"
@@ -78,12 +106,10 @@
   shell: /opt/webdir/bin/restart_httpd-scale.sh
   args:
     creates: /opt/webdir/logs/restart_httpd-scale.request
-  when: ansible_distribution == "CentOS"
-    and ansible_distribution_major_version == "7"
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
 
 - name: restart httpd
   service:
     name: httpd
     state: restarted
-  when: ansible_distribution == "CentOS"
-    and ansible_distribution_major_version == "6"
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "6"

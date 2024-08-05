@@ -1,3 +1,5 @@
+#!/usr/bin/bash
+#
 export LANG=en_US.UTF-8
 export TERM=linux
 export NOLOCALE=yes
@@ -10,9 +12,10 @@ BIN_DIR=$BASE_DIR/bin
 bx_process_script=$BIN_DIR/bx-process
 bx_sites_script=$BIN_DIR/bx-sites
 ansible_wrapper=$BIN_DIR/wrapper_ansible_conf
+FAKE_PASSWORD=XXXXXXXXXXXX
 
 [[ -z $LOGS_FILE ]] && LOGS_FILE=$LOGS_DIR/pool_menu.log
-MENU_SPACER="------------------------------------------------------------------------------------"
+MENU_SPACER="------------------------------------------------------------------------------------------------------"
 
 [[ -z $LINK_STATUS  ]] && LINK_STATUS=1
 [[ ! -d $CACHE_DIR  ]] && mkdir -m 700 $CACHE_DIR
@@ -21,7 +24,7 @@ MENU_SPACER="-------------------------------------------------------------------
 [[ -f $BIN_DIR/bitrix_utils.txt ]] && \
         . $BIN_DIR/bitrix_utils.txt
 
-get_text(){
+get_text() {
     local txt="${1}"
     local opt1="${2}"
     local opt2="${3}"
@@ -38,109 +41,97 @@ get_text(){
 
 # get ip address of host
 get_ip_addr() {
-  # get firt ip address for host
-  ip -f inet -o addr show | cut -d\  -f 7 | cut -d/ -f 1 | grep -v '127\.0\.0\.1' | head -1
+    # get firt ip address for host
+    ip -f inet -o addr show | cut -d\  -f 7 | cut -d/ -f 1 | grep -v '127\.0\.0\.1' | head -1
 }
 
-print_color_text(){
-  _color_text="$1"
-  _color_name="$2"
-  _echo_opt="$3"
-  [[ -z "$_color_name" ]] && _color_name='green'
-  _color_number=38
+print_color_text() {
+    _color_text="$1"
+    _color_name="$2"
+    _echo_opt="$3"
+    [[ -z "$_color_name" ]] && _color_name='green'
+    _color_number=38
 
-  case "$_color_name" in 
-    green)    _color_number=32 ;;
-    blue)     _color_number=34 ;;
-    red)      _color_number=31 ;;
-    cyan)     _color_number=36 ;;
-    magenta)  _color_number=35 ;;
-    *)        _color_number=39 ;;
-  esac
+    case "$_color_name" in
+	green)    _color_number=32 ;;
+	blue)     _color_number=34 ;;
+	red)      _color_number=31 ;;
+	cyan)     _color_number=36 ;;
+	agenta)   _color_number=35 ;;
+	*)        _color_number=39 ;;
+    esac
 
-  echo -en "\\033[1;${_color_number}m"
-  echo $_echo_opt "$_color_text"
-  echo -en "\\033[0;39m"
+    echo -en "\\033[1;${_color_number}m"
+    echo $_echo_opt "$_color_text"
+    echo -en "\\033[0;39m"
 }
 
 # save information in log file
 print_log() {
-  _log_message=$1
-  _log_file=$2
-  if [[ -n "$_log_file" ]]; then
-    log_date=$(date +'%Y-%m-%dT%H:%M:%S')
-    # exclude test domain
-    printf "%-14s: %6d: %s\n" "$log_date" "$$" "$_log_message" >> $_log_file
-  else
-    printf "%-14s: %6d: %s\n" "$log_date" "$$" "$_log_message"
-  fi
+    _log_message=$1
+    _log_file=$2
+    if [[ -n "$_log_file" ]]; then
+        log_date=$(date +'%Y-%m-%dT%H:%M:%S')
+        # exclude test domain
+        printf "%-14s: %6d: %s\n" "$log_date" "$$" "$_log_message" >> $_log_file
+    else
+        printf "%-14s: %6d: %s\n" "$log_date" "$$" "$_log_message"
+    fi
 }
 
-get_os_type(){
+get_os_type() {
     OS_TYPE=$(cat /etc/redhat-release | grep CentOS -c)
-
-    OS_VERSION=$(cat /etc/redhat-release | \
-        sed -e "s/CentOS Linux release//;s/CentOS release // " | \
-        cut -d'.' -f1 |sed -e "s/\s\+//")
-
+    OS_VERSION=$(cat /etc/redhat-release | sed -e "s/CentOS Stream release//;s/CentOS release // " | cut -d'.' -f1 | sed -e "s/\s\+//g")
     # is OpenVZ installation
     IS_OPENVZ=$( [[ -f /proc/user_beancounters  ]] && echo 1 || echo 0  )
-
     # Hardware type
     HW_TYPE=general
     [[ $IS_OPENVZ -gt 0  ]] && HW_TYPE=openvz
-
     # x86_64 or i386
     IS_X86_64=$(uname -a | grep -wc 'x86_64')
-
-    [[ -f /etc/profile ]] && \
-        BITRIX_ENV_TYPE=$(grep BITRIX_ENV_TYPE /etc/profile | \
-        awk -F'=' '{print $2}')
+    [[ -f /etc/profile ]] && BITRIX_ENV_TYPE=$(grep BITRIX_ENV_TYPE /etc/profile | awk -F'=' '{print $2}')
     [[ -z $BITRIX_ENV_TYPE ]] && BITRIX_ENV_TYPE=general
-
 }
-
 
 # set logo
-get_logo(){
-  logo="$BU0001"
-  [[ -z $BITRIX_ENV_TYPE ]] && get_os_type
-  if [[ $BITRIX_ENV_TYPE == "crm" ]]; then
-      logo="$BU0002"
-  fi
+get_logo() {
+    logo="$BU0001"
+    [[ -z $BITRIX_ENV_TYPE ]] && get_os_type
+    if [[ $BITRIX_ENV_TYPE == "crm" ]]; then
+	logo="$BU0002"
+    fi
 
-  logov=$(egrep -o 'BITRIX_VA_VER=[0-9\.]+'  /root/.bash_profile | \
-   awk -F'=' '{print $2}' )
-  export BITRIX_VA_VER=$logov
-  export BITRIX_ENV_TYPE
+    logov=$(egrep -o 'BITRIX_VA_VER=[0-9\.]+'  /root/.bash_profile | awk -F'=' '{print $2}' )
+    export BITRIX_VA_VER=$logov
+    export BITRIX_ENV_TYPE
 
-  echo -e "\t\t" $logo " version "$logov
+    echo -e $logo " version "$logov
 }
 
-print_header(){
-  _header_text=$1
-  echo -e '\t\t\t' "$_header_text"
-  echo
+print_header() {
+    _header_text=$1
+    echo -e '\t\t' "$_header_text"
+    echo
 }
 
-print_verbose(){
-  _verbose_type=$1
-  _verbose_message=$2
-  [[ -z $VERBOSE ]] && VERBOSE=0
-  if [[ $VERBOSE -gt 0 ]]; then
-    print_color_text "$_verbose_type" green -n
-    echo ": $_verbose_message"
-  fi
+print_verbose() {
+    _verbose_type=$1
+    _verbose_message=$2
+    [[ -z $VERBOSE ]] && VERBOSE=0
+    if [[ $VERBOSE -gt 0 ]]; then
+	print_color_text "$_verbose_type" green -n
+	echo ": $_verbose_message"
+    fi
 }
 
 # error message for all possible menus
-error_pick(){
-  notice_message="$BU2001" ;
+error_pick() {
+    notice_message="$BU2001" ;
 }
 
 # print error message
 # as we use cycles, must make sure that the user sees an error
-print_message(){
+print_message() {
     _input_message=${1}       # prompt in read output
     _print_message=${2}       # colored text like a notice
     _input_format=${3}        # can add option to read 
@@ -179,7 +170,7 @@ print_message(){
 }
 
 # password can't be empty
-ask_password_info(){
+ask_password_info() {
     _password_key=$1
     _password_val=$2
 
@@ -192,7 +183,6 @@ ask_password_info(){
     local _password_2=
     until [[ ( $_current_tequest -gt $_limit_request ) || ( $_password_set -eq 1 ) ]]; do
         _current_tequest=$(( $_current_tequest+1 ))
-
         print_message "$(get_text "$BU0004" "$_password_key")" "" "-s" _password_1
         print_message "$(get_text "$BU0005" "$_password_key")" "" "-s" _password_2
         echo
@@ -219,31 +209,22 @@ ask_password_info(){
 
 # client settings
 get_client_settings() {
-  client_settings_file=/etc/ansible/ansible-roles
-  IN_POOL=0
-  if [[ -f $client_settings_file ]]; then
-
-    host_data=$(grep -v '^#' $client_settings_file)
-    CLIENT_ID=$(echo "$host_data"     | grep '^host_id '        | awk -F'=' '{print $2}' | \
-     sed -e 's/^\s\+//;s/\s\+$//')      # login of host for basic auth on master
-    CLIENT_PASSWD=$(echo "$host_data" | grep '^host_pass '      | awk -F'=' '{print $2}' | \
-     sed -e 's/^\s\+//;s/\s\+$//')      # password of host for basic auth on master
-    CLIENT_INT=$(echo "$host_data"    | grep '^host_ether '     | awk -F'=' '{print $2}' | \
-     sed -e 's/^\s\+//;s/\s\+$//')      # management interface name
-    CLIENT_IP=$(echo "$host_data"     | grep '^host_netaddr '   | awk -F'=' '{print $2}' | \
-     sed -e 's/^\s\+//;s/\s\+$//')      # management ip address
-    MASTER_IP=$(echo "$host_data"     | grep '^master_netaddr ' | awk -F'=' '{print $2}' | \
-     sed -e 's/^\s\+//;s/\s\+$//')      # master ip address
-    MASTER_NAME=$(echo "$host_data"   | grep '^master '         | awk -F'=' '{print $2}' | \
-     sed -e 's/^\s\+//;s/\s\+$//')      # master name
-    MASTER_PORT=$(echo "$host_data"   | grep '^master_port '    | awk -F'=' '{print $2}' | \
-     sed -e 's/^\s\+//;s/\s\+$//')
-    CLIENT_NAME=$(echo "$host_data"   | grep '^hostname '       | awk -F'=' '{print $2}' | \
-     sed -e 's/^\s\+//;s/\s\+$//')      # master name
-    IS_MASTER=$(echo "$host_data"     | grep '^groups' | grep -cwi 'bitrix-mgmt')
-    IS_PUSH=$(echo "$host_data"     | grep '^groups' | grep -cwi 'bitrix-push')
-    IN_POOL=1
-  fi
+    client_settings_file=/etc/ansible/ansible-roles
+    IN_POOL=0
+    if [[ -f $client_settings_file ]]; then
+	host_data=$(grep -v '^#' $client_settings_file)
+	CLIENT_ID=$(echo "$host_data"     | grep '^host_id '        | awk -F'=' '{print $2}' | sed -e 's/^\s\+//;s/\s\+$//')      # login of host for basic auth on master
+	CLIENT_PASSWD=$(echo "$host_data" | grep '^host_pass '      | awk -F'=' '{print $2}' | sed -e 's/^\s\+//;s/\s\+$//')      # password of host for basic auth on master
+	CLIENT_INT=$(echo "$host_data"    | grep '^host_ether '     | awk -F'=' '{print $2}' | sed -e 's/^\s\+//;s/\s\+$//')      # management interface name
+	CLIENT_IP=$(echo "$host_data"     | grep '^host_netaddr '   | awk -F'=' '{print $2}' | sed -e 's/^\s\+//;s/\s\+$//')      # management ip address
+	MASTER_IP=$(echo "$host_data"     | grep '^master_netaddr ' | awk -F'=' '{print $2}' | sed -e 's/^\s\+//;s/\s\+$//')      # master ip address
+	MASTER_NAME=$(echo "$host_data"   | grep '^master '         | awk -F'=' '{print $2}' | sed -e 's/^\s\+//;s/\s\+$//')      # master name
+	MASTER_PORT=$(echo "$host_data"   | grep '^master_port '    | awk -F'=' '{print $2}' | sed -e 's/^\s\+//;s/\s\+$//')
+	CLIENT_NAME=$(echo "$host_data"   | grep '^hostname '       | awk -F'=' '{print $2}' | sed -e 's/^\s\+//;s/\s\+$//')      # master name
+	IS_MASTER=$(echo "$host_data"     | grep '^groups' | grep -cwi 'bitrix-mgmt')
+	IS_PUSH=$(echo "$host_data"       | grep '^groups' | grep -cwi 'bitrix-push')
+	IN_POOL=1
+    fi
 }
 
 # get information about pool configuration
@@ -255,7 +236,7 @@ get_client_settings() {
 # NOTICE: error stops the execution of the script!!!!
 # fill out variable POOL_SERVER_LIST
 # fill out variable POOL_UNU_SERVER_LIST ( contains out of day servers )
-get_pool_info(){
+get_pool_info() {
     pool_data=$($ansible_wrapper -a view)
 
     # test error 
@@ -300,7 +281,6 @@ get_pool_info(){
 
         if [[ -z $srv_err ]]; then
             srv_conn="Y"
-
             srv_vers=$(     echo "$srv_bx_info" | awk -F':' '{print $3}')
             srv_base_ver=$( echo "$srv_vers"    | awk -F'.' '{print $1}')
             srv_pwd_info=$( echo "$srv_bx_info" | awk -F':' '{print $4}' | grep -ic 'must be changed')
@@ -349,7 +329,7 @@ $srv_menu_info"
     done
 }
 
-cache_pool_info(){
+cache_pool_info() {
     POOL_UNU_SERVER_LIST=
     POOL_SERVER_LIST=
     POOL_SERVERS_CACHE=$CACHE_DIR/pool_servers.cache
@@ -368,8 +348,7 @@ cache_pool_info(){
         return 0
     fi
 
-    if [[ ( $test_cache_servers -gt 0 ) || \
-        ( $test_cache_unused -gt 0 ) || ( $DEBUG -gt 0 ) ]]; then
+    if [[ ( $test_cache_servers -gt 0 ) || ( $test_cache_unused -gt 0 ) || ( $DEBUG -gt 0 ) ]]; then
         get_pool_info
         echo "$POOL_SERVER_LIST" > $POOL_SERVERS_CACHE
         echo "$POOL_UNU_SERVER_LIST" > $POOL_UNUSED_CACHE
@@ -377,17 +356,15 @@ cache_pool_info(){
         POOL_UNU_SERVER_LIST=$(cat $POOL_UNUSED_CACHE)
         POOL_SERVER_LIST=$(cat $POOL_SERVERS_CACHE)
     fi
-
 }
 
 # get ansible ssh key
 # fill out variables:
 # ANSIBLE_SSHKEY_PRIVATE
 # ANSIBLE_SSHKEY_PUBLIC
-get_ansible_sshkey(){
+get_ansible_sshkey() {
     pool_sshkey_info=$($ansible_wrapper -a key)  # get sshkey that used in the pool
     pool_sshkey_error=$(echo "$pool_sshkey_info" | grep '^error:' | sed -e 's/^error://')
-
   
     # test error
     if [[ -n "$pool_sshkey_error" ]]; then
@@ -395,26 +372,23 @@ get_ansible_sshkey(){
         exit
     fi
 
-    ANSIBLE_SSHKEY_PRIVATE=$(echo "$pool_sshkey_info" | \
-        grep '^info:sshkey:' | sed -e 's/^info:sshkey://')
+    ANSIBLE_SSHKEY_PRIVATE=$(echo "$pool_sshkey_info" | grep '^info:sshkey:' | sed -e 's/^info:sshkey://')
     ANSIBLE_SSHKEY_PUBLIC=$ANSIBLE_SSHKEY_PRIVATE".pub"
 
     # test if file exists
     for _sshkey in $ANSIBLE_SSHKEY_PRIVATE $ANSIBLE_SSHKEY_PUBLIC; do
         if [[ ! -f $ANSIBLE_SSHKEY_PRIVATE ]]; then
-            print_message "$BU1001" \
-                "$(get_text "$BU2008" $_sshkey)" "" any_key
+            print_message "$BU1001" "$(get_text "$BU2008" $_sshkey)" "" any_key
         fi
     done
 }
-
 
 # prints formatted output for POOL_SERVER_LIST
 # ex.
 # h01w:h01w.bx:mgmt,mysql_master_1,web:1397293177:Y:5.0-2:ok:eth0=192.168.1.193,eth1=10.1.0.4 
 # m02:192.168.2.17::1397293301:Y:5.0-0:ok:eth0=192.168.2.17,eth1=10.1.0.2
 #
-print_pool_info(){
+print_pool_info() {
     srv_rols_exclude=$1    # exclude server with defined role
     srv_rols_include=$2    # include only servers with defined role
 
@@ -426,8 +400,7 @@ print_pool_info(){
   
     print_header "$BU0006"
     echo "$MENU_SPACER"
-    printf "%-25s| %-20s | %4s | %7s | %10s | %3s | %s \n" \
-        "ServerName" "NetAddress" "Conn" "Ver" "Passwords" "Uid" "Roles"
+    printf "%-25s| %-20s | %4s | %7s | %10s | %3s | %s \n" "ServerName" "NetAddress" "Conn" "Ver" "Passwords" "Uid" "Roles"
     echo "$MENU_SPACER"
     IFS_BAK=$IFS
     IFS=$'\n'
@@ -453,7 +426,6 @@ print_pool_info(){
         srv_time=$(echo "$srv_info" | awk -F':' '{print $4}' | awk -F'_' '{print $1}') # creation time
         srv_date=$(date -d @$srv_time +"%d-%m-%Y")
         hostname=$(echo "$srv_info" | awk -F':' '{print $5}') # server name 
-
         srv_conn=$(echo "$srv_info" | awk -F':' '{print $7}') # server connected to pool or not
         srv_bver=$(echo "$srv_info" | awk -F':' '{print $8}') # version virt env on server
         srv_bpwd=$(echo "$srv_info" | awk -F':' '{print $9}') # bitrix user password status
@@ -462,25 +434,17 @@ print_pool_info(){
         srv_base_ver=$(echo "$srv_info" | awk -F':' '{print $12}') # version of bitrix-env
         is_printed=0
         if [[ -n "$srv_rols_exclude" ]]; then
-      
-            [[ $(echo "$srv_rols" | grep -c "$srv_rols_exclude") -eq 0 ]] && \
-                is_printed=1
-
+            [[ $(echo "$srv_rols" | grep -c "$srv_rols_exclude") -eq 0 ]] && is_printed=1
         else
             if [[ -n "$srv_rols_include" ]]; then
-
-                [[ $(echo "$srv_rols" | grep -c "$srv_rols_include") -gt 0 ]] && \
-                    is_printed=1
-
+                [[ $(echo "$srv_rols" | grep -c "$srv_rols_include") -gt 0 ]] && is_printed=1
             else
                 is_printed=1
             fi
         fi
 
         if [[ $is_printed -gt 0 ]]; then
-                printf "%-25s| %-20s | %4s | %7s | %10s | %3s | %s \n" \
-                    "$hostname" "$srv_neta" "$srv_conn" "$srv_bver" \
-                    "$srv_bpwd" "$srv_buid" "$srv_rols"
+            printf "%-25s| %-20s | %4s | %7s | %10s | %3s | %s \n" "$hostname" "$srv_neta" "$srv_conn" "$srv_bver" "$srv_bpwd" "$srv_buid" "$srv_rols"
         fi
     done
     IFS=$IFS_BAK
@@ -492,8 +456,7 @@ print_pool_info(){
         echo
         print_color_text "$BU0007" red
         echo "$MENU_SPACER"
-        printf "%-25s| %-20s | %s \n" \
-            "ServerName" "NetAddress" "Errors"
+        printf "%-25s| %-20s | %s \n" "ServerName" "NetAddress" "Errors"
         echo "$MENU_SPACER"
         IFS_BAK=$IFS
         IFS=$'\n'
@@ -502,19 +465,16 @@ print_pool_info(){
             srv_name=$(echo "$srv_info" | awk -F':' '{print $1}') # short server name
             srv_neta=$(echo "$srv_info" | awk -F':' '{print $2}') # netaddress
             hostname=$(echo "$srv_info" | awk -F':' '{print $5}') # server name 
-
             srv_bver=$(echo "$srv_info" | awk -F':' '{print $7}') # version virt env on server
             srv_error_descr=$(echo "$srv_info" | awk -F':' '{print $11}') # uid for bitrix user
-            printf "%-25s| %-20s" "$hostname" "$srv_neta" 
+            printf "%-25s| %-20s" "$hostname" "$srv_neta"
             err_r=1
             for err in $(echo "$srv_error_descr" | sed -e 's/,/\n/g'); do
                 if [[ "$err" == "password" ]]; then
                     err_message="$BU2009"
                 elif [[ "$err" == "version" ]]; then
                     err_message="$BU2010"
-
                 elif [[ "$err" == "ssh_connection" ]]; then
-
                     err_message="$BU2011"
                 else
                     err_message=$err
@@ -536,7 +496,7 @@ print_pool_info(){
 }
 
 # execute background task and print information about status
-exec_pool_task(){
+exec_pool_task() {
     _task_exe=$1
     _task_txt=$2
 
@@ -546,8 +506,7 @@ exec_pool_task(){
     _task_dat=$(echo "$_task_inf" | grep '^info:' | sed -e "s/^info://")
   
     if [[ -n "$_task_err" ]]; then
-        print_message "$(get_text "$BU2012" "$_task_txt")" \
-            "$_task_msg" "" any_key
+        print_message "$(get_text "$BU2012" "$_task_txt")" "$_task_msg" "" any_key
         exit 1
     fi
 
@@ -566,7 +525,7 @@ exec_pool_task(){
 }
 
 # get list of running tasks filter by type
-get_task_by_type(){
+get_task_by_type() {
     _task_type=$1
     _task_info_lock=$2
     _task_info_var=$3
@@ -574,9 +533,7 @@ get_task_by_type(){
     _process_inf=$($bx_process_script -a list -t $_task_type)
     _process_err=$(echo "$_process_inf" | grep '^error:' | sed -e "s/^error://")
     _process_msg=$(echo "$_process_msg" | grep '^message:' | sed -e "s/^message://")
-
-    _process_data=$(echo "$_process_inf" | \
-    grep '^info:' | sed -e "s/^info://" | grep -i 'running')
+    _process_data=$(echo "$_process_inf" | grep '^info:' | sed -e "s/^info://" | grep -i 'running')
 
     eval "$_task_info_lock=0"
     eval "$_task_info_var='$_process_data'"
@@ -584,7 +541,7 @@ get_task_by_type(){
 }
 
 # print running task information for human
-print_task_by_type(){
+print_task_by_type() {
     _p_task_type=$1
     _p_task_lock=$2
     _p_task_info=$3
@@ -595,12 +552,11 @@ print_task_by_type(){
 
     if [[ $_p_task_lock -eq 1 ]]; then
         print_color_text "$(get_text "$BU0063" "$_p_task_type")" red
-    
+
         echo "$MENU_SPACER"
-        printf "%-25s| %-25s | %s\n" \
-            "$BU0008" "$BU0009" "$BU0010"
+        printf "%-25s| %-25s | %s\n" "$BU0008" "$BU0009" "$BU0010"
         echo "$MENU_SPACER"
-    
+
         IFS_BAK=$IFS
         IFS=$'\n'
         for line in $_p_task_info; do
@@ -608,7 +564,6 @@ print_task_by_type(){
             _task_time=$(echo $line| awk -F':' '{print $4}')    # task started at
             _task_date=$(date -d @$_task_time +"%d/%m/%Y %H:%M")
             _task_step=$(echo $line| awk -F':' '{print $NF}')   # current operations
-
             printf "%-25s| %-25s | %s\n" "$_task_iden" "$_task_date" "$_task_step"
         done
         IFS=$IFS_BAK
@@ -621,7 +576,7 @@ print_task_by_type(){
 }
 
 # get information about network interfaces which is configured on the server
-get_local_network(){
+get_local_network() {
     local check_link_status="${1:-1}"   # test link status: 0 - don't check; 1 - check
     EXCLUDE_INT='\(lo\)'                # exclude interface names
     NONHW_INT='\(ppp\)'                 # exclude test of interface status by ethtool
@@ -633,19 +588,13 @@ get_local_network(){
     
     # CLIENT_INT/CLIENT_IP
     get_client_settings
-    [[ $DEBUG -gt 0 ]] &&
-        echo "Test link status=$check_link_status"
+    [[ $DEBUG -gt 0 ]] && echo "Test link status=$check_link_status"
 
     # test openssl installation
     OPENVZ_INSTALL=$([[ -f /proc/user_beancounters  ]] && echo 1 || echo 0)
 
-
-
-    local ip_link_list=$(ip link show | egrep -o '^[0-9]+:\s+\S+' | \
-        sed "s/^\s\+//;s/\s\+$//;s/://g;s/@.*//g" | \
-        awk '{printf "%s\n", $2}' | grep -v "$EXCLUDE_INT")
-    [[ $DEBUG -gt 0 ]] &&
-        echo "ip_link_list=$ip_link_list"
+    local ip_link_list=$(ip link show | egrep -o '^[0-9]+:\s+\S+' | sed "s/^\s\+//;s/\s\+$//;s/://g;s/@.*//g" | awk '{printf "%s\n", $2}' | grep -v "$EXCLUDE_INT")
+    [[ $DEBUG -gt 0 ]] && echo "ip_link_list=$ip_link_list"
     local int_count=$(echo "$ip_link_list" | wc -l)
 
     # test network interfaces
@@ -657,8 +606,7 @@ get_local_network(){
     # header
     print_color_text "$BU0012" green
     echo "$MENU_SPACER"
-    printf "%10s | %10s | %12s | %20s | %s\n" \
-      "$BU0013" "$BU0014" "$BU0015" "$BU0016" "$BU0017"
+    printf "%10s | %10s | %12s | %20s | %s\n" "$BU0013" "$BU0014" "$BU0015" "$BU0016" "$BU0017"
     echo "$MENU_SPACER"
 
     # process interfaces
@@ -671,22 +619,18 @@ get_local_network(){
         local int_data=$(ip addr show $int_name | sed -e 's/^\s\+//')
 
         # test inetrfaces, exclude non-hardware interfaces and openvz interfaces
-        if [[ ( $(echo "$int_name" | grep -c "$NONHW_INT") -eq 0 ) && \
-            ( $OPENVZ_INSTALL -eq 0 ) ]]; then
+        if [[ ( $(echo "$int_name" | grep -c "$NONHW_INT") -eq 0 ) && ( $OPENVZ_INSTALL -eq 0 ) ]]; then
             ethtool_info=$(ethtool $int_name | egrep -o '(Speed|Link detected):\s+\S+')
             int_speed=$(echo "$ethtool_info" | awk -F':' '/Speed/{print $2}' | sed -e 's/://g;s/\s\+//g;')
             int_link=$( echo "$ethtool_info" | awk -F':' '/Link/{print $2}'  | sed -e 's/://g;s/\s\+//g;' )
             int_mac=$(echo "$int_data" | egrep -o "ether\s+\S+" | awk '{print $2}')
-            [[ $DEBUG -gt 0 ]] && \
-                echo "+ int_name=$int_name"
+            [[ $DEBUG -gt 0 ]] && echo "+ int_name=$int_name"
         else
-            [[ $DEBUG -gt 0 ]] &&
-                echo "- int_name=$int_name"
+            [[ $DEBUG -gt 0 ]] && echo "- int_name=$int_name"
         fi
 
         if [[ ( $check_link_status -eq 1 ) && ( "$int_link" != "yes" ) ]]; then
-            [[ $DEBUG -gt 0 ]] && \
-                echo "$(get_text "$BU2019" "$int_name" "$int_link")"
+            [[ $DEBUG -gt 0 ]] && echo "$(get_text "$BU2019" "$int_name" "$int_link")"
             continue
         fi
 
@@ -694,13 +638,9 @@ get_local_network(){
         # eth0:1 or eth0 - several times
         local int_subs=$(echo "$int_data" | grep '^inet\s\+' | awk '{print $NF}')
         local int_subs_count=$(echo "$int_subs" | wc -l)
-        local int_subs_unique=$(echo "$int_subs" | \
-            sort | uniq -c | \
-            sed -e "s/^\s\+//;s/\s\+$//;s/\s\+/=/")
+        local int_subs_unique=$(echo "$int_subs" | sort | uniq -c | sed -e "s/^\s\+//;s/\s\+$//;s/\s\+/=/")
 
-        [[ $DEBUG -gt 0 ]] && \
-            echo "--> int_speed=$int_speed int_link=$int_link int_mac=$int_mac int_subs_count=$int_subs_count"
-
+        [[ $DEBUG -gt 0 ]] && echo "--> int_speed=$int_speed int_link=$int_link int_mac=$int_mac int_subs_count=$int_subs_count"
     
         # processing sub interfaces; different records in HOST_NETWORK_INFO and HOST_IPS lists
         if [[ $int_subs_count -gt 1 ]]; then
@@ -708,8 +648,7 @@ get_local_network(){
             for sub_name_info in $int_subs_unique; do
                 sub_cnt=$(echo "$sub_name_info" | awk -F'=' '{print $1}')
                 sub_name=$(echo "$sub_name_info" | awk -F'=' '{print $2}')
-                local sub_addr=$(echo "$int_data" | grep "$sub_name$" | \
-                    egrep -o "inet [0-9\.]+" | awk '{print $2}')
+                local sub_addr=$(echo "$int_data" | grep "$sub_name$" | egrep -o "inet [0-9\.]+" | awk '{print $2}')
 
                 # IPADDR2/PREFIX2 in sysconfig file
                 if [[ $sub_cnt -gt 1 ]]; then
@@ -717,10 +656,8 @@ get_local_network(){
                     local sa=
                     for sa in $sub_addr; do
                         [[ $sub_id -gt 0 ]] && continue
-                        [[ $DEBUG -gt 0  ]] && \
-                            echo "----> sub_name=${sub_name}/$sub_id sub_addr=$sa"
-                        if [[ ( -n $sa ) && \
-                            ( $(echo "$sa" | awk -F'.' '{print $1}') -ne 127 ) ]]; then
+                        [[ $DEBUG -gt 0  ]] && echo "----> sub_name=${sub_name}/$sub_id sub_addr=$sa"
+                        if [[ ( -n $sa ) && ( $(echo "$sa" | awk -F'.' '{print $1}') -ne 127 ) ]]; then
                             HOST_INT_COUNT=$(($HOST_INT_COUNT+1))
                             HOST_IPS=$HOST_IPS"$sub_name=$sa "
                             HOST_NETWORK=$(($HOST_NETWORK+1))
@@ -731,23 +668,18 @@ get_local_network(){
                                 if [[ $sa != "$CLIENT_IP" ]]; then
                                     status_int="primary changed"
                                 fi
-                                printf "%10s | %10s | %12s | %20s | %s ($status_int)\n" \
-                                    "$sub_name" "$int_link" "$int_speed" "$int_mac" "$sa"
+                                printf "%10s | %10s | %12s | %20s | %s ($status_int)\n" "$sub_name" "$int_link" "$int_speed" "$int_mac" "$sa"
                             else
-                                printf "%10s | %10s | %12s | %20s | %s\n" \
-                                    "$sub_name" "$int_link" "$int_speed" "$int_mac" "$sa"
+                                printf "%10s | %10s | %12s | %20s | %s\n" "$sub_name" "$int_link" "$int_speed" "$int_mac" "$sa"
                             fi
- 
                         fi
                         sub_id=$(( $sub_id + 1 ))
                     done
                 else
-                    [[ $DEBUG -gt 0 ]] && \
-                        echo "----> sub_name=$sub_name sub_addr=$sub_addr"
+                    [[ $DEBUG -gt 0 ]] && echo "----> sub_name=$sub_name sub_addr=$sub_addr"
 
                     # ip address is found
-                    if [[ ( -n $sub_addr ) && \
-                        ( $(echo "$sub_addr" | awk -F'.' '{print $1}') -ne 127 ) ]]; then
+                    if [[ ( -n $sub_addr ) && ( $(echo "$sub_addr" | awk -F'.' '{print $1}') -ne 127 ) ]]; then
                         HOST_INT_COUNT=$(($HOST_INT_COUNT+1))
                         HOST_IPS=$HOST_IPS"$sub_name=$sub_addr "
                         HOST_NETWORK=$(($HOST_NETWORK+1))
@@ -758,45 +690,33 @@ get_local_network(){
                             if [[ $sub_addr != "$CLIENT_IP" ]]; then
                                 status_int="primary changed"
                             fi
- 
-                            printf "%10s | %10s | %12s | %20s | %s ($status_int)\n" \
-                                "$sub_name" "$int_link" "$int_speed" "$int_mac" "$sub_addr"
- 
-                        else
-                            printf "%10s | %10s | %12s | %20s | %s\n" \
-                                "$sub_name" "$int_link" "$int_speed" "$int_mac" "$sub_addr"
+                             printf "%10s | %10s | %12s | %20s | %s ($status_int)\n" "$sub_name" "$int_link" "$int_speed" "$int_mac" "$sub_addr"
+                         else
+                            printf "%10s | %10s | %12s | %20s | %s\n" "$sub_name" "$int_link" "$int_speed" "$int_mac" "$sub_addr"
                         fi
- 
-                   fi
+                    fi
                     # ip address is not found => skip
                     # Notice: need to add support for inet6 
                 fi
             done
         else
-            local int_addr=$(echo "$int_data" | grep "$int_name$" | \
-                egrep -o "inet [0-9\.]+" | awk '{print $2}')
+            local int_addr=$(echo "$int_data" | grep "$int_name$" | egrep -o "inet [0-9\.]+" | awk '{print $2}')
             # ip address is found
-            if [[ ( -n $int_addr ) && \
-                ( $(echo "$int_addr" | awk -F'.' '{print $1}') -ne 127 ) ]]; then
+            if [[ ( -n $int_addr ) && ( $(echo "$int_addr" | awk -F'.' '{print $1}') -ne 127 ) ]]; then
                 HOST_INT_COUNT=$(($HOST_INT_COUNT+1))
                 HOST_IPS=$HOST_IPS"$int_name=$int_addr "
                 HOST_NETWORK=$(($HOST_NETWORK+1))
                 HOST_NETWORK_INFO=$HOST_NETWORK_INFO"$HOST_INT_COUNT#$int_name#$int_mac#$int_addr "
  
-
                 if [[ $int_name == "$CLIENT_INT" ]]; then
                     status_int=primary
                     if [[ $int_addr != "$CLIENT_IP" ]]; then
                         status_int="primary changed"
                     fi
- 
-                    printf "%10s | %10s | %12s | %20s | %s ($status_int)\n" \
-                        "$int_name" "$int_link" "$int_speed" "$int_mac" "$int_addr"
+                    printf "%10s | %10s | %12s | %20s | %s ($status_int)\n" "$int_name" "$int_link" "$int_speed" "$int_mac" "$int_addr"
                 else
-                    printf "%10s | %10s | %12s | %20s | %s\n" \
-                        "$int_name" "$int_link" "$int_speed" "$int_mac" "$int_addr"
+                    printf "%10s | %10s | %12s | %20s | %s\n" "$int_name" "$int_link" "$int_speed" "$int_mac" "$int_addr"
                 fi
- 
             fi
             # ip address is not found => skip
             # Notice: need to add support for inet6 
@@ -807,8 +727,6 @@ get_local_network(){
     # skip final spaces
     HOST_IPS=$(echo "$HOST_IPS" | sed -e 's/\s\+$//')
     HOST_NETWORK_INFO=$(echo "$HOST_NETWORK_INFO" | sed -e 's/\s\+$//')
-
-
     # return 0
 }
 
@@ -821,9 +739,7 @@ get_site_my_connect() {
     local _tmpdir="${3:-/opt/webdir/tmp}"
     local _file_type="${4:-my_cnf}"
 
-    $bx_sites_script -a $_file_type \
-        --site "$_site_name" -r "$_site_root" \
-        --tmpdir $_tmpdir | grep '^bxSite:db:'
+    $bx_sites_script -a $_file_type --site "$_site_name" -r "$_site_root" --tmpdir $_tmpdir | grep '^bxSite:db:'
 }
 
 # create random string
@@ -837,17 +753,14 @@ create_random_string() {
 test_passw_bitrix_localhost() {
     test_pwd=$(chage -l bitrix)
   
-    _test_Last_password_change=$(echo "$test_pwd" | \
-        awk -F':' '/Last password change/{print $2}' | \
-        sed 's/^\s\+//;s/\s\+$//;')
+    _test_Last_password_change=$(echo "$test_pwd" | awk -F':' '/Last password change/{print $2}' | sed 's/^\s\+//;s/\s\+$//;')
 
     if [[ $(echo "$_test_Last_password_change" | grep -ic 'password must be changed') -gt 0 ]]; then
-        clear
+        [[ $DEBUG -eq 0 ]] && clear
         print_color_text "$BU0018" red
         passwd bitrix
         if [[ $? -gt 0 ]]; then
-            print_message "$BU1001" "$BU0018" \
-                "" any_key
+            print_message "$BU1001" "$BU0018" "" any_key
             exit 1
         fi
     fi
@@ -855,56 +768,51 @@ test_passw_bitrix_localhost() {
 
 # send client setting to master
 update_client_settings() {
-  client_address="${1}"
+    client_address="${1}"
 
-  http_url="https://$MASTER_IP:$MASTER_PORT/change?client_ip=$client_address"
-  http_cmd="/usr/bin/curl -s"
-  http_conn_time=10
-  http_max_time=30
-  http_user_agent="Updater/$CLIENT_NAME"
-  _update_temp=/tmp/update_$(date +%s)
-  curl --fail --silent --show-error \
-   -A $http_user_agent --connect-timeout $http_conn_time --max-time $http_max_time \
-   --user $CLIENT_ID:$CLIENT_PASSWD \
-   --insecure --write-out "http_code=%{http_code}" $http_url > $_update_temp 2>&1
-  curl_exit=$?
+    http_url="https://$MASTER_IP:$MASTER_PORT/change?client_ip=$client_address"
+    http_cmd="/usr/bin/curl -s"
+    http_conn_time=10
+    http_max_time=30
+    http_user_agent="Updater/$CLIENT_NAME"
+    _update_temp=/tmp/update_$(date +%s)
+    curl --fail --silent --show-error -A $http_user_agent --connect-timeout $http_conn_time --max-time $http_max_time --user $CLIENT_ID:$CLIENT_PASSWD --insecure --write-out "http_code=%{http_code}" $http_url > $_update_temp 2>&1
+    curl_exit=$?
 
-  if [[ $curl_exit -gt 0 ]]; then
-    print_log "curl return error code=$curl_exit: $(head -1 $_update_temp)" $LOGS_FILE
-    UPDATE_SEND=0
-    # test returned code: 401 (incorrect host login and password)
-    [[ $curl_exit -eq 22 ]] && UPDATE_SEND=255
-    rm -f $_update_temp
-  else
-    UPDATE_SEND=1
-    rm -f $_update_temp
-  fi
-  #echo $UPDATE_SEND
+    if [[ $curl_exit -gt 0 ]]; then
+	print_log "curl return error code=$curl_exit: $(head -1 $_update_temp)" $LOGS_FILE
+	UPDATE_SEND=0
+	# test returned code: 401 (incorrect host login and password)
+	[[ $curl_exit -eq 22 ]] && UPDATE_SEND=255
+	rm -f $_update_temp
+    else
+	UPDATE_SEND=1
+	rm -f $_update_temp
+    fi
+    #echo $UPDATE_SEND
 }
 
 # save master settings in master log
-update_master_settings(){
-  master_address="${1}"
-  master_id="${2}"
+update_master_settings() {
+    master_address="${1}"
+    master_id="${2}"
 
-  #print_log "$ansible_wrapper -a update_network --host_id $master_id -i $master_address" $LOGS_FILE
+    #print_log "$ansible_wrapper -a update_network --host_id $master_id -i $master_address" $LOGS_FILE
 
-  update_inf=$($ansible_wrapper -a update_network \
-      --host_id $master_id -i $master_address)
-  update_err=$(echo "$update_inf" | grep '^error:' | sed -e 's/^error://')
-  if [[ -z "$update_err" ]]; then
-    UPDATE_SEND=1
-  else
-    UPDATE_SEND=0
-  fi
+    update_inf=$($ansible_wrapper -a update_network --host_id $master_id -i $master_address)
+    update_err=$(echo "$update_inf" | grep '^error:' | sed -e 's/^error://')
+    if [[ -z "$update_err" ]]; then
+	UPDATE_SEND=1
+    else
+	UPDATE_SEND=0
+    fi
 }
 
 # test sites configuration before start create mysql cluster
 # STOP_BY_KERNELS - doesn't create cluster because kernel sites > 1
 # STOP_BY_SCALE   - doesn't create cluster because there are sites without scale module
 # STOP_BY_CLUSTER - doesn't create cluster because there are sites without scale module
-test_sites_config(){
-
+test_sites_config() {
   sites_test=$($bx_sites_script -a cluster_test)
 
   STOP_BY_KERNELS=$(echo "$sites_test" | awk -F':' '/:general:/{print $3}')
@@ -919,9 +827,7 @@ test_sites_config(){
     printf "%20s | %s\n" "$BU0021" "$BU0022"
     echo $MENU_SPACER
     for def in $(echo "$sites_test" | awk -F':' '/:kernels:/{print $3}' | sed -e 's/;/ /g;'); do
-      printf "%20s | %s\n" \
-       "$(echo $def | awk -F'=' '{print $1}')" \
-       "$(echo $def | awk -F'=' '{print $2}')"
+      printf "%20s | %s\n" "$(echo $def | awk -F'=' '{print $1}')" "$(echo $def | awk -F'=' '{print $2}')"
     done
     echo $MENU_SPACER
     STOP_ALL_CONDITIONS=$(( $STOP_ALL_CONDITIONS+1 ))
@@ -934,13 +840,10 @@ test_sites_config(){
     printf "%20s | %s\n" "$BU0021" "$BU0022"
     echo $MENU_SPACER
     for def in $(echo "$sites_test" | awk -F':' '/:scale:/{print $3}' | sed -e 's/;/ /g;'); do
-      printf "%20s | %s\n" \
-       "$(echo $def | awk -F'=' '{print $1}')" \
-       "$(echo $def | awk -F'=' '{print $2}')"
+      printf "%20s | %s\n" "$(echo $def | awk -F'=' '{print $1}')" "$(echo $def | awk -F'=' '{print $2}')"
     done
     echo $MENU_SPACER
     STOP_ALL_CONDITIONS=$(( $STOP_ALL_CONDITIONS+1 ))
-
   fi
 
   if [[ $STOP_BY_CLUSTER -gt 0 ]]; then
@@ -950,13 +853,10 @@ test_sites_config(){
     printf "%20s | %s\n" "$BU0021" "$BU0022"
     echo $MENU_SPACER
     for def in $(echo "$sites_test" | awk -F':' '/:cluster:/{print $3}' | sed -e 's/;/ /g;'); do
-      printf "%20s | %s\n" \
-       "$(echo $def | awk -F'=' '{print $1}')" \
-       "$(echo $def | awk -F'=' '{print $2}')"
+      printf "%20s | %s\n" "$(echo $def | awk -F'=' '{print $1}')" "$(echo $def | awk -F'=' '{print $2}')"
     done
     echo $MENU_SPACER
     STOP_ALL_CONDITIONS=$(( $STOP_ALL_CONDITIONS+1 ))
-
   fi
 }
 
@@ -985,33 +885,26 @@ test_hostname() {
 
     # test hostname 
     if [[ -z "${q_host}" ]]; then
-        [[ $q_type -gt 0 ]] && \
-            print_message "$BU1002" "$BU2020" "" any_key
+        [[ $q_type -gt 0 ]] && print_message "$BU1002" "$BU2020" "" any_key
         return 255
     fi
 
     # test initial host name regexp
     if [[ $(echo "${q_host}" | egrep -c "$hostname_regexp" ) -gt 0 ]]; then
-
         # test localhost aliases
         if [[ $(echo "${q_host}" | egrep -c "$localhost_names") -gt 0 ]]; then
-            [[ $q_type -gt 0 ]] && \
-                print_message "$BU1002" "$(get_text "$BU2021" "$q_host")" "" any_key
+            [[ $q_type -gt 0 ]] && print_message "$BU1002" "$(get_text "$BU2021" "$q_host")" "" any_key
             return 2
-                    
         # test names cannot consist entirely of numbers.
         elif [[ $(echo "${q_host}" | egrep -c "$number_names") -gt 0 ]]; then
-             [[ $q_type -gt 0 ]] && \
-                 print_message "$BU1002" "$(get_text "$BU2022" "$q_host")" "" any_key
+             [[ $q_type -gt 0 ]] && print_message "$BU1002" "$(get_text "$BU2022" "$q_host")" "" any_key
              return 3
         fi
 
         # alil test passed
         # if limit size defined, check it
-        if [[ ${q_size} -gt 0 ]] 2>/dev/null; then
+        if [[ ${q_size} -gt 0 ]] 2> /dev/null; then
             len_hostname=$(echo -n "${q_host}" | wc -c)
-
-
             # hostname `test` 
             # len 4
             if [[ $DEBUG -gt 0 ]]; then
@@ -1022,9 +915,7 @@ test_hostname() {
             if [[ ${len_hostname} -le ${q_size} ]]; then
                     test_hostname=1
             else
-               [[ $q_type -gt 0 ]] && \
-                   print_message "$BU1002" \
-                   "$(get_text "$BU2023" "$q_host" "$q_size")" "" "" any_key
+               [[ $q_type -gt 0 ]] && print_message "$BU1002" "$(get_text "$BU2023" "$q_host" "$q_size")" "" "" any_key
                return 1
             fi
         fi
@@ -1046,7 +937,7 @@ test_hostname() {
 # return 1      - cache file doesn't exist
 # return 2      - cache file is expired
 # return 255    - unknown error
-test_cache_file(){
+test_cache_file() {
     local cache_file="${1}"
     local cache_lv="${2:-7200}"
 
@@ -1064,25 +955,35 @@ test_cache_file(){
 }
 
 # test bitrix-env new version
-test_bitrix_update(){
+test_bitrix_update() {
+    [[ -z $OS_VERSION ]] && get_os_type
+
     local bitrix_update_cache=$CACHE_DIR/bitrix_update.cache
     local bitrix_update_lv=86400
     local bitrix_rtn=0
 
     test_cache_file $bitrix_update_cache
     if [[ $? -gt 0 ]]; then
-        yum makecache fast >/dev/null 2>&1
-        yum check-update | grep -c '^bitrix-env' > $bitrix_update_cache 2>/dev/null
+        # VMBITRIX_9.0
+        if [[ $OS_VERSION -eq 9 ]]; then
+            dnf makecache > /dev/null 2>&1
+            dnf check-update | grep -c '^bitrix-env' > $bitrix_update_cache 2> /dev/null
+        elif [[ $OS_VERSION -eq 7 ]]; then
+            yum makecache fast > /dev/null 2>&1
+            yum check-update | grep -c '^bitrix-env' > $bitrix_update_cache 2> /dev/null
+        else
+            yum makecache fast > /dev/null 2>&1
+            yum check-update | grep -c '^bitrix-env' > $bitrix_update_cache 2> /dev/null
+        fi
     fi
-    return $(cat $bitrix_update_cache) 
-    
+    return $(cat $bitrix_update_cache)
 }
 
 # print menu
-print_menu(){
+print_menu() {
     IFS_BAK=$IFS
     IFS=$'\n'
-    echo "$BU0029"
+    echo -e "\t\t" "$BU0029"
     for menu_item in $menu_list; do
         echo -e "\t\t" $menu_item
     done
@@ -1090,26 +991,24 @@ print_menu(){
     IFS_BAK=
 }
 
-log_to_file(){
+log_to_file() {
     log_message="${1}"
     notice="${2:-INFO}"
-    printf "%20s: %5s [%s] %s\n" \
-        "$(date +"%Y/%m/%d %H:%M:%S")" $$ "$notice" "$log_message" >> $LOGS_FILE
-    [[ $DEBUG -gt 0 ]] && \
-        printf "%20s: %5s [%s] %s\n" \
+    printf "%20s: %5s [%s] %s\n" "$(date +"%Y/%m/%d %H:%M:%S")" \
+        $$ "$notice" "$log_message" >> $LOGS_FILE
+    [[ $DEBUG -gt 0 || $VERBOSE -gt 0 ]] && printf "%20s: %5s [%s] %s\n" \
         "$(date +"%Y/%m/%d %H:%M:%S")" $$ "$notice" "$log_message" 1>&2
     return 0
 }
 
-
-# Centos7:
+# CentOS7 + CentOS Stream 9:
 # mysql-community-server => mysql-community
 # Percona-Server-server  => percona
 # MariaDB-server         => MariaDB
 # mariadb-server         => mariadb
 # Centos6:
 # mysql-server           => mysql
-get_mysql_package(){
+get_mysql_package() {
     [[ -n $MYSQL_PACKAGE ]] && return 0
 
     PACKAGES_LIST=$(rpm -qa)
@@ -1119,21 +1018,17 @@ get_mysql_package(){
     if [[ $(echo "$PACKAGES_LIST" | grep -c '^mysql-community-server') -gt 0 ]]; then
         MYSQL_PACKAGE=mysql-community-server
         MYSQL_SERVICE=mysqld
-    
     # Percona 5.6 && 5.7
     elif [[ $(echo "$PACKAGES_LIST" | grep -c '^Percona-Server-server') -gt 0 ]]; then
         MYSQL_PACKAGE=Percona-Server-server
         MYSQL_SERVICE=mysqld
-
     # Percona 8.0
     elif [[ $(echo "$PACKAGES_LIST" | grep -c '^percona-server-server') -gt 0  ]]; then
         MYSQL_PACKAGE=percona-server-server
         MYSQL_SERVICE=mysqld
-
     elif [[ $(echo "$PACKAGES_LIST" | grep -c '^MariaDB-server') -gt 0 ]]; then
         MYSQL_PACKAGE=MariaDB-server
         MYSQL_SERVICE=mariadb
-
     elif [[ $(echo "$PACKAGES_LIST" | grep -c '^mariadb-server') -gt 0 ]]; then
         MYSQL_PACKAGE=mariadb-server
         MYSQL_SERVICE=mariadb
@@ -1143,26 +1038,29 @@ get_mysql_package(){
     else
         return 1
     fi
-    MYSQL_VERSION=$(rpm -qa --queryformat '%{version}' ${MYSQL_PACKAGE}* | \
-        head -1 | awk -F'.' '{printf "%d.%d", $1,$2}' )
+    MYSQL_VERSION=$(rpm -qa --queryformat '%{version}' ${MYSQL_PACKAGE}* | head -1 | awk -F'.' '{printf "%d.%d", $1,$2}' )
     MYSQL_MID_VERSION=$(echo "$MYSQL_VERSION" | awk -F'.' '{print $2}')
     MYSQL_UNI_VERSION=$(echo "$MYSQL_VERSION" | awk -F'.' '{printf "%s%s", $1,$2}')
 
     # mysql status
     [[ -z $OS_VERSION ]] && get_os_type
     MYSQL_STATUS=
-    if [[ $OS_VERSION -eq 7 ]]; then
-        systemctl is-active $MYSQL_SERVICE >/dev/null 2>&1
+
+    # VMBITRIX_9.0
+    if [[ $OS_VERSION -eq 9 ]]; then
+        systemctl is-active $MYSQL_SERVICE > /dev/null 2>&1
+        status_rtn=$?
+    elif [[ $OS_VERSION -eq 7 ]]; then
+        systemctl is-active $MYSQL_SERVICE > /dev/null 2>&1
         status_rtn=$?
     else
-		MYSQL_INIT_SCRIPT=/etc/init.d/mysqld
+	MYSQL_INIT_SCRIPT=/etc/init.d/mysqld
         MYSQL_SERVICE_NAME=mysqld
-
         if [[ -f /etc/init.d/mysql ]]; then
             MYSQL_INIT_SCRIPT=/etc/init.d/mysql
             MYSQL_SERVICE_NAME=mysql
         fi
-        $MYSQL_INIT_SCRIPT status | grep -wc running >/dev/null 2>&1
+        $MYSQL_INIT_SCRIPT status | grep -wc running > /dev/null 2>&1
         status_rtn=$?
     fi
     if [[ $status_rtn -gt 0 ]]; then
@@ -1172,12 +1070,16 @@ get_mysql_package(){
     fi
 }
 
-my_start () {
+my_start() {
     [[ -z $MYSQL_STATUS ]] && get_mysql_package
     [[ -z $OS_VERSION ]] && get_os_type
 
     [[ $MYSQL_STATUS == "running" ]] && return 0
-    if [[ $OS_VERSION -eq 7 ]]; then
+
+    # VMBITRIX_9.0
+    if [[ $OS_VERSION -eq 9 ]]; then
+        systemctl start $MYSQL_SERVICE
+    elif [[ $OS_VERSION -eq 7 ]]; then
         systemctl start $MYSQL_SERVICE
     else
         service mysqld start
@@ -1185,29 +1087,25 @@ my_start () {
 }
 
 # copy-paste from mysql_secure_installation; you can find explanation in that script
-basic_single_escape () {
+basic_single_escape() {
     echo "$1" | sed 's/\(['"'"'\]\)/\\\1/g'
 }
 
 # generate random password
-randpw(){
+randpw() {
     local len="${1:-20}"
     local pt="${2:-0}"
     if [[ $pt -eq 0 ]]; then
-        </dev/urandom tr -dc '?!@&\-_+@%\(\)\{\}\[\]=0-9a-zA-Z' | head -c$len; echo ""
-
+        </dev/urandom tr -dc '?!@&\-_+@%=.,;/0-9a-zA-Z' | head -c$len; echo ""
     elif [[ $pt -ge 10 ]]; then
         </dev/urandom tr -dc '\-_+=0-9a-zA-Z' | head -c$len; echo ""
-
     else
         </dev/urandom tr -dc '0-9a-z' | head -c$len; echo ""
-
     fi
-
 }
 
 # generate client mysql config
-my_config(){
+my_config() {
     local cfg="${1:-$MYSQL_CNF}"
     echo "# mysql bvat config file" > $cfg
     echo "[client]" >> $cfg
@@ -1218,7 +1116,7 @@ my_config(){
 }
 
 # run query
-my_query(){
+my_query() {
     local query="${1}"
     local cfg="${2:-$MYSQL_CNF}"
     [[ -z $query ]] && return 1
@@ -1233,7 +1131,7 @@ my_query(){
 }
 
 # query and result
-my_select(){
+my_select() {
     local query="${1}"
     local cfg="${2:-$MYSQL_CNF}"
     [[ -z $query ]] && return 1
@@ -1247,14 +1145,13 @@ my_select(){
     return $mysql_rtn
 }
 
-my_additional_security(){
+my_additional_security() {
     # delete anonymous users
     my_query "DELETE FROM mysql.user WHERE User='';"
     [[ $? -eq 0 ]] && print_color_text "$BU0030"
 
     # remove remote root
-    my_query \
-        "DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');"
+    my_query "DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');"
     [[ $? -eq 0 ]] && print_color_text "$BU0031"
 
     # remove test database
@@ -1267,16 +1164,14 @@ my_additional_security(){
     # flush privileges
     my_query "FLUSH PRIVILEGES;"
     [[ $? -eq 0 ]] && print_color_text "$BU0034"
-
 }
 
-update_site_settings(){
+update_site_settings() {
     local path=${1:-/home/bitrix/www/bitrix/.settings.php}
     tmp_path=$path.tmp
 
     [[ -z $BX_PASSWORD ]] && return 2
     [[ -z $BX_USER ]] && return 2
-
     [[ ! -f $path ]] && return 1
     #cp -f $path $path.bak
     log_to_file "$(get_text "$BU0036" "$path")"
@@ -1300,16 +1195,14 @@ update_site_settings(){
     chown bitrix:bitrix $path
     chmod 640 $path
     log_to_file "$(get_text "$BU0035" "$path")"
-
 }
 
-update_site_dbconn(){
+update_site_dbconn() {
     local path=${1:-/home/bitrix/www/bitrix/php_interface/dbconn.php}
     tmp_path=$path.tmp
 
     [[ -z $BX_PASSWORD ]] && return 2
     [[ -z $BX_USER ]] && return 2
-
     [[ ! -f $path ]] && return 1
     #cp -f $path $path.bak
     log_to_file "$(get_text "$BU0036" "$path")"
@@ -1335,24 +1228,27 @@ update_site_dbconn(){
 
 # create mysql account and database for default site
 # MYSQL_USER_BASE
-update_site_mysql_data(){
+update_site_mysql_data() {
     user_select="${1}"
-
 
     user_tmp=$(mktemp /tmp/XXXXXX_user)
     BX_PASSWORD=
     BX_USER=
 
+    # process for existen user
     if [[ -n $user_select ]]; then
         BX_USER="$user_select"
+
+    # process for new one
+    # generate new user
     else
         user_id=0
 
         # choose user name
+        # test if it free; user1, user2 .. user20 => exit
         test_limits=20
         while [[ ( -z $BX_USER ) && ( $test_limits -gt 0 ) ]]; do
             test_user="${MYSQL_USER_BASE}${user_id}"
-
             log_to_file "$(get_text "$BU0037" "$test_user")"
             my_select "SELECT User FROM mysql.user WHERE User='$test_user'" > $user_tmp 2>&1
             if [[ $? -gt 0 ]]; then
@@ -1364,8 +1260,7 @@ update_site_mysql_data(){
             # if temporary file contains username than request return value and user exists
             is_user=$(cat $user_tmp | grep -wc "$test_user")
 
-            [[ $is_user -eq 0 ]] && \
-                BX_USER="$test_user"
+            [[ $is_user -eq 0 ]] && BX_USER="$test_user"
 
             user_id=$(( $user_id + 1 ))
             test_limits=$(( $test_limits - 1 ))
@@ -1376,21 +1271,28 @@ update_site_mysql_data(){
             rm -f $user_tmp
             exit 1
         fi
+
         log_to_file "$(get_text "$BU0038" "$BX_USER")"
     fi
+    
     # create/update user
     my_query="CREATE"
     [[ -n $user_select ]] && my_query="ALTER"
     BX_PASSWORD=$(randpw)
     esc_db_password=$(basic_single_escape $BX_PASSWORD)
-    my_query "$my_query USER '$BX_USER'@'localhost' IDENTIFIED BY '$esc_db_password';" > $user_tmp 2>&1
+    local sql_query="$my_query USER '$BX_USER'@'localhost' IDENTIFIED BY '$esc_db_password';"
+    local sql_query_log="$my_query USER '$BX_USER'@'localhost' IDENTIFIED BY '$FAKE_PASSWORD';"
+
+    log_to_file "Starting query=$my_query for user=$BX_USER"
+    my_query "$sql_query" > $user_tmp 2>&1
+
     if [[ $? -gt 0 ]]; then
-        log_to_file "Cannot $my_query $BX_USER"
+        log_to_file "-- query: $sql_query_log"
         cat $user_tmp >> $LOGS_FILE
         rm -f $user_tmp
         exit 1
     fi
-    log_to_file "$my_query mysql user=$BX_USER password=$BX_PASSWORD"
+    log_to_file "++ query: $sql_query_log"
 
     # grant access
     my_query "GRANT ALL PRIVILEGES ON $BX_DB.* TO '$BX_USER'@'localhost';" >$user_tmp 2>&1
@@ -1402,13 +1304,12 @@ update_site_mysql_data(){
     fi
     log_to_file "$(get_text "$BU0039" "$BX_USER" "$BX_DB")"
 
-    # create database
+    # delete temporary file
     rm -f $user_tmp
 }
 
-my_generate_rootpw(){
-    [[ -z $MYSQL_VERSION ]] && \
-        get_mysql_package
+my_generate_rootpw() {
+    [[ -z $MYSQL_VERSION ]] && get_mysql_package
     # start mysql
     my_start
 
@@ -1416,7 +1317,7 @@ my_generate_rootpw(){
 
     if [[ ! -f $MYSQL_CNF ]]; then
         log_to_file "$(get_text "$BU0041" "$MYSQL_CNF")"
-        if [[ $MYSQL_MID_VERSION -eq 7 ]]; then
+        if [[ $MYSQL_UNI_VERSION -ge 57 ]]; then
             MYSQL_LOG_FILE=/var/log/mysqld.log
             MYSQL_ROOTPW=$(grep 'temporary password' $MYSQL_LOG_FILE | awk '{print $NF}')
             MYSQL_ROOTPW_TYPE=temporary
@@ -1445,21 +1346,28 @@ my_generate_rootpw(){
     # generate root password and update mysql settings
     MYSQL_ROOTPW=$(randpw)
     local esc_pass=$(basic_single_escape "$MYSQL_ROOTPW")
-    if [[ $MYSQL_MID_VERSION -gt 5 ]]; then
-        my_query "ALTER USER 'root'@'localhost' IDENTIFIED BY '$esc_pass';" \
-            "$mysql_update_config"
-        my_query_rtn=$?
-    else
-        my_query \
-            "UPDATE mysql.user SET Password=PASSWORD('$esc_pass') WHERE User='root'; FLUSH PRIVILEGES;" \
-            "$mysql_update_config"
-        my_query_rtn=$?
+    
+    # default mysql 8.0
+    local update_sql="ALTER USER 'root'@'localhost' IDENTIFIED BY '$esc_pass'; \
+        FLUSH PRIVILEGES;"
+    local update_sql_log="ALTER USER 'root'@'localhost' IDENTIFIED BY '$FAKE_PASSWORD';"
+ 
+    if [[ $MYSQL_UNI_VERSION -le 57 ]]; then
+        update_sql="UPDATE mysql.user SET Password=PASSWORD('$esc_pass') \
+        WHERE User='root'; FLUSH PRIVILEGES;"
+        update_sql_log="UPDATE mysql.user SET Password=PASSWORD('$FAKE_PASSWORD') \
+        WHERE User='root';"
     fi
 
+    my_query "$update_sql" "$mysql_update_config"
+    my_query_rtn=$?
+
     if [[ $my_query_rtn -eq 0 ]]; then
+        log_to_file "+ query: $update_sql_log"
         log_to_file "$BU0044"
         rm -f $mysql_update_config
     else
+        log_to_file "- query: $update_sql_log"
         log_to_file "$BU0045"
         rm -f $mysql_update_config
         return 1
@@ -1472,77 +1380,113 @@ my_generate_rootpw(){
     # configure additional options
     my_additional_security
     log_to_file "$BU0047"
+    return 0
 }
 
-my_generate_sitepw(){
+my_generate_sitepw() {
     local site_dir="${1:-/home/bitrix/www}"
     local site_dbcon="$site_dir/bitrix/php_interface/dbconn.php"
     local site_settings="$site_dir/bitrix/.settings.php"
-    local site_db=$(cat $site_dbcon | \
-        grep -v '^#\|^$\|^;' | grep -w DBName | \
-        awk -F'=' '{print $2}' | sed -e 's/"//g;s/;//;s/\s\+//')
+    local site_db=$(cat $site_dbcon | grep -v '^#\|^$\|^;' | \
+        grep -w DBName | awk -F'=' '{print $2}' | sed -e 's/"//g;s/;//;s/\s\+//')
 
     [[ -f $site_dbcon && -f $site_settings ]]  || return 1
     [[ -z $site_db ]] && return 1
     BX_DB="$site_db"
 
     # test root login in config files
-    dbconn_info=$(cat $site_dbcon | grep -v '\(^$\|^;\|^#\)' | \
-        grep -w "DBLogin")
-    settings_info=$(cat $site_settings | grep -v '\(^$\|^;\|^#\)' | \
-        grep -w "login")
-
+    dbconn_info=$(cat $site_dbcon | grep -v '\(^$\|^;\|^#\)' | grep -w "DBLogin")
+    settings_info=$(cat $site_settings | grep -v '\(^$\|^;\|^#\)' | grep -w "login")
+    
+    # only for deafult site
+    # 'login'    => 'bitrix0'
+    # there is root account in dbconn.php or settings.php
     is_root_dbcon=$(echo "$dbconn_info" | grep -wc "root")
     is_root_settings=$(echo "$settings_info"  | grep -wc "root")
 
+    # there is bitrix account in dbconn.php or settings.php
     is_bitrix_dbcon=$(echo "$dbconn_info" | grep -c "bitrix")
     is_bitrix_settings=$(echo "$settings_info"  | grep -c "bitrix")
 
     BX_USER=
+    
+    # if user found in dbconn; get it name from it 
     if [[ $is_bitrix_dbcon -gt 0 ]]; then
         BX_USER=$(echo "$dbconn_info" | awk -F'=' '{print $2}' | \
-            sed -e "s/^\s\+//;s/\s\+$//" | \
-            sed -e "s/^'//;s/;$//;s/'$//")
+            sed -e "s/^\s\+//;s/\s\+$//" | sed -e "s/^'//;s/;$//;s/'$//")
+        log_to_file "There is user=$BX_USER in conf=dbconn.php"
     else
+        # TODO!!! Get from settings.php
         [[ ( $is_root_dbcon -eq 0 ) && ( $is_root_settings -eq 0 ) ]] && return 1
     fi
+
     # generate user settings
     update_site_mysql_data "$BX_USER"
 
     # create db, if not exist
-    [[ ! -d "/var/lib/mysql/$site_db" ]] && \
-        my_query "CREATE DATABASE $site_db"
+    [[ ! -d "/var/lib/mysql/$site_db" ]] && my_query "CREATE DATABASE $site_db"
 
     # update configs
     update_site_dbconn "$site_dbcon"
     update_site_settings "$site_settings"
-
 }
 
-update_crypto_key(){
+update_settings_option() {
+    local option="${1}"
+    local value="${2}"
+    local path="${3:-/home/bitrix/www/bitrix/.settings.php}"
+
+    tmp_path=$path.tmp
+
+    [[ -f $path ]] || return 1
+    log_to_file "$(get_text "$BU0036" "$path")"
+
+    # get 
+    option_line=$(grep -n "'$option'" $path | awk -F':' '{print $1}')
+    if [[ -z $option_line ]]; then
+        log_to_file "$(get_text "$BU202501" "$option" "$path")"
+        exit 1
+    fi
+    esc_value=$(basic_single_escape ${value})
+
+    {
+        head -n $(( $option_line - 1 )) $path
+        echo "        '$option'    => '$esc_value',"
+        tail -n +$(( $option_line+1 )) $path
+    } > $tmp_path
+
+    log_to_file "Replace file $path by $tmp_path"
+    mv -f $tmp_path $path
+    chown bitrix:bitrix $path
+    chmod 640 $path
+    log_to_file "$(get_text "$BU003501" "$option" "$path")"
+}
+
+update_crypto_key() {
     local site_dir="${1:-/home/bitrix/www}"
     local site_settings="$site_dir/bitrix/.settings.php"
-    [[ -f $site_settings ]]  || return 1
 
+    [[ -f $site_settings ]]  || return 1
     secure_key=$(randpw 32 1)
-    sed -i "s/MYSUPERSECRETPHRASE/$secure_key/" $site_settings
+    update_settings_option "crypto_key" "$secure_key"
 }
 
-generate_push(){
+generate_push() {
     [[ -z $OS_VERSION ]] && get_os_type
 
     if [[ -f /etc/sysconfig/push-server-multi ]]; then
-        sed -i "/SECURITY_KEY/d" /etc/sysconfig/push-server-multi && \
-            log_to_file "$BU0048"
+        # delete current key
+        sed -i "/SECURITY_KEY/d" /etc/sysconfig/push-server-multi && log_to_file "$BU0048"
 
-        # generate configs
-        /etc/init.d/push-server-multi reset >/dev/null 2>&1
+        # generate configs && generate SECURITY_KEY in /etc/sysconfig/push-server-multi
+        /etc/init.d/push-server-multi reset > /dev/null 2>&1
         log_to_file "$BU0049"
 
-        # publish variables to apache
+        # get variables from config file
         . /etc/sysconfig/push-server-multi
 
-        if [[ $OS_VERSION -eq 7 ]]; then
+        # VMBITRIX_9.0
+        if [[ $OS_VERSION -ge 7 ]]; then
             log_to_file "$BU0050"
             # delete current one
             sed -i "/BX_PUSH_SECURITY_KEY/d" /etc/httpd/bx/conf/00-environment.conf
@@ -1554,14 +1498,18 @@ generate_push(){
         fi
 
         # settings file
-        sed -i "s/__SECURITY_KEY__/$SECURITY_KEY/" /home/bitrix/www/bitrix/.settings.php
+        update_settings_option "signature_key" "$SECURITY_KEY"
 
         # restart apache
-        service httpd restart >/dev/null 2>&1
+	    if [[ $OS_VERSION -ge 7 ]]; then
+            systemctl restart httpd.service > /dev/null 2>&1
+        else
+            service httpd restart > /dev/null 2>&1
+        fi
     fi
 }
 
-update_bitrix_password(){
+update_bitrix_password() {
     BITRIXTMP=$(mktemp /tmp/.password_XXXXXXX)
     # generate password
     randpw 10 > $BITRIXTMP
@@ -1570,15 +1518,25 @@ update_bitrix_password(){
     cat $BITRIXTMP | passwd --stdin bitrix >> $LOGS_FILE 2>&1
     log_to_file "$BU0051"
 
+    # this password is working for the first logon
+    chage -d0 bitrix >> $LOGS_FILE 2>&1
+
     # delete temporary file
     rm -f $BITRIXTMP
 }
 
+# change issue message (that used in login screen)
+update_issue() {
+    /opt/webdir/bin/bx_motd > /etc/issue.new 2>/dev/null
+    mv -f /etc/issue.new /etc/issue
+    chmod 640 /etc/issue
+}
 
-update_root_password(){
+
+update_root_password() {
     ROOTPASSWORD=/root/ROOT_PASSWORD
     # generate password
-    ROOTPW=$(randpw 10 1)
+    ROOTPW=$(randpw 12 1)
 
     # update user
     log_to_file "$BU0052"
@@ -1589,20 +1547,212 @@ update_root_password(){
     chage -d0 root >> $LOGS_FILE 2>&1
 
     # add cleaner to .bash_profile file
-    echo /opt/webdir/bin/rpm_package/cleaner.sh >> /root/.bash_profile
-    log_to_file "$BU0053"
+    if [[ $(grep -c /opt/webdir/bin/rpm_package/cleaner.sh /root/.bash_profile) -eq 0 ]]; then
+        echo /opt/webdir/bin/rpm_package/cleaner.sh >> /root/.bash_profile
+        log_to_file "$BU0053"
+    fi
+
+    update_issue
 }
 
-generate_ansible_inventory(){
+generate_hostname() {
+    ask_user="${1:-0}"
+    hostident="${2}"
+    # get hostname
+    if [[ -z $hostident ]]; then
+        USED_HOSTNAME=$(hostname)
+    else
+        USED_HOSTNAME="${hostident}"
+    fi
+
+    test_hostname "$USED_HOSTNAME" 0 0 
+    test_hostname_rtn=$?
+    if [[ $test_hostname_rtn -gt 0 ]]; then
+        if [[ $ask_user -gt 0 ]]; then
+            read -r -p "$BU0056" USED_HOSTNAME
+            [[ -z $USED_HOSTNAME  ]] && USED_HOSTNAME=server1
+        else
+            USED_HOSTNAME=server1
+        fi
+    fi
+    log_to_file "$(get_text "$BU0057" "$USED_HOSTNAME")"
+}
+
+generate_int_and_ip() {
+    ask_user="${1:-0}"
+
+    # get host interfaces
+    get_local_network 1> /dev/null 2>&1
+    if [[ $HOST_NETWORK -gt 0  ]]; then
+        # use the first interface
+        USED_INT=
+        USED_IP=
+        for info in $HOST_IPS; do
+            [[ -n $USED_INT ]] && \
+                continue
+            USED_INT=$(echo $info | awk -F'=' '{print $1}')
+            USED_IP=$(echo $info | awk -F'=' '{print $2}')
+        done
+    else
+        log_to_file "$BU2029"
+        return 1
+    fi
+    log_to_file "$(get_text "$BU0055" "$USED_INT" "$USED_IP")"
+}
+
+waiting_ansible_task() {
+    taskId="${1}"
+
+    [[ -z $taskId ]] && return 1
+
+    pidFile=/opt/webdir/temp/$taskId/pid
+    statusFile=/opt/webdir/temp/$taskId/status
+    checkFile=/opt/webdir/temp/$taskId/.test
+
+    if [[ ! -f $pidFile ]]; then
+        log_to_file "Cannot find pidFile=$pidFile"
+        return 1
+    fi
+    pidNum=$(cat $pidFile)
+    if [[ -z $pidNum ]]; then
+        log_to_file "Empty PID number in file=$pidFile"
+        return 1
+    fi
+
+    taskFinished=0
+    wait_timeout=0
+    limit_timeout=1800
+    sleep_time=120
+    while [[ $taskFinished -eq 0 ]]; do
+        if [[ $wait_timeout -gt $limit_timeout ]]; then
+            log_to_file "The waiting time is maximum=$limit_timeout sec, \
+                we are completing the execution."
+            return 1
+        fi
+
+        pgrep -F $pidFile -l >$checkFile 2>&1
+        pgrep_rtn=$?
+        # return 1 if there is no process
+        if [[ $pgrep_rtn -eq 0 ]]; then
+            # process_name
+            process_name=$(awk '{print $2}' $checkFile)
+            log_to_file "There is running process=$process_name pid=$pidNum for task=$taskId: waiting"
+
+            # waiting and create maximum waiting time
+            sleep $sleep_time
+            wait_timeout=$(( $wait_timeout + $sleep_time ))
+            continue
+        fi
+
+        # there is no process; test if there is final status in status
+        is_play_recap=$(cat $statusFile | grep -c 'PLAY RECAP')
+
+        # no status information; may be process if failed by memory condition on host
+        if [[ $is_play_recap -eq 0 ]]; then
+            log_to_file "It looks like the process pid=$pidNum \
+                crashed without completing its work."
+            return 1
+        fi
+
+        # get status from status file
+        host_status=$(cat $statusFile | grep 'PLAY RECAP' -A1  | tail -n1)
+        host_unreachable=$(echo "$host_status" | egrep -o 'unreachable=[0-9]+' | \
+            awk -F'=' '{print $2}')
+        host_failed=$(echo "$host_status" | egrep -o 'failed=[0-9]+' | \
+            awk -F'=' '{print $2}')
+        if [[ $host_unreachable -gt 0 || $host_failed -gt 0 ]]; then
+            log_to_file "Errors occurred during the playbook execution (taskId=$taskId). \
+                Details can be found in the file=$statusFile"
+            return 1
+        fi
+
+        log_to_file "PLaybook (taskId=$taskId) execution completed, no errors found."
+        return 0
+    done
+}
+
+generate_ansible_inventory() {
+    ask_user="${1:-0}"
+    bitrix_type="${2:-general}"
+    hostident="${3}"
+    log_to_file "$BU0054"
+
+    # create info about host interface
+    generate_int_and_ip ${ask_user}
+
+    # gernerate hostname
+    generate_hostname ${ask_user} ${hostident}
+
+    gen_temp_file=$(mktemp /tmp/generate.XXXXXX)
+
+    # start creation pool
+    /opt/webdir/bin/wrapper_ansible_conf \
+        -a create --bitrix_type $bitrix_type \
+        -H $USED_HOSTNAME -I $USED_INT > $gen_temp_file 2>&1
+    if [[ $? -gt 0 ]]; then
+        log_to_file "Cannot create pool configuration; host=$USED_HOSTNAME interface=$USED_INT"
+        log_to_file "$(cat $gen_temp_file)"
+        rm -f $gen_temp_file
+        #return 1
+        exit
+    fi
+    taskId=$(cat $gen_temp_file | egrep -o "task_id=[a-z0-9_]+" | \
+        awk -F'=' '{print $2}')
+    if [[ -z $taskId ]]; then
+        log_to_file "No taskId value found in the output of the  pool creation command."
+        rm -f gen_temp_file
+        #return 1
+        exit
+    fi
+
+    log_to_file "Waiting for the pool configuration command to complete taskId=$taskId."
+    waiting_ansible_task $taskId || exit
+
+    log_to_file "Pull configuration is complete. You can change it ./menu.sh"
+
+    # configure push server
+    # info:bxDaemon:pushserver_7401067151:12944:1720176682::running:::
+    /opt/webdir/bin/bx-sites -a push_configure_nodejs \
+        -H $USED_HOSTNAME > $gen_temp_file 2>&1
+    if [[ $? -gt 0 ]]; then
+        log_to_file "Cannot create push-server configuration; host=$USED_HOSTNAME"
+        log_to_file "$(cat $gen_temp_file)"
+        rm -f $gen_temp_file
+        #return 1
+        exit
+    fi
+    taskId=$(cat $gen_temp_file | egrep -o 'pushserver_[0-9]+')
+    if [[ -z $taskId ]]; then
+        log_to_file "No taskId value found in the output of the \
+            push-server configuration command."
+        rm -f gen_temp_file
+        #return 1
+        exit
+    fi
+
+    log_to_file "Waiting for the push-server configuration command to complete taskId=$taskId."
+    waiting_ansible_task $taskId || exit
+
+    log_to_file "Push configuration is complete. You can change it ./menu.sh"
+
+}
+
+delete_packer_user() {
+    id vbox >/dev/null 2>&1
+    if [[ $? -eq 0 ]]; then
+        userdel --force --remove vbox
+    fi
+}
+
+create_pool_on_install() {
     ask_user="${1:-0}"
     bitrix_type="${2:-general}"
     hostident="${3}"
     log_to_file "$BU0054"
 
     # get host interfaces
-    get_local_network 1>/dev/null 2>&1
+    get_local_network 1> /dev/null 2>&1
     if [[ $HOST_NETWORK -gt 0  ]]; then
-
         # use the first interface
         USED_INT=
         USED_IP=
@@ -1624,39 +1774,85 @@ generate_ansible_inventory(){
     else
         USED_HOSTNAME="${hostident}"
     fi
-    
-    test_hostname "$USED_HOSTNAME" 0 0 
+
+    test_hostname "$USED_HOSTNAME" 0 0
     test_hostname_rtn=$?
     if [[ $test_hostname_rtn -gt 0 ]]; then
         if [[ $ask_user -gt 0 ]]; then
             read -r -p "$BU0056" USED_HOSTNAME
-            [[ -z $USED_HOSTNAME  ]] && \
-                USED_HOSTNAME=server1
+            [[ -z $USED_HOSTNAME  ]] && USED_HOSTNAME=server1
         else
             USED_HOSTNAME=server1
         fi
     fi
     log_to_file "$(get_text "$BU0057" "$USED_HOSTNAME")"
 
-    # start creation pool
-    /opt/webdir/bin/wrapper_ansible_conf -a create \
-        --bitrix_type $bitrix_type \
-        -H $USED_HOSTNAME -I $USED_INT >> $LOGS_FILE 2>&1
+    # create pool task
+    $ansible_wrapper -a create --bitrix_type $bitrix_type -H $USED_HOSTNAME -I $USED_INT >> $LOGS_FILE 2>&1
     if [[ $? -gt 0 ]]; then
         return 1
     fi
     log_to_file "$BU0058"
 }
 
+run_push_server_on_install() {
+    ask_user="${1:-0}"
+    bitrix_type="${2:-general}"
+    hostident="${3}"
+    log_to_file "$BU3001"
+
+    # get host interfaces
+    get_local_network 1> /dev/null 2>&1
+    if [[ $HOST_NETWORK -gt 0  ]]; then
+        # use the first interface
+        USED_INT=
+        USED_IP=
+        for info in $HOST_IPS; do
+            if [[ -z $USED_INT ]]; then
+                USED_INT=$(echo $info | awk -F'=' '{print $1}')
+                USED_IP=$(echo $info | awk -F'=' '{print $2}')
+            fi
+        done
+    else
+        log_to_file "$BU2029"
+        return 1
+    fi
+    log_to_file "$(get_text "$BU3002" "$USED_INT" "$USED_IP")"
+
+    # get hostname
+    if [[ -z $hostident ]]; then
+        USED_HOSTNAME=$(hostname)
+    else
+        USED_HOSTNAME="${hostident}"
+    fi
+
+    test_hostname "$USED_HOSTNAME" 0 0
+    test_hostname_rtn=$?
+    if [[ $test_hostname_rtn -gt 0 ]]; then
+        if [[ $ask_user -gt 0 ]]; then
+            read -r -p "$BU0056" USED_HOSTNAME
+            [[ -z $USED_HOSTNAME  ]] && USED_HOSTNAME=server1
+        else
+            USED_HOSTNAME=server1
+        fi
+    fi
+    log_to_file "$(get_text "$BU3003" "$USED_HOSTNAME")"
+
+    # run push server on nodejs task
+    $bx_sites_script -a push_configure_nodejs -H $USED_HOSTNAME >> $LOGS_FILE 2>&1
+    if [[ $? -gt 0 ]]; then
+        return 1
+    fi
+    log_to_file "$BU3004"
+}
+
 # get available memory on board
-get_available_memory(){
+get_available_memory() {
     AVAILABLE_MEMORY=$(free | grep Mem | awk '{print $2}')
     if [[ $IS_OPENVZ -gt 0 ]]; then
         if [[ -z $AVAILABLE_MEMORY ]]; then
-            mem4kblock=`cat /proc/user_beancounters | \
-                grep vmguarpages|awk '{print $4}'`
-            mem4kblock2=`cat /proc/user_beancounters | \
-                grep privvmpages|awk '{print $4}'`
+            mem4kblock=`cat /proc/user_beancounters | grep vmguarpages|awk '{print $4}'`
+            mem4kblock2=`cat /proc/user_beancounters | grep privvmpages|awk '{print $4}'`
             if [[ ${mem4kblock2} -gt ${mem4kblock} ]]; then
                 AVAILABLE_MEMORY=$(echo "${mem4kblock} * 4"|bc)
             else
@@ -1665,48 +1861,37 @@ get_available_memory(){
         fi
     fi
     AVAILABLE_MEMORY_MB=$(( $AVAILABLE_MEMORY / 1024 ))
-
-    [[ ( $IS_X86_64 -eq 0 ) && ( $AVAILABLE_MEMORY_MB -gt 4096 ) ]] && \
-        AVAILABLE_MEMORY_MB=4096
-
+    [[ ( $IS_X86_64 -eq 0 ) && ( $AVAILABLE_MEMORY_MB -gt 4096 ) ]] && AVAILABLE_MEMORY_MB=4096
 }
 
-get_php_settings(){
+get_php_settings() {
     PHP_CMD=$(which php)
     APACHE_CMD=$(which httpd)
-
     # 5.4, 5.6, 7.0 and etc 
-    PHP_VERSION=$($PHP_CMD -v | \
-        egrep -o "PHP [0-9\.]+" | awk '{print $2}' | \
-        awk -F'.' '{printf "%d.%d", $1, $2}')
+    PHP_VERSION=$($PHP_CMD -v | egrep -o "PHP [0-9\.]+" | awk '{print $2}' | awk -F'.' '{printf "%d.%d", $1, $2}')
     php_up=$(echo "$PHP_VERSION" | awk -F'.' '{print $1}')
     php_mid=$(echo "$PHP_VERSION" | awk -F'.' '{print $2}')
     IS_OLDER_PHP=0
-    [[ ( $php_up -ge 5 && $php_mid -ge 6 ) || ( $php_up -ge 7 ) ]] && \
-        IS_OLDER_PHP=1
-
-    APACHE_VERSION=$($APACHE_CMD -v | \
-        egrep -o "Apache/[0-9\.]+" | awk -F'/' '{print $2}' | \
-        awk -F'.' '{printf "%d.%d", $1,$2}')
-
-    IS_APCU_PHP=$($PHP_CMD -m 2>/dev/null | grep -wc apcu)
-    IS_OPCACHE_PHP=$($PHP_CMD -m 2>/dev/null | grep -wc OPcache)
+    [[ ( $php_up -ge 5 && $php_mid -ge 6 ) || ( $php_up -ge 7 ) ]] && IS_OLDER_PHP=1
+    APACHE_VERSION=$($APACHE_CMD -v | egrep -o "Apache/[0-9\.]+" | awk -F'/' '{print $2}' | awk -F'.' '{printf "%d.%d", $1,$2}')
+    IS_APCU_PHP=$($PHP_CMD -m 2> /dev/null | grep -wc apcu)
+    IS_OPCACHE_PHP=$($PHP_CMD -m 2> /dev/null | grep -wc OPcache)
 }
 
 # bx_trusted
-public_firewalld(){
+public_firewalld() {
     if [[ $(systemctl is-active firewalld | grep -wc active) -eq 0 ]]; then
         # http://jabber.bx/view.php?id=89409
-        rpm -qi firewalld >/dev/null 2>&1
+        rpm -qi firewalld > /dev/null 2>&1
         if [[ $? -gt 0 ]]; then
             log_to_file "$BU0061"
-            yum -y install  firewalld >/dev/null 2>&1
+            yum -y install  firewalld > /dev/null 2>&1
             if [[ $? -gt 0 ]]; then
                 log_to_file "$BU2032"
                 return 2
             fi
         fi
-        systemctl enable firewalld >/dev/null 2>&1
+        systemctl enable firewalld > /dev/null 2>&1
         systemctl start firewalld
         if [[ $? -gt 0 ]]; then
             log_to_file "$BU2033"
@@ -1717,25 +1902,24 @@ public_firewalld(){
     log_to_file "$BU0059"
     is_bx_trusted=$(firewall-cmd --get-zones | grep "bx_trusted" -wc)
     if [[ $is_bx_trusted -eq 0 ]]; then
-        firewall-cmd --permanent --new-zone=bx_trusted >/dev/null 2>&1
+        firewall-cmd --permanent --new-zone=bx_trusted > /dev/null 2>&1
     fi
 
-    firewall-cmd --zone=bx_trusted --permanent --add-port=1-65535/tcp >/dev/null 2>&1
-    firewall-cmd --zone=bx_trusted --permanent --add-port=1-65535/udp >/dev/null 2>&1
+    firewall-cmd --zone=bx_trusted --permanent --add-port=1-65535/tcp > /dev/null 2>&1
+    firewall-cmd --zone=bx_trusted --permanent --add-port=1-65535/udp > /dev/null 2>&1
 
-    firewall-cmd --zone=public --list-interfaces 1>/dev/null 2>&1
+    firewall-cmd --zone=public --list-interfaces 1> /dev/null 2>&1
     if [[ $? -gt 0 ]]; then
         log_to_file "$BU2030"
         return 2
     fi
-    firewall-cmd --permanent --zone=public --add-service=http >/dev/null 2>&1 && \
-        firewall-cmd --permanent --zone=public --add-service=https  >/dev/null 2>&1
+    firewall-cmd --permanent --zone=public --add-service=http > /dev/null 2>&1 && firewall-cmd --permanent --zone=public --add-service=https  > /dev/null 2>&1
     if [[ $? -gt 0 ]]; then
         log_to_file "$BU2031"
         return 2
     fi
     log_to_file "$BU0060"
-    firewall-cmd --reload >/dev/null 2>&1
+    firewall-cmd --reload > /dev/null 2>&1
     return 0
 }
 
@@ -1756,28 +1940,24 @@ check_iptables_status() {
     done
 
     # iptables working (stateless)
-    iptables -I INPUT -p tcp \
-        --dport $iptables_test_port -j ACCEPT > $iptables_tmp 2>&1
+    iptables -I INPUT -p tcp --dport $iptables_test_port -j ACCEPT > $iptables_tmp 2>&1
     if [[ $? -eq 0 ]]; then
         iptables_status='stateless'
-        iptables -D INPUT -p tcp \
-            --dport $iptables_test_port -j ACCEPT > $iptables_tmp 2>&1
+        iptables -D INPUT -p tcp --dport $iptables_test_port -j ACCEPT > $iptables_tmp 2>&1
     fi
 
     # iptables working (stateful)
     if [[ $iptables_status == "stateless" ]]; then
-        iptables -I INPUT -m state --state NEW \
-            -p tcp --dport $iptables_test_port -j ACCEPT > $iptables_tmp 2>&1
+        iptables -I INPUT -m state --state NEW -p tcp --dport $iptables_test_port -j ACCEPT > $iptables_tmp 2>&1
         if [[ $? -eq 0 ]]; then
             iptables_status='stateful'
-            iptables -D INPUT -m state --state NEW \
-                -p tcp --dport $iptables_test_port -j ACCEPT > $iptables_tmp 2>&1
+            iptables -D INPUT -m state --state NEW -p tcp --dport $iptables_test_port -j ACCEPT > $iptables_tmp 2>&1
         fi
     fi
     rm -f $iptables_tmp
 }
 
-check_firewalld_status(){
+check_firewalld_status() {
     firewalld_package="not_installed"
     firewalld_status="not_running"
     firewalld_bx_type="not_installed"
@@ -1802,24 +1982,22 @@ check_firewalld_status(){
         if [[ $(firewall-cmd --get-active-zones | grep bx_trusted -c) -gt 0 ]]; then
             firewalld_bx_type="installed"
         fi
-
-		systemctl status firewalld > $firewalld_tmp 2>&1
+	    systemctl status firewalld > $firewalld_tmp 2>&1
         if [[ $(grep -c "ERROR:" $firewalld_tmp) -eq 0 ]]; then
             firewalld_tolerance="compatible"
         fi
-
     fi
     rm -f $firewalld_tmp
 }
 
-replace_firewalld_by_iptables(){
+replace_firewalld_by_iptables() {
     [[ -z $OS_VERSION ]] && get_os_type
 
     if [[ $OS_VERSION -eq 7 ]]; then
         check_firewalld_status
         if [[ $firewalld_package == "installed" ]]; then
-            yum -y remove firewalld >/dev/null 2>&1
-            yum -y install iptables-services >/dev/null 2>&1
+            yum -y remove firewalld > /dev/null 2>&1
+            yum -y install iptables-services > /dev/null 2>&1
             systemctl enable iptables
             systemctl start iptables
         fi
@@ -1836,15 +2014,14 @@ replace_firewalld_by_iptables(){
 -A FORWARD -j REJECT --reject-with icmp-host-prohibited
 COMMIT' > /etc/sysconfig/iptables
             systemctl start iptables
-
         fi
     else
         chkconfig iptables on
-        /etc/init.d/iptables restart >/dev/null 2>&1
+        /etc/init.d/iptables restart > /dev/null 2>&1
     fi
 }
 
-public_stateless_iptables(){
+public_stateless_iptables() {
     replace_firewalld_by_iptables
 
     is_incorrect_rules=$(grep -c "state NEW" /etc/sysconfig/iptables)
@@ -1866,11 +2043,11 @@ COMMIT' > /etc/sysconfig/iptables
         echo 'IPTABLES_MODULES_UNLOAD="no"' >> /etc/sysconfig/iptables-config
     fi
 
-    iptables -I INPUT -m tcp -p tcp --dport 80 -j ACCEPT 1>/dev/null 2>&1 && \
-    iptables -I INPUT -m tcp -p tcp --dport 443 -j ACCEPT 1>/dev/null 2>&1 && \
-    iptables -I INPUT -p tcp -m tcp --sport 443 -j ACCEPT 1>/dev/null 2>&1 && \
-    iptables -I INPUT -p tcp -m tcp --sport 80 -j ACCEPT 1>/dev/null 2>&1 &&\
-    iptables -I INPUT -p udp -m udp --sport 53 -j ACCEPT 1>/dev/null 2>&1
+    iptables -I INPUT -m tcp -p tcp --dport 80 -j ACCEPT 1> /dev/null 2>&1 && \
+    iptables -I INPUT -m tcp -p tcp --dport 443 -j ACCEPT 1> /dev/null 2>&1 && \
+    iptables -I INPUT -p tcp -m tcp --sport 443 -j ACCEPT 1> /dev/null 2>&1 && \
+    iptables -I INPUT -p tcp -m tcp --sport 80 -j ACCEPT 1> /dev/null 2>&1 &&\
+    iptables -I INPUT -p udp -m udp --sport 53 -j ACCEPT 1> /dev/null 2>&1
 
     if [[ $? -gt 0 ]]; then
         log_to_file "$BU2035"
@@ -1879,13 +2056,11 @@ COMMIT' > /etc/sysconfig/iptables
     iptables-save > /etc/sysconfig/iptables
 }
 
-public_stateful_iptables(){
+public_stateful_iptables() {
     replace_firewalld_by_iptables
 
-    iptables -I INPUT -m tcp -p tcp \
-        -m state --state NEW --dport 80 -j ACCEPT 1>/dev/null 2>&1 && \
-    iptables -I INPUT -m tcp -p tcp \
-        -m state --state NEW --dport 443 -j ACCEPT 1>/dev/null 2>&1
+    iptables -I INPUT -m tcp -p tcp -m state --state NEW --dport 80 -j ACCEPT 1> /dev/null 2>&1 && \
+    iptables -I INPUT -m tcp -p tcp -m state --state NEW --dport 443 -j ACCEPT 1> /dev/null 2>&1
     if [[ $? -gt 0 ]]; then
         log_to_file "$BU2035"
         return 2
@@ -1894,7 +2069,7 @@ public_stateful_iptables(){
     iptables-save > /etc/sysconfig/iptables
 }
 
-configure_firewall_daemon(){
+configure_firewall_daemon() {
     CONFIGURE_IPTABLES=${1:-1}
     CONFIGURE_FIREWALLD=${2:-0}
 
@@ -1911,14 +2086,18 @@ configure_firewall_daemon(){
         fi
     # support statefull
     else
-        if [[ $OS_VERSION == "7" ]]; then
-            if [[ $CONFIGURE_FIREWALLD -eq 1 ]]; then
-                public_firewalld
-				check_firewalld_status 
-				if [[ $firewalld_tolerance == "non_compatible" ]]; then
-					log_to_file "$BU2037"
-					public_stateful_iptables
-				fi	
+	# VMBITRIX_9.0
+	if [[ $OS_VERSION == "9" ]]; then
+	    public_firewalld
+	    check_firewalld_status
+	elif [[ $OS_VERSION == "7" ]]; then
+	    if [[ $CONFIGURE_FIREWALLD -eq 1 ]]; then
+		public_firewalld
+		check_firewalld_status
+		if [[ $firewalld_tolerance == "non_compatible" ]]; then
+		    log_to_file "$BU2037"
+		    public_stateful_iptables
+		fi
             else
                 public_stateful_iptables
             fi
@@ -1928,7 +2107,7 @@ configure_firewall_daemon(){
     fi
 }
 
-get_server_id(){
+get_server_id() {
     local h="${1}"
 
     [[ -z ${h} ]] && return 3
@@ -1939,17 +2118,14 @@ get_server_id(){
     for srv_info in $POOL_SERVER_LIST; do
         srv_name=$(echo "$srv_info" | awk -F':' '{print $1}') # server identifier in ansible inventory
         hostname=$(echo "$srv_info" | awk -F':' '{print $5}') # server name 
-
         if [[ $hostname == "$h" ]]; then
             echo $srv_name
             return 0
         fi
-
         if [[ $srv_name == "$h" ]]; then
             echo $srv_name
             return 0
         fi
-
     done
     IFS=$IFS_BAK
     IFS_BAK=
@@ -1975,10 +2151,9 @@ get_server_id(){
         IFS_BAK=
     fi
     return 2
-
 }
 
-if_hostname_exists_in_the_pool(){
+if_hostname_exists_in_the_pool() {
     local h="${1}"
     cache_pool_info
 
@@ -1987,11 +2162,9 @@ if_hostname_exists_in_the_pool(){
     for srv_info in $POOL_SERVER_LIST; do
         srv_name=$(echo "$srv_info" | awk -F':' '{print $1}') # server identifier in ansible inventory
         hostname=$(echo "$srv_info" | awk -F':' '{print $5}') # server name 
-
         if [[ $hostname == "$h" ]]; then
             return 1
         fi
-
     done
     IFS=$IFS_BAK
     IFS_BAK=
@@ -2000,14 +2173,12 @@ if_hostname_exists_in_the_pool(){
     if [[ -n "$POOL_UNU_SERVER_LIST" ]]; then
         IFS_BAK=$IFS
         IFS=$'\n'
- 
         for srv_info in $POOL_UNU_SERVER_LIST; do
             srv_name=$(echo "$srv_info" | awk -F':' '{print $1}') # short server name
             hostname=$(echo "$srv_info" | awk -F':' '{print $5}') # server name 
             if [[ $hostname == "$h" ]]; then
                 return 1
             fi
-
         done
         IFS=$IFS_BAK
         IFS_BAK=
@@ -2015,7 +2186,7 @@ if_hostname_exists_in_the_pool(){
     return 0
 }
 
-if_serverid_exists_in_the_pool(){
+if_serverid_exists_in_the_pool() {
     local h="${1}"
     cache_pool_info
 
@@ -2024,11 +2195,9 @@ if_serverid_exists_in_the_pool(){
     for srv_info in $POOL_SERVER_LIST; do
         srv_name=$(echo "$srv_info" | awk -F':' '{print $1}') # server identifier in ansible inventory
         hostname=$(echo "$srv_info" | awk -F':' '{print $5}') # server name 
-
         if [[ $srv_name == "$h" ]]; then
             return 1
         fi
-
     done
     IFS=$IFS_BAK
     IFS_BAK=
@@ -2037,14 +2206,12 @@ if_serverid_exists_in_the_pool(){
     if [[ -n "$POOL_UNU_SERVER_LIST" ]]; then
         IFS_BAK=$IFS
         IFS=$'\n'
- 
         for srv_info in $POOL_UNU_SERVER_LIST; do
             srv_name=$(echo "$srv_info" | awk -F':' '{print $1}') # short server name
             hostname=$(echo "$srv_info" | awk -F':' '{print $5}') # server name 
             if [[ $srv_name == "$h" ]]; then
                 return 1
             fi
-
         done
         IFS=$IFS_BAK
         IFS_BAK=
@@ -2052,19 +2219,19 @@ if_serverid_exists_in_the_pool(){
     return 0
 }
 
-print_menu_header(){
-    clear
-    echo -e "\t\t\t" $logo
-    echo -e "\t\t\t" $menu_logo
+print_menu_header() {
+    [[ $DEBUG -eq 0 ]] && clear
+    echo -e "\t\t" $logo
+    echo -e "\t\t" $menu_logo
     echo
 }
 
-is_ansible_running(){
+is_ansible_running() {
     IS_ANSIBLE_PROCESS=$(ps -ef | grep ansible-playbook | grep -v grep | wc -l)
     return $IS_ANSIBLE_PROCESS
 }
 
-package_mysql(){
+package_mysql() {
     # one-time call
     [[ -n $MYSQL_PACKAGE ]] && return 0
 
@@ -2077,12 +2244,10 @@ package_mysql(){
         MYSQL_PACKAGE=Percona-Server-server
         MYSQL_SERVICE=mysqld
         MYSQL_SYSTEMD=/usr/lib/systemd/system/mysqld.service
-
     elif [[ $(echo "$PACKAGES_LIST" | grep -c '^MariaDB-server') -gt 0 ]]; then
         MYSQL_PACKAGE=MariaDB-server
         MYSQL_SERVICE=mariadb
         MYSQL_SYSTEMD=/usr/lib/systemd/system/mariadb.service
-
     elif [[ $(echo "$PACKAGES_LIST" | grep -c '^mariadb-server') -gt 0 ]]; then
         MYSQL_PACKAGE=mariadb-server
         MYSQL_SERVICE=mariadb
@@ -2094,16 +2259,13 @@ package_mysql(){
     else
         return 1
     fi
-    MYSQL_VERSION=$(rpm -qa --queryformat '%{version}' ${MYSQL_PACKAGE}* | \
-        head -1 | awk -F'.' '{printf "%d.%d", $1,$2}' )
+    MYSQL_VERSION=$(rpm -qa --queryformat '%{version}' ${MYSQL_PACKAGE}* | head -1 | awk -F'.' '{printf "%d.%d", $1,$2}' )
     MYSQL_MID_VERSION=$(echo "$MYSQL_VERSION" | awk -F'.' '{print $2}')
 }
 
-
-bx_alternatives_for_mycnf(){
+bx_alternatives_for_mycnf() {
     is_mycnf_alters=$(alternatives --list | grep "^my\.cnf\s\+" -c)
-    is_percona_alternatives=$(alternatives --list  | \
-        grep "^my\.cnf\s\+" | grep -cv '/etc/bitrix-my.cnf')
+    is_percona_alternatives=$(alternatives --list  | grep "^my\.cnf\s\+" | grep -cv '/etc/bitrix-my.cnf')
     [[ $is_mycnf_alters -eq 0 ]] && return 0            # doesn't use alternatives; skip
     [[ $is_percona_alternatives -eq 0 ]] && return 0    # already created bitrix alternatives; skip
 
@@ -2111,31 +2273,27 @@ bx_alternatives_for_mycnf(){
     package_mysql
 
     BACKUP_CFG_FILE=$BACKUP_CFG_DIR/my.cnf.bx
-    [[ $MYSQL_MID_VERSION -eq 6 ]] && \
-        BACKUP_CFG_FILE=$BACKUP_CFG_DIR/my.cnf.bx_mysql56
-    [[ $MYSQL_MID_VERSION -eq 7 ]] && \
-        BACKUP_CFG_FILE=$BACKUP_CFG_DIR/my.cnf.bx_mysql57
+    [[ $MYSQL_MID_VERSION -eq 6 ]] && BACKUP_CFG_FILE=$BACKUP_CFG_DIR/my.cnf.bx_mysql56
+    [[ $MYSQL_MID_VERSION -eq 7 ]] && BACKUP_CFG_FILE=$BACKUP_CFG_DIR/my.cnf.bx_mysql57
 
     cp -f $BACKUP_CFG_FILE /etc/bitrix-my.cnf
     rm -f /etc/my.cnf
     update-alternatives --install /etc/my.cnf my.cnf "/etc/bitrix-my.cnf" 300
 }
 
-bx_repo_version(){
+bx_repo_version() {
     repo_file=/etc/yum.repos.d/bitrix.repo
 
     [[ ! -f  $repo_file ]] && return 0
 
     is_bitrix_beta="$(cat $repo_file | grep -w bitrix-beta)"
-    [[ -z "$is_bitrix_beta" ]] && \
-        is_bitrix="$(cat $repo_file | grep -w bitrix)"
-
+    [[ -z "$is_bitrix_beta" ]] && is_bitrix="$(cat $repo_file | grep -w bitrix)"
     [[ -n $is_bitrix_beta ]] && return 2
     [[ -n $is_bitrix ]] && return 1
     return 0
 }
 
-bx_enable_beta_version(){
+bx_enable_beta_version() {
     get_os_type
 
     echo "[bitrix-beta]
@@ -2147,10 +2305,10 @@ gpgcheck=1
 gpgkey=https://repo.bitrix.info/yum/RPM-GPG-KEY-BitrixEnv
 " > /etc/yum.repos.d/bitrix.repo
 
-    yum clean all >/dev/null 2>&1
+    yum clean all > /dev/null 2>&1
 }
 
-bx_disable_beta_version(){
+bx_disable_beta_version() {
     get_os_type
 
     echo "[bitrix]
@@ -2162,16 +2320,14 @@ gpgcheck=1
 gpgkey=https://repo.bitrix.info/yum/RPM-GPG-KEY-BitrixEnv
 " > /etc/yum.repos.d/bitrix.repo
 
-    yum clean all >/dev/null 2>&1
+    yum clean all > /dev/null 2>&1
 }
 
-bx_update_master_network(){
+bx_update_master_network() {
     current=${1}
     saved=${2}
     host=${3}
     is_push=${4}
-
-
 
     ANSIBLE_CHANGED="/etc/ansible/hosts
 /etc/ansible/host_vars/$host
@@ -2202,19 +2358,18 @@ bx_update_master_network(){
         fi
     done
 
-    pushd /etc/push-server >/dev/null 2>&1
+    pushd /etc/push-server > /dev/null 2>&1
     for file in *.json; do
         if [[ -f $file && $(grep -c "$saved" $file) -gt 0 ]]; then
             sed -i "s/$saved/$current/g" $file
             log_to_file "Replace NET $current to $saved in $file"
         fi
     done
-    popd >/dev/null 2>&1
+    popd > /dev/null 2>&1
     # push service will be started by autostart option
 }
 
-
-bx_ansible_network(){
+bx_ansible_network() {
     get_client_settings
 
     if [[ $IS_MASTER -eq 0 ]]; then 
@@ -2225,15 +2380,12 @@ bx_ansible_network(){
     # CLIENT_IP - ip address
     # IS_PUSH - bitrix-push
     # CLIENT_NAME
-    VISIBLE_INTS=$(ip link  |  grep '^[0-9]\+:' | grep -v lo | \
-        awk '{print $2}' | sed -e 's/://')
-
+    VISIBLE_INTS=$(ip link  |  grep '^[0-9]\+:' | grep -v lo | awk '{print $2}' | sed -e 's/://')
     IS_EXISTEN_INT=$(echo "$VISIBLE_INTS" | grep -cw "^$CLIENT_INT$")
     IF_MISMATCH_IP=0
     IS_NET_CHANGED=0
     if [[ $IS_EXISTEN_INT -gt 0 ]];then
-        CURRENT_IP=$(ip addr show $CLIENT_INT | \
-            egrep "inet\s+[0-9\.]+" | awk '{print $2}' | awk -F'/' '{print $1}')
+        CURRENT_IP=$(ip addr show $CLIENT_INT | egrep "inet\s+[0-9\.]+" | awk '{print $2}' | awk -F'/' '{print $1}')
         [[ $CURRENT_IP != "$CLIENT_IP" ]] && IF_MISMATCH_IP=1
     fi
 
@@ -2255,21 +2407,17 @@ bx_ansible_network(){
     fi
 
     if [[ $IS_EXISTEN_INT -eq 0 ]]; then
-        CURRENT_INTS=$(ip link list | grep '^[0-9]\+:' | grep -v lo | \
-            awk '{print $2}' | sed -e 's/://')
+        CURRENT_INTS=$(ip link list | grep '^[0-9]\+:' | grep -v lo | awk '{print $2}' | sed -e 's/://')
         CURRENT_INT=
         CURRENT_IP=
         for int in $CURRENT_INTS; do
             [[ -n $CURRENT_IP && -n $CURRENT_INT ]] && continue
-
-            ipv4=$(ip addr show $int | \
-                egrep "inet\s+[0-9\.]+" | awk '{print $2}' | awk -F'/' '{print $1}')
+            ipv4=$(ip addr show $int | egrep "inet\s+[0-9\.]+" | awk '{print $2}' | awk -F'/' '{print $1}')
             if [[ -n $ipv4 ]]; then
                 CURRENT_IP=$ipv4
                 CURRENT_INT=$int
             fi
         done
-
         if [[ -z $CURRENT_IP && -z $CURRENT_INT ]]; then
             log_to_file "There are no active network interfaces"
             return 1

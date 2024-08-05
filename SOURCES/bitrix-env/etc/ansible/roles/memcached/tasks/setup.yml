@@ -1,35 +1,54 @@
 ---
 # memcached_server
+
+# CentOS 7
 - name: memcached - install software
-  yum: pkg=memcached state=present
+  yum:
+    pkg=memcached
+    state=present
   tags: package
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
 
 - name: memcached - sysconfig
-  template: src=sysconfig-memcached.j2 dest=/etc/sysconfig/memcached 
-   owner=root group=root mode=0644
+  template:
+    src=sysconfig-memcached.j2
+    dest=/etc/sysconfig/memcached
+    owner=root
+    group=root
+    mode=0644
   tags: memcached_config
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
 
 - name: memcached - ensure service started in system
-  service: name=memcached state=started enabled=yes
+  service:
+    name=memcached
+    state=started
+    enabled=yes
   tags: service
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
 
 - name: memcached - restart service
-  service: name=memcached state=restarted
+  service:
+    name=memcached
+    state=restarted
   tags: service
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
 
 - name: update monitoring - check memcached process
-  file: src=/usr/share/munin/plugins/{{ item }}
+  file:
+    src=/usr/share/munin/plugins/{{ item }}
     dest=/etc/munin/plugins/{{ item }}memcached
     state=link
   with_items:
     - process_status_
   tags: monitoring
   notify: restart munin-node
-  when: monitoring_status == 'enable'
+  when: monitoring_status == 'enable' and ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
 
 - name: update monitoring - check instance status
-  file: src=/usr/share/munin/plugins/memcached_ 
-    dest=/etc/munin/plugins/memcached_{{ item }} 
+  file:
+    src=/usr/share/munin/plugins/memcached_
+    dest=/etc/munin/plugins/memcached_{{ item }}
     state=link
   with_items:
    - bytes
@@ -37,5 +56,68 @@
    - rates
   tags: configure_monitor_agents
   notify: restart munin-node
-  when: monitoring_status == 'enable'
+  when: monitoring_status == 'enable' and ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
 
+# CentOS Stream 9
+- name: memcached - enable remi memcached repository
+  dnf:
+    name: '@memcached:remi'
+    state: present
+  tags: remi
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+
+- name: memcached - install software
+  yum:
+    pkg=memcached
+    state=present
+  tags: package
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+
+- name: memcached - sysconfig
+  template:
+    src=sysconfig-memcached.j2
+    dest=/etc/sysconfig/memcached
+    owner=root
+    group=root
+    mode=0644
+  tags: memcached_config
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+
+- name: memcached - ensure service started in system
+  service:
+    name=memcached
+    state=started
+    enabled=yes
+  tags: service
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+
+- name: memcached - restart service
+  service:
+    name=memcached
+    state=restarted
+  tags: service
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+
+- name: update monitoring - check memcached process
+  file:
+    src=/usr/share/munin/plugins/{{ item }}
+    dest=/etc/munin/plugins/{{ item }}memcached
+    state=link
+  with_items:
+    - process_status_
+  tags: monitoring
+  notify: restart munin-node
+  when: monitoring_status == 'enable' and ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+
+- name: update monitoring - check instance status
+  file:
+    src=/usr/share/munin/plugins/memcached_
+    dest=/etc/munin/plugins/memcached_{{ item }}
+    state=link
+  with_items:
+   - bytes
+   - counters
+   - rates
+  tags: configure_monitor_agents
+  notify: restart munin-node
+  when: monitoring_status == 'enable' and ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"

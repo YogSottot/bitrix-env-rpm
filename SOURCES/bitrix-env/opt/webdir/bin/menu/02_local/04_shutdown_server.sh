@@ -1,3 +1,5 @@
+#!/usr/bin/bash
+#
 PROGNAME=$(basename $0)
 PROGPATH=$(dirname $0)
 [[ -z $DEBUG ]] && DEBUG=0
@@ -7,15 +9,14 @@ logo=$(get_logo)
 
 TYPE="${1:-reboot}"
 
-
-sub_menu(){
+sub_menu() {
     menu_logo="${TYPE^} server"
 
     MENU_SELECT=
     until [[ -n "$MENU_SELECT" ]]; do
-        clear
-        echo -e "\t\t\t" $logo
-        echo -e "\t\t\t" $menu_logo
+        [[ $DEBUG -eq 0 ]] && clear
+        echo -e "\t\t" $logo
+        echo -e "\t\t" $menu_logo
         echo
 
         print_message "$(get_text "$CH025" "$TYPE")" "" "" answer n
@@ -30,4 +31,3 @@ sub_menu(){
 }
 
 sub_menu
-

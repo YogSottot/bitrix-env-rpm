@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+#
 # manage ansible configs for host
 # hosts - add|remove host from group
 # host_vars - add|remove|modify variables in personal host file
@@ -14,6 +15,7 @@
 # remove  - remove record in the hosts file ( if group not defined => from all group )
 # update  - update host variables in personal file
 # WANT_JSON
+#
 use strict;
 use warnings;
 

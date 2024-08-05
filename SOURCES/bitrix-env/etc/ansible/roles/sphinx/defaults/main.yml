@@ -5,12 +5,11 @@ sphinx_base_dir: /etc/sphinx
 sphinx_log_dir: /var/log/sphinx
 sphinx_run_dir: /var/run/sphinx
 sphinx_lib_dir: /var/lib/sphinx
-
-sphinx_bx_dir:   /etc/sphinx/bx
+sphinx_bx_dir: /etc/sphinx/bx
 # index directory
-sphinx_inx_dir:  /etc/sphinx/bx/search_index
+sphinx_inx_dir: /etc/sphinx/bx/search_index
 # dictionary directory
-sphinx_dct_dir:  /etc/sphinx/bx/dicts
+sphinx_dct_dir: /etc/sphinx/bx/dicts
 
 ### service options
 sphinx_general_listen: 9312
@@ -31,4 +30,3 @@ bx_ansible_executer: bitrix
 
 sphinx_package: "sphinx"
 cache_directory: /opt/webdir/tmp
-

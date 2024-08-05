@@ -72,6 +72,7 @@ BU0034="MySQL privileges restarted."
 ## update_site_settings
 # Обновили опции login и password в файле=/ПУТЬ/К/ФАЙЛУ
 BU0035="Login and password options in __OPT1__ updated."
+BU003501="__OPT1__ option in __OPT2__ updated."
 # Начинаем обновления файла=/ПУТЬ/К/ФАЙЛУ
 BU0036="Updating __OPT1__"
 ## update_site_mysql_data
@@ -193,6 +194,7 @@ BU2024="Hostname __OPT1__ contains invalid characters."
 ## update_site_settings
 # Не найдена опция password в файле=ПУТЬ_К_ФАЙЛУ
 BU2025="Cannot find the 'password' option in __OPT1__"
+BU202501="Cannot find the '__OPT1__' option in __OPT2__"
 ## update_site_mysql_data
 # Запрос к MySQL службе вернул ошибку: (дальше текст ошибки из команды)
 BU2026="Request to the MySQL service returned an error: "
@@ -317,3 +319,14 @@ You might want to create a new one."
 # используйте один из адрес указанных ниже на мастер сервере.
 MM0036="If you want to add this server to an existing pool,
 use one of these IPv4 addresses on the master server."
+
+# run_push_server_on_install
+# Запуск пуш сервера на nodejs на этом сервере
+BU3001="Run Push server on NodeJS on this server"
+# Будут использованы следующие настройки для пуш сервера: сетевой интерфейс=ИМЯ адрес=АДРЕС
+BU3002="Push server settings: primary interface=__OPT1__; address=__OPT2__."
+# Будут использованы следующие настройки для пуш сервера: имя хоста=ИМЯ
+BU3003="Push server settings: hostname=__OPT1__"
+# Выполняется срипт-настройки; пожалуйста подождите
+BU3004="Push server setup script is now running; please wait."
+

@@ -52,10 +52,7 @@
   when: updated_hostname is not defined
 
 - include_tasks: upgrade_mysql_from55_to57.yml
-  when: mysql_manage == 'upgrade_mysql57' 
-    and inventory_hostname == updated_hostname
+  when: mysql_manage == 'upgrade_mysql57' and inventory_hostname == updated_hostname
 
 - include_tasks: upgrade_mysql_from57_to80.yml
-  when: mysql_manage == 'upgrade_mysql80'
-    and inventory_hostname == updated_hostname
-
+  when: mysql_manage == 'upgrade_mysql80' and inventory_hostname == updated_hostname

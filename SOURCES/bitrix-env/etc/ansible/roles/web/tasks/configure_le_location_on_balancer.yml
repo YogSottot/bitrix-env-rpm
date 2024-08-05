@@ -10,5 +10,3 @@
     dest: "/etc/nginx/bx/site_enabled/http_balancer.conf"
     insertafter: "proxy_set_header"
     line: "include bx/conf/letsencrypt-challenge-tokens.conf;"
-
-

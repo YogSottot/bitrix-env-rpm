@@ -1,10 +1,12 @@
 ---
 # create additional directories
 # start on new server
-- include: sites_directories.yml
+- include_tasks: sites_directories.yml
 
 - name: enable web-services
-  service: name={{ item }} enabled=yes
+  service:
+    name={{ item }}
+    enabled=yes
   with_items:
     - nginx
     - httpd

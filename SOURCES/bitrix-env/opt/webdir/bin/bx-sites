@@ -1,5 +1,7 @@
 #!/usr/bin/perl
+#
 # get information about current site(s) configuration
+#
 use strict;
 use warnings;
 
@@ -241,55 +243,55 @@ elsif ( $o_action =~ /^delete$/ ) {
 
     # get status of host in the domain
 }
-elsif ( $o_action =~ /^ntlm_status$/ ) {
-    my $bxSites = bxSites->new( debug => $o_verbose );
-    $sites = $bxSites->getNTLMServerStatus();
-
-    # enable NTML options for sites
-}
-elsif ( $o_action =~ /^ntlm$/ ) {
-    my $bxSites = bxSites->new( debug => $o_verbose );
-
-    $sites =
-      $bxSites->changeNTLMForSite( $o_ntlm_domain, $o_ntlm_full_domain,
-        $o_ntlm_ads, $o_ntlm_login, $o_ntlm_host, $o_dbname, $o_password_file );
-}
-elsif ( $o_action =~ /^ntlm_update$/ ) {
-    my $bxSites = bxSites->new( debug => $o_verbose );
-
-    $sites = $bxSites->updateNTLMForSite( $o_dbname, );
-
-    # add new host to web group, or delete host from it
-}
-elsif ( $o_action =~ /^(create_web|delete_web|web[12])$/ ) {
-    my $bxSites = bxSites->new( debug => $o_verbose );
-
-    $sites =
-      $bxSites->changeHostForWebCluster( $o_hostname, $o_action, $o_fstype );
-}
+#elsif ( $o_action =~ /^ntlm_status$/ ) {
+#    my $bxSites = bxSites->new( debug => $o_verbose );
+#    $sites = $bxSites->getNTLMServerStatus();
+#
+#    # enable NTML options for sites
+#}
+#elsif ( $o_action =~ /^ntlm$/ ) {
+#    my $bxSites = bxSites->new( debug => $o_verbose );
+#
+#    $sites =
+#      $bxSites->changeNTLMForSite( $o_ntlm_domain, $o_ntlm_full_domain,
+#        $o_ntlm_ads, $o_ntlm_login, $o_ntlm_host, $o_dbname, $o_password_file );
+#}
+#elsif ( $o_action =~ /^ntlm_update$/ ) {
+#    my $bxSites = bxSites->new( debug => $o_verbose );
+#
+#    $sites = $bxSites->updateNTLMForSite( $o_dbname, );
+#
+#    # add new host to web group, or delete host from it
+#}
+#elsif ( $o_action =~ /^(create_web|delete_web|web[12])$/ ) {
+#    my $bxSites = bxSites->new( debug => $o_verbose );
+#
+#    $sites =
+#      $bxSites->changeHostForWebCluster( $o_hostname, $o_action, $o_fstype );
+#}
 elsif ( $o_action =~ /^(push_configure_nodejs|push_remove_nodjs)$/ ) {
     my $bxSites = bxSites->new( debug => $o_verbose );
     $sites = $bxSites->configurePushServer( $o_hostname, $o_action );
 }
-elsif ( $o_action eq "configure_transformer" ){
-    my $bxSites = bxSites->new( debug => $o_verbose  );
-    my $opts = {
-        web_site_name => $o_site,
-        web_site_dir => $o_root,
-        transformer_host => $o_hostname,
-        transformer_domains => $o_domains,
-    };
-    $sites = $bxSites->configureTransformer($opts);
-}
-elsif ( $o_action eq "remove_transformer" ){
-    my $bxSites = bxSites->new( debug => $o_verbose  );
-    my $opts = {
-        web_site_name => $o_site,
-        web_site_dir => $o_root,
-        transformer_host => $o_hostname,
-    };
-    $sites = $bxSites->removeTransformer($opts);
-}
+#elsif ( $o_action eq "configure_transformer" ){
+#    my $bxSites = bxSites->new( debug => $o_verbose  );
+#    my $opts = {
+#        web_site_name => $o_site,
+#        web_site_dir => $o_root,
+#        transformer_host => $o_hostname,
+#        transformer_domains => $o_domains,
+#    };
+#    $sites = $bxSites->configureTransformer($opts);
+#}
+#elsif ( $o_action eq "remove_transformer" ){
+#    my $bxSites = bxSites->new( debug => $o_verbose  );
+#    my $opts = {
+#        web_site_name => $o_site,
+#        web_site_dir => $o_root,
+#        transformer_host => $o_hostname,
+#    };
+#    $sites = $bxSites->removeTransformer($opts);
+#}
 elsif ( $o_action =~ /^(configure_le)$/ ) {
     my $bxSites = bxSites->new( debug => $o_verbose );
     my $opts = {
@@ -322,7 +324,6 @@ elsif ( $o_action eq "reset_cert" ) {
     my $opts = { cert => $o_certificate };
     $sites = $bxSites->statusCerts( $opts );
 }
-
 elsif ( $o_action =~ /^backup$/ ) {
     my $filters = {};
     if ($o_dbname) {
@@ -578,4 +579,3 @@ Options:
 EOT
     exit;
 }
-

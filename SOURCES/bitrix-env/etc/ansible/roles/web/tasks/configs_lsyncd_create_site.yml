@@ -28,9 +28,11 @@
 
 - name: restart service lsyncd
   delegate_to: "{{ cluster_web_server }}"
-  service: name=lsyncd-{{ inventory_hostname }} state=started enabled=yes
+  service:
+    name=lsyncd-{{ inventory_hostname }}
+    state=started
+    enabled=yes
   when: "'bitrix-web' in group_names and inventory_hostname != cluster_web_server"
-
 
 - name: update lsyncd config on backend
   blockinfile:
@@ -59,6 +61,8 @@
   when: "'bitrix-web' in group_names and inventory_hostname != cluster_web_server"
 
 - name: restart service lsyncd
-  service: name=lsyncd-{{ cluster_web_server }} state=started enabled=yes
+  service:
+    name=lsyncd-{{ cluster_web_server }}
+    state=started
+    enabled=yes
   when: "'bitrix-web' in group_names and inventory_hostname != cluster_web_server"
-

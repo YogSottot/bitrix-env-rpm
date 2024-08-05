@@ -5,11 +5,16 @@
 # certificate_chain: - path to certificate chain
 # private_key: - path to private key
 - name: test certificate and private key
-  bx_cert: cert="{{ certificate }}" priv="{{ private_key }}"
+  bx_cert:
+    cert="{{ certificate }}"
+    priv="{{ private_key }}"
   when: certificate_chain is undefined
 
 - name: test certificate, private key and chain
-  bx_cert: cert="{{ certificate }}" priv="{{ private_key }}" chain="{{ certificate_chain }}"
+  bx_cert:
+    cert="{{ certificate }}"
+    priv="{{ private_key }}"
+    chain="{{ certificate_chain }}"
   when: certificate_chain is defined
 
 - name: create directories
@@ -29,11 +34,11 @@
     src: nginx/ssl_options.conf.j2
     dest: /etc/nginx/bx/conf/ssl_options.conf
 
-- include: configure_cert_per_sites.yml
+- include_tasks: configure_cert_per_sites.yml
   when: sites_cnt > 0
 
-- include: configure_cert_push_server.yml
-  when: push_server is defined and push_server > 0
+#- include_tasks: configure_cert_push_server.yml
+#  when: push_server is defined and push_server > 0
 
 - name: reload nginx
   service: 
@@ -44,4 +49,3 @@
   service: 
     name: httpd
     state: reloaded
-

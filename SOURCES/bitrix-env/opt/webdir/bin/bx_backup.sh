@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/usr/bin/bash
+#
 # backup site information
 # argv:
 # $1 - kernel_name  - dbname for site ( create backup for all sites with with db)
@@ -6,7 +7,7 @@
 # if site is link - backup only files
 # if iste is kernel - files + mysql
 #set -x
-
+#
 export LANG=en_US.UTF-8
 export TERM=linux
 PROGNAME=$(basename $0)
@@ -33,29 +34,28 @@ for _dir in $BITRIX_DIR $LOGS_DIR $TEMP_DIR $CONF_DIR; do
   [[ ! -d $_dir ]] && mkdir -p -m 700 $_dir
 done
 
-
 # test options
 kernel_name=$1
 backup_dir=$2
 sql_dir=/home/bitrix
 if [[ ( -z "$kernel_name" ) || ( -z $backup_dir ) ]]; then
-  echo "Usage: $PROGNAME kernel_name backup_dir"
-  echo "Ex."
-  echo "$PROGNAME sitemanager0 /home/bitrix/backup/archive"
-  echo
-  exit 1
+    echo "Usage: $PROGNAME kernel_name backup_dir"
+    echo "Ex."
+    echo "$PROGNAME sitemanager0 /home/bitrix/backup/archive"
+    echo
+    exit 1
 fi
 
 [[ ! -d $backup_dir ]] && mkdir $backup_dir
 
 # logging infor to file
-log_to_file(){
+log_to_file() {
     _mess=$1
 
     echo "$(date +"%Y/%m/%d %H:%M:%S") $$ $_mess" | tee -a $LOGS_FILE
 }
 
-error(){
+error() {
     _mess="${1}"
 
     [[ -f $BACK_DB_MYCNF ]] && rm -f $BACK_DB_MYCNF
@@ -65,7 +65,7 @@ error(){
 }
 
 # create backup directory that can be access from http(s)
-create_wwwbackup_directory(){
+create_wwwbackup_directory() {
     _backup_directory=$1
     if [[ ! -d $_backup_directory ]];then
         mkdir -p $_backup_directory
@@ -81,7 +81,7 @@ create_wwwbackup_directory(){
 }
 
 # create mysql dump
-create_mysqldump(){
+create_mysqldump() {
     _dump_conf=$1
     _dump_db=$2
     _dump_char=$3
@@ -106,7 +106,7 @@ create_mysqldump(){
     if [ "$_dump_char" == "cp1251" ]; then
         echo "SET NAMES 'cp1251' COLLATE 'cp1251_general_ci';" > $_acon_file
     else
-        echo "SET NAMES 'utf8' COLLATE 'utf8_unicode_ci';" > $_acon_file
+        echo "SET NAMES 'utf8mb4' COLLATE 'utf8mb4_0900_ai_ci';" > $_acon_file
     fi
 
     eval "$_dump_var_files='$_dump_file $_acon_file'"
@@ -117,7 +117,7 @@ create_mysqldump(){
 # POOL_SITES_LINK_LIST
 # POOL_SITES_KETNEL_COUNT
 # POOL_SITES_LINK_COUNT
-get_kernel_info(){
+get_kernel_info() {
     # get list of all sites on the server
     get_pool_sites
     # test if site with defined kernelname exists
@@ -172,7 +172,7 @@ get_kernel_info(){
 
 # clean old backup
 # crontab can be different => limit by count
-clean_old_backup_files(){
+clean_old_backup_files() {
     # there are today's backup 
     TODAYS_FILES=$(find $backup_dir -name "www_backup_${kernel_name}*.tar.gz" -mtime -1 | wc -l)
     if [[ $TODAYS_FILES -gt 0 ]]; then
@@ -182,7 +182,7 @@ clean_old_backup_files(){
 
 # create backup archive
 # backup_dir/wwww_backup_$kernel_name_$DATE_STR_$RAND_STR.tar
-create_backup_archive(){
+create_backup_archive() {
     BACK_FILE=$backup_dir/www_backup_${kernel_name}_${DATE_STR}_${RAND_STR}.tar
 
     # create tar archive
@@ -203,13 +203,11 @@ create_backup_archive(){
     done
 }
 
-
 # get backup info
 DATE_STR=$(date +%d.%m.%Y)         # backup date
 RAND_STR=$(create_random_string)   # backup random string
 WWW_BACK_DIR=/home/bitrix/www/bitrix/backup   # dir can be used by php via http(s)
 WWW_EXCL_DIR=$BASE_DIR/bin/ex.txt
-
 
 # test and create backup directory
 create_wwwbackup_directory "$WWW_BACK_DIR"
@@ -218,7 +216,7 @@ create_wwwbackup_directory "$WWW_BACK_DIR"
 get_kernel_info 
 
 # create mysqldump files - list files in BACK_SQL_FILES
-mysql_charset='utf8'
+mysql_charset='utf8mb4'
 [[ "$BACK_KERNEL_CHAR" == "cp1251" ]] && mysql_charset="cp1251"
 
 # create backup via mysqldump
@@ -230,5 +228,3 @@ create_backup_archive
 
 # clean files from old backups
 clean_old_backup_files
-
-

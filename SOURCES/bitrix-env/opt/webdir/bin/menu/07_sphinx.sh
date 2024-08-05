@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/usr/bin/bash
+#
 # manage web instances
 #set -x
 PROGNAME=$(basename $0)
@@ -6,6 +7,7 @@ PROGPATH=$(dirname $0)
 [[ -z $DEBUG ]] && DEBUG=0
 
 . $PROGPATH/07_sphinx/functions.sh || exit 1
+
 logo=$(get_logo)
 
 create_sphinx_instance() {
@@ -22,9 +24,9 @@ delete_sphinx_instance() {
 
 # print host menu
 submenu() {
-    submenu_00="$SPH0201"
-    submenu_01="$SPH0015"
-    submenu_02="$SPH0016"
+    #submenu_00="$SPH0201"
+    #submenu_01="$SPH0015"
+    #submenu_02="$SPH0016"
     submenu_03="$SPH0017"
 
     SUBMENU_SELECT=
@@ -56,16 +58,15 @@ submenu() {
         print_message "$SPH0205" '' '' SUBMENU_SELECT
        
         case "$SUBMENU_SELECT" in
-            "1") create_sphinx_instance  ;;
-            "2") create_sphinx_index ;;
-            "3") delete_sphinx_instance  ;;
+            #"1") create_sphinx_instance  ;;
+            #"2") create_sphinx_index ;;
+            #"3") delete_sphinx_instance  ;;
             "0") exit ;;
-            *)   error_pick; SUBMENU_SELECT=;;
+            *) error_pick; SUBMENU_SELECT= ;;
         esac
 
         SUBMENU_SELECT=
-done
+    done
 }
 
 submenu
-

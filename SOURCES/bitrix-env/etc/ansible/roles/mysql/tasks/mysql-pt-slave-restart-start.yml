@@ -35,8 +35,7 @@
   template:
     dest: /etc/systemd/system/pt-slave-restart.service
     src: pt-slave-restart.service.j2
-  when: ansible_distribution == "CentOS"
-    and ansible_distribution_major_version == "7"
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
 
 - name: create init.d file
   file:
@@ -54,4 +53,3 @@
   shell: /opt/webdir/bin/pt-slave-restart start
   args:
     creates: /var/run/slave_restart.pid
-

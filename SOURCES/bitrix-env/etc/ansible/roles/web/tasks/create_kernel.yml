@@ -1,13 +1,13 @@
 ---
 ######## generate site options and testing site
 ####
-- include: inc_generate_site_vars.yml
+- include_tasks: inc_generate_site_vars.yml
 ####
 ######## generate site options and testing site
 
 ######## create database and user for site
 ####
-- include: inc_site_mysql.yml
+- include_tasks: inc_site_mysql.yml
   when: "inventory_hostname == cluster_web_server"
 
 ####
@@ -15,7 +15,7 @@
 
 ######## create site directories on all web servers in the pool
 ####
-- include: create_basic_dirs.yml
+- include_tasks: create_basic_dirs.yml
 
 - name: create folder for temporary files
   file:
@@ -55,7 +55,7 @@
   tags: create_site_files
   when: inventory_hostname == cluster_web_server
 
-- include: create_push_settings.yml
+- include_tasks: create_push_settings.yml
   when: NodeJSPush == 'enable' and inventory_hostname == cluster_web_server
 
 - name: create upload directory
@@ -70,23 +70,22 @@
 
 ####
 ######## /create site directories on all web servers in the pool
-- name: test cp1251 locale
-  shell: "locale -a | grep ru_RU.cp1251 -ic"
-  register: locale_cmd
-  ignore_errors: true
-  when: "bitrix_site_charset == 'windows-1251'"
-
-- name: ensure locale exists
-  shell: localedef -c -i ru_RU -f CP1251 ru_RU.CP1251
-  when: bitrix_site_charset == 'windows-1251'
-    and locale_cmd.stdout == "0"
-
+#- name: test cp1251 locale
+#  shell: "locale -a | grep ru_RU.cp1251 -ic"
+#  register: locale_cmd
+#  ignore_errors: true
+#  when: "bitrix_site_charset == 'windows-1251'"
+#
+#- name: ensure locale exists
+#  shell: localedef -c -i ru_RU -f CP1251 ru_RU.CP1251
+#  when: bitrix_site_charset == 'windows-1251' and locale_cmd.stdout == "0"
+#
 ######## create csync/lsync configuration and sync data for site between nodes for new site
 ####
-- include: create_csync2_site.yml
+- include_tasks: create_csync2_site.yml
   when: "cluster_web_configure == 'enable' and fstype == 'csync'"
 
-- include: configs_lsyncd_create_site.yml
+- include_tasks: configs_lsyncd_create_site.yml
   when: "cluster_web_configure == 'enable' and fstype == 'lsync'"
 
 ####
@@ -94,7 +93,7 @@
 
 ######## create configs for web services
 ####
-- include: create_web_configs.yml
+- include_tasks: create_web_configs.yml
   when: "'bitrix-web' in group_names"
 
 - name: create custom nginx config
@@ -111,7 +110,7 @@
 
 ######## cron configs
 ####
-- include: create_cron_config.yml
+- include_tasks: create_cron_config.yml
   when: "web_site_cron == 'enable'"
 ####
 ######## /cron configs
@@ -129,4 +128,3 @@
   when: "'bitrix-web' in group_names"
 ####
 ####### /remove files
-

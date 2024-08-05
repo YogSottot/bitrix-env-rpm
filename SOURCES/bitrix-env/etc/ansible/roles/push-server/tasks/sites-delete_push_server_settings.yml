@@ -1,12 +1,13 @@
 ---
-- include: sites-gathering_facts-not_mandatory.yml
+- include_tasks: sites-gathering_facts-not_mandatory.yml
 
 # add template data to the site config
 - name: delete site configs
   with_items: "{{ bx_sites_info }}"
   delegate_to: "{{ cluster_web_server }}"
   when: proccess_sites
-  bx_blockinfile: 
-    insertafter='BEGIN GENERATED PUSH SETTINGS' 
-    insertbefore='END GENERATED PUSH SETTINGS' state=delete
+  bx_blockinfile:
+    insertafter='BEGIN GENERATED PUSH SETTINGS'
+    insertbefore='END GENERATED PUSH SETTINGS'
+    state=delete
     dest="{{ item.DocumentRoot }}/bitrix/.settings.php"

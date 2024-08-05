@@ -13,25 +13,32 @@
 ####
 # bx_sites_info - usage when created apache configuration
 - name: gathering facts about installed sites with the same DB
-  bx_facts: name=list password=0 install='(kernel|link)'
-    status=finished dbname={{ manage_kernel | default('sitemanager0') }}
+  bx_facts:
+    name=list
+    password=0
+    install='(kernel|link)'
+    status=finished
+    dbname={{ manage_kernel | default('sitemanager0') }}
 
 - name: create variable bx_sites_info - all sites with the same DB
   set_fact:
     bx_sites_info: "{{ hostvars[inventory_hostname]['bx_sites'] }}"
 
 - name: gathering facts about installed kernel site with defined DB
-  bx_facts: name=list password=0 install='(kernel|ext_kernel)'
-    status=finished dbname={{ manage_kernel | default('sitemanager0') }}
+  bx_facts:
+    name=list
+    password=0
+    install='(kernel|ext_kernel)'
+    status=finished
+    dbname={{ manage_kernel | default('sitemanager0') }}
 
 - name: create variable bx_kernel_site - installed kernel site with defined DB
   set_fact:
     bx_kernel_site: "{{ hostvars[inventory_hostname]['bx_sites'] }}"
 
-
 ############ Configure Winbind (samba, kerberos and etc.)
 ####
-- include: samba_configs.yml
+- include_tasks: samba_configs.yml
   when: ntlm_dps != 'NOT_DEFINED'
 ####
 ############ /Configure Winbind (samba, kerberos and etc.)
@@ -44,8 +51,7 @@
 - name: exit if check returned that the host is not added to domain
   fail: 
     msg: "AD status={{ domain_status }} winbind status={{ nss_status }}"
-  when: domain_status == 'not_configured' 
-    or nss_status == 'not_configured'
+  when: domain_status == 'not_configured' or nss_status == 'not_configured'
 ####
 ############ /Test domain
 
@@ -117,7 +123,10 @@
 ####
 - name: update info in bitrix group
   delegate_to: 127.0.0.1
-  bx_conf: group=web state=update ntlm_web_configure=enable
+  bx_conf:
+    group=web
+    state=update
+    ntlm_web_configure=enable
   tags: ansible_hosts
 ####
 ############ /update ansible group settings

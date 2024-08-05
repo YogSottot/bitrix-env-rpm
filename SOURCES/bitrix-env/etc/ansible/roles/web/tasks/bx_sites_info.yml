@@ -21,7 +21,10 @@
 
 - name: gathering facts about installed sites
   delegate_to: "{{ cluster_web_server }}"
-  bx_facts: name=list password=0 status=finished
+  bx_facts:
+    name=list
+    password=0
+    status=finished
   tags: sites_facts
   when: "is_cluster == 'enable'"
 

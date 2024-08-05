@@ -1,13 +1,16 @@
 ---
 # sync tasks on two server by lock file
 - name: create lock on the master server
-  file: path="/tmp/{{ master_server }}.lock" state=touch
+  file:
+    path="/tmp/{{ master_server }}.lock"
+    state=touch
   when: "master_server == inventory_hostname"
   tags: mysql_sync
 
 - name: wait lock on slave servers
   delegate_to: "{{ master_server }}"
-  wait_for: path="/tmp/{{ master_server }}.lock" state=present
+  wait_for:
+    path="/tmp/{{ master_server }}.lock"
+    state=present
   tags: mysql_sync
   when: "inventory_hostname != master_server"
-

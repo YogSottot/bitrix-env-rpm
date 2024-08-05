@@ -20,23 +20,23 @@
   file: 
     path: "/etc/etckeeper_commit_{{ commitdate.stdout }}"
     state: touch
- 
+
 - name: check if directores in /etc contains uncommitted changes
   shell: /usr/bin/etckeeper unclean && echo "True" || echo "False"
   register: hgstatus
-  ignore_errors: True
+  ignore_errors: true
   tags: etckeeper
 
 - name: commit changes by etckeeper
   shell: /usr/bin/etckeeper commit "commit from ansible {{ task_type|default('mysql') }} task at {{ commitdate.stdout }}"
   tags: etckeeper
-  when: "'True' in hgstatus.stdout"
+  #when: "'True' in hgstatus.stdout"
 
 - name: delete touch file
   file: 
     path: "/etc/etckeeper_commit_{{ commitdate.stdout }}"
     state: absent
- 
+
 - name: delete lockfile
   file:
     path: /var/cache/etckeeper/packagelist.pre-install

@@ -19,4 +19,3 @@
 
 [bitrix-push]
 {{ hostname }}   ansible_connection=local ansible_ssh_host={{ host_ip_address }}
-

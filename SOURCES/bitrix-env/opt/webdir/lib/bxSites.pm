@@ -1,4 +1,5 @@
 # list information about all sites on the server
+#
 package bxSites;
 use strict;
 use warnings;
@@ -531,102 +532,102 @@ m|^(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+\S+\s+test\s+\-f\s+$task_backup_v4|
 
 # add or delete web role from server;
 # in case creation second server in group with web role => create balancer
-sub changeHostForWebCluster {
-    my ( $self, $host1, $action, $fstype ) = @_;
-
-    my $p = Pool->new( debug => $self->debug, );
-    my $get_hi = $p->get_inventory_hostname($host1);
-    return $get_hi if ( $get_hi->is_error );
-    my $server_name = $get_hi->data->[1];
-
-    my $message_p = ( caller(0) )[3];
-    my $message_t = 'bxSite';
-
-    my $logOutput = Output->new(
-        error   => 0,
-        logfile => $self->logfile,
-        debug   => $self->debug
-    );
-
-    if ( $action !~ /^(create_web|delete_web|web1|web2)$/ ) {
-        return Output->new(
-            error => 1,
-            message =>
-"$message_p: action can hold 'create_web', 'delete_web', 'web1' or 'web2' values"
-        );
-    }
-
-    # csync or lsync
-    if ( not defined $fstype ) {
-        $fstype = "lsync";
-    }
-
-    $logOutput->log_data("$message_p: $action for $server_name");
-
-    my $host = Host->new( host => $server_name );
-    my $is_host_in_pool = $host->host_in_pool();
-    if ( $is_host_in_pool->is_error ) {
-        return $is_host_in_pool;
-    }
-
-    # test sites; scale and cluster modules + number kernels sites
-    if ( ( $action eq "web2" ) or ( $action eq "create_web" ) ) {
-        my $testClusterConfig = $self->testClusterConfig();
-        my $test_data         = $testClusterConfig->get_data->[1];
-        if (   ( $test_data->{'test_kernels'} > 1 )
-            || ( $test_data->{'test_without_scale'} > 0 )
-            || ( $test_data->{'test_without_cluster'} > 0 ) )
-        {
-            return Output->new(
-                error => 1,
-                message =>
-"$message_p: Found conditions when web-cluster configuration is disabled",
-            );
-        }
-    }
-
-    # create cluster and replica passwords
-    my $mysql_group   = bxMysql->new();
-    my $mysql_options = $mysql_group->mysql_cluster_options;
-    $mysql_options->{'group'} = 'mysql';
-
-    # run ansible playbook
-    my $po       = Pool->new();
-    my $ansData  = $po->ansible_conf;
-    my $cmd_play = $ansData->{'playbook'};
-    my $cmd_conf = catfile( $ansData->{'base'}, "web.yml" );
-
-    $mysql_options->{manage_web} =
-      $action;    # create_web, delete_web, web1 or web2
-    $mysql_options->{fstype} = $fstype;
-
-    # run playbook
-    if ( $action eq "delete_web" ) {
-        $mysql_options->{'deleted_web_server'} = $server_name;
-    }
-    else {
-        if ( $action eq "web1" ) {
-
-            delete $mysql_options->{cluster_password_file}
-              if ( defined $mysql_options->{cluster_password_file} );
-            delete $mysql_options->{replica_password_file}
-              if ( defined $mysql_options->{replica_password_file} );
-        }
-        $mysql_options->{'new_web_server'} = $server_name;
-    }
-
-    #print Dumper($mysql_options);
-    #exit;
-
-    my $dh = bxDaemon->new(
-        debug    => $self->debug,
-        task_cmd => qq($cmd_play $cmd_conf)
-    );
-
-    my $created_process =
-      $dh->startAnsibleProcess( 'web_cluster', $mysql_options );
-    return $created_process;
-}
+#sub changeHostForWebCluster {
+#    my ( $self, $host1, $action, $fstype ) = @_;
+#
+#    my $p = Pool->new( debug => $self->debug, );
+#    my $get_hi = $p->get_inventory_hostname($host1);
+#    return $get_hi if ( $get_hi->is_error );
+#    my $server_name = $get_hi->data->[1];
+#
+#    my $message_p = ( caller(0) )[3];
+#    my $message_t = 'bxSite';
+#
+#    my $logOutput = Output->new(
+#        error   => 0,
+#        logfile => $self->logfile,
+#        debug   => $self->debug
+#    );
+#
+#    if ( $action !~ /^(create_web|delete_web|web1|web2)$/ ) {
+#        return Output->new(
+#            error => 1,
+#            message =>
+#"$message_p: action can hold 'create_web', 'delete_web', 'web1' or 'web2' values"
+#        );
+#    }
+#
+#    # csync or lsync
+#    if ( not defined $fstype ) {
+#        $fstype = "lsync";
+#    }
+#
+#    $logOutput->log_data("$message_p: $action for $server_name");
+#
+#    my $host = Host->new( host => $server_name );
+#    my $is_host_in_pool = $host->host_in_pool();
+#    if ( $is_host_in_pool->is_error ) {
+#        return $is_host_in_pool;
+#    }
+#
+#    # test sites; scale and cluster modules + number kernels sites
+#    if ( ( $action eq "web2" ) or ( $action eq "create_web" ) ) {
+#        my $testClusterConfig = $self->testClusterConfig();
+#        my $test_data         = $testClusterConfig->get_data->[1];
+#        if (   ( $test_data->{'test_kernels'} > 1 )
+#            || ( $test_data->{'test_without_scale'} > 0 )
+#            || ( $test_data->{'test_without_cluster'} > 0 ) )
+#        {
+#            return Output->new(
+#                error => 1,
+#                message =>
+#"$message_p: Found conditions when web-cluster configuration is disabled",
+#            );
+#        }
+#    }
+#
+#    # create cluster and replica passwords
+#    my $mysql_group   = bxMysql->new();
+#    my $mysql_options = $mysql_group->mysql_cluster_options;
+#    $mysql_options->{'group'} = 'mysql';
+#
+#    # run ansible playbook
+#    my $po       = Pool->new();
+#    my $ansData  = $po->ansible_conf;
+#    my $cmd_play = $ansData->{'playbook'};
+#    my $cmd_conf = catfile( $ansData->{'base'}, "web.yml" );
+#
+#    $mysql_options->{manage_web} =
+#      $action;    # create_web, delete_web, web1 or web2
+#    $mysql_options->{fstype} = $fstype;
+#
+#    # run playbook
+#    if ( $action eq "delete_web" ) {
+#        $mysql_options->{'deleted_web_server'} = $server_name;
+#    }
+#    else {
+#        if ( $action eq "web1" ) {
+#
+#            delete $mysql_options->{cluster_password_file}
+#              if ( defined $mysql_options->{cluster_password_file} );
+#            delete $mysql_options->{replica_password_file}
+#              if ( defined $mysql_options->{replica_password_file} );
+#        }
+#        $mysql_options->{'new_web_server'} = $server_name;
+#    }
+#
+#    #print Dumper($mysql_options);
+#    #exit;
+#
+#    my $dh = bxDaemon->new(
+#        debug    => $self->debug,
+#        task_cmd => qq($cmd_play $cmd_conf)
+#    );
+#
+#    my $created_process =
+#      $dh->startAnsibleProcess( 'web_cluster', $mysql_options );
+#    return $created_process;
+#}
 
 # create site
 # site_options define parametrs for new site
@@ -677,12 +678,14 @@ sub CreateSite {
 
     # charset option test
     if ( defined $site_options->{'SiteCharset'} ) {
-        if ( $site_options->{'SiteCharset'} !~ /^(utf-8|windows-1251)$/i ) {
+#        if ( $site_options->{'SiteCharset'} !~ /^(utf-8|windows-1251)$/i ) {
+	if ( $site_options->{'SiteCharset'} !~ /^(utf-8)$/i ) {
             return Output->new(
                 error   => 1,
                 message => "$message_p: charset="
                   . $site_options->{'SiteCharset'}
-                  . "; it can contain only 'utf-8' or 'windows-1251'",
+#                  . "; it can contain only 'utf-8' or 'windows-1251'",
+		  . "; it can contain only 'utf-8'",
             );
         }
         $site_options->{'SiteCharset'} =~ tr/A-Z/a-z/;
@@ -1513,126 +1516,126 @@ sub siteCustomSettings {
     return $created_process;
 }
 
-sub configureTransformer {
-    my ( $self, $opts ) = @_;
+#sub configureTransformer {
+#    my ( $self, $opts ) = @_;
+#
+#    my $message_p = ( caller(0) )[3];
+#    my $message_t = __PACKAGE__;
+#    my $logOutput = Output->new(
+#        error   => 0,
+#        logfile => $self->logfile,
+#        debug   => $self->debug
+#    );
+#
+#    if (   not defined $opts->{transformer_host}
+#        || \not defined $opts->{web_site_name}
+#        || \not defined $opts->{web_site_dir} )
+#    {
+#        return Output->new(
+#            error   => 1,
+#            message => "$message_p: Some mandatory options are missing.",
+#        );
+#    }
+#
+#    if ( not defined $opts->{transformer_domains} ){
+#        $opts->{transformer_domains} = ['localhost', $opts->{web_site_name}];
+#    }else{
+#        if ( $opts->{transformer_domains} =~ /,/ ){
+#            my @transformer_domains = split(',' , $opts->{transformer_domains} );
+#            $opts->{transformer_domains} = \@transformer_domains;
+#        }else{
+#            $opts->{transformer_domains} = [$opts->{transformer_domains}];
+#        }
+#    }
+#
+#    my $host = Host->new( host => $opts->{transformer_host} );
+#    my $is_host_in_pool = $host->host_in_pool();
+#    if ( $is_host_in_pool->is_error ) {
+#        return $is_host_in_pool;
+#    }
+#
+#    my $bx_pool = Pool->new();
+#    my $an_data = $bx_pool->ansible_conf;
+#    my $host_vars_path =
+#      catfile( $an_data->{'host_vars'}, $opts->{transformer_host} );
+#    if ( -f $host_vars_path ){
+#        my $inventory = get_from_yaml($host_vars_path);
+#        if ( $inventory->is_error ){
+#            return $inventory;
+#        }
+#        if (defined $inventory->{redis_password}){
+#            $opts->{redis_password} = $inventory->{redis_password};
+#        }
+#        if (defined $inventory->{redis_root_password}){
+#            $opts->{redis_root_password} = $inventory->{redis_root_password};
+#        }
+#    }
+#
+#    $opts->{is_create} = "true";
+#    if ( not defined $opts->{redis_password} ) {
+#        $opts->{redis_password} = generate_simple_password();
+#    }
+#    if ( not defined $opts->{redis_root_password} ) {
+#        $opts->{redis_root_password} = generate_simple_password();
+#    }
+#
+#    $logOutput->log_data(
+#        "$message_p: configure transformer-service" . $opts->{web_site_name} );
+#
+#    # create site by ansible task
+#    my $po       = Pool->new();
+#    my $ansData  = $po->ansible_conf;
+#    my $cmd_play = $ansData->{'playbook'};
+#    my $cmd_conf = catfile( $ansData->{'base'}, "transformer.yml" );
+#    my $dh       = bxDaemon->new(
+#        debug    => $self->debug,
+#        task_cmd => qq($cmd_play $cmd_conf)
+#    );
+#
+#    my $created_process =
+#      $dh->startAnsibleProcess( "configure_transformer", $opts );
+#    return $created_process;
+#}
 
-    my $message_p = ( caller(0) )[3];
-    my $message_t = __PACKAGE__;
-    my $logOutput = Output->new(
-        error   => 0,
-        logfile => $self->logfile,
-        debug   => $self->debug
-    );
-
-    if (   not defined $opts->{transformer_host}
-        || \not defined $opts->{web_site_name}
-        || \not defined $opts->{web_site_dir} )
-    {
-        return Output->new(
-            error   => 1,
-            message => "$message_p: Some mandatory options are missing.",
-        );
-    }
-
-    if ( not defined $opts->{transformer_domains} ){
-        $opts->{transformer_domains} = ['localhost', $opts->{web_site_name}];
-    }else{
-        if ( $opts->{transformer_domains} =~ /,/ ){
-            my @transformer_domains = split(',' , $opts->{transformer_domains} );
-            $opts->{transformer_domains} = \@transformer_domains;
-        }else{
-            $opts->{transformer_domains} = [$opts->{transformer_domains}];
-        }
-    }
-
-    my $host = Host->new( host => $opts->{transformer_host} );
-    my $is_host_in_pool = $host->host_in_pool();
-    if ( $is_host_in_pool->is_error ) {
-        return $is_host_in_pool;
-    }
-
-    my $bx_pool = Pool->new();
-    my $an_data = $bx_pool->ansible_conf;
-    my $host_vars_path =
-      catfile( $an_data->{'host_vars'}, $opts->{transformer_host} );
-    if ( -f $host_vars_path ){
-        my $inventory = get_from_yaml($host_vars_path);
-        if ( $inventory->is_error ){
-            return $inventory;
-        }
-        if (defined $inventory->{redis_password}){
-            $opts->{redis_password} = $inventory->{redis_password};
-        }
-        if (defined $inventory->{redis_root_password}){
-            $opts->{redis_root_password} = $inventory->{redis_root_password};
-        }
-    }
-
-    $opts->{is_create} = "true";
-    if ( not defined $opts->{redis_password} ) {
-        $opts->{redis_password} = generate_simple_password();
-    }
-    if ( not defined $opts->{redis_root_password} ) {
-        $opts->{redis_root_password} = generate_simple_password();
-    }
-
-    $logOutput->log_data(
-        "$message_p: configure transformer-service" . $opts->{web_site_name} );
-
-    # create site by ansible task
-    my $po       = Pool->new();
-    my $ansData  = $po->ansible_conf;
-    my $cmd_play = $ansData->{'playbook'};
-    my $cmd_conf = catfile( $ansData->{'base'}, "transformer.yml" );
-    my $dh       = bxDaemon->new(
-        debug    => $self->debug,
-        task_cmd => qq($cmd_play $cmd_conf)
-    );
-
-    my $created_process =
-      $dh->startAnsibleProcess( "configure_transformer", $opts );
-    return $created_process;
-}
-
-sub removeTransformer {
-    my ( $self, $opts ) = @_;
-
-    my $message_p = ( caller(0) )[3];
-    my $message_t = __PACKAGE__;
-    my $logOutput = Output->new(
-        error   => 0,
-        logfile => $self->logfile,
-        debug   => $self->debug
-    );
-
-    if (   not defined $opts->{transformer_host}
-        || \not defined $opts->{web_site_name}
-        || \not defined $opts->{web_site_dir} )
-    {
-        return Output->new(
-            error   => 1,
-            message => "$message_p: Some mandatory options are missing.",
-        );
-    }
-
-    $opts->{is_remove} = "true";
-
-    $logOutput->log_data(
-        "$message_p: remove transformer-service" . $opts->{web_site_name} );
-
-    # create site by ansible task
-    my $po       = Pool->new();
-    my $ansData  = $po->ansible_conf;
-    my $cmd_play = $ansData->{'playbook'};
-    my $cmd_conf = catfile( $ansData->{'base'}, "transformer.yml" );
-    my $dh       = bxDaemon->new(
-        debug    => $self->debug,
-        task_cmd => qq($cmd_play $cmd_conf)
-    );
-
-    my $created_process =
-      $dh->startAnsibleProcess( "remove_transformer", $opts );
-    return $created_process;
-}
+#sub removeTransformer {
+#    my ( $self, $opts ) = @_;
+#
+#    my $message_p = ( caller(0) )[3];
+#    my $message_t = __PACKAGE__;
+#    my $logOutput = Output->new(
+#        error   => 0,
+#        logfile => $self->logfile,
+#        debug   => $self->debug
+#    );
+#
+#    if (   not defined $opts->{transformer_host}
+#        || \not defined $opts->{web_site_name}
+#        || \not defined $opts->{web_site_dir} )
+#    {
+#        return Output->new(
+#            error   => 1,
+#            message => "$message_p: Some mandatory options are missing.",
+#        );
+#    }
+#
+#    $opts->{is_remove} = "true";
+#
+#    $logOutput->log_data(
+#        "$message_p: remove transformer-service" . $opts->{web_site_name} );
+#
+#    # create site by ansible task
+#    my $po       = Pool->new();
+#    my $ansData  = $po->ansible_conf;
+#    my $cmd_play = $ansData->{'playbook'};
+#    my $cmd_conf = catfile( $ansData->{'base'}, "transformer.yml" );
+#    my $dh       = bxDaemon->new(
+#        debug    => $self->debug,
+#        task_cmd => qq($cmd_play $cmd_conf)
+#    );
+#
+#    my $created_process =
+#      $dh->startAnsibleProcess( "remove_transformer", $opts );
+#    return $created_process;
+#}
 
 1;

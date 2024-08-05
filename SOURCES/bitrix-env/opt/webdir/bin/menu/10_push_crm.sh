@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/usr/bin/bash
+#
 # manage web instances
 #set -x
 PROGNAME=$(basename $0)
@@ -6,6 +7,7 @@ PROGPATH=$(dirname $0)
 [[ -z $DEBUG ]] && DEBUG=0
 
 . $PROGPATH/10_push/functions.sh || exit 1
+
 logo=$(get_logo)
 
 configure_push_service() {
@@ -15,9 +17,7 @@ configure_push_service() {
 # print host menu
 submenu() {
     submenu_00="$PUSH201"
-    submenu_01="1. $PUSH006"
-
-
+    #submenu_01="1. $PUSH006"
 
     SUBMENU_SELECT=
     until [[ -n "$SUBMENU_SELECT" ]]; do
@@ -43,19 +43,18 @@ submenu() {
         print_message "$PUSH205" '' '' SUBMENU_SELECT
        
         case "$SUBMENU_SELECT" in
-            "1") 
-                if [[ $PUSH_VERSION -eq 1 ]]; then
-                    configure_push_service
-                else
-                    error_pick
-                fi;;
+            #"1") 
+                #if [[ $PUSH_VERSION -eq 1 ]]; then
+                    #configure_push_service
+                #else
+                    #error_pick
+                #fi;;
             "0") exit ;;
             *)   error_pick; SUBMENU_SELECT=;;
         esac
 
         SUBMENU_SELECT=
-done
+    done
 }
 
 submenu
-

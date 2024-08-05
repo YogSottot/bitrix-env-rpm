@@ -14,7 +14,7 @@ WEB0006="C - mysql client config file exists (Y) or not (N) on the server"
 # Найдены настройки сайтов, которые не позволяют создать кластерную конфигурацию.
 WEB0007="There are site preferences that make cluster configuration impossible."
 # Доступно обновление для bitrix-env. Вы должны установить его прежде чем продолжить.
-WEB0008="A bitrix-env update was found. 
+WEB0008="A bitrix-env update was found.
 It needs to be installed before running this action."
 # ОБновление доступно в меню управления Хостами
 WEB0009="To install it, use the Host menu."
@@ -76,8 +76,8 @@ WEB0036="Manage PHP extensions"
 WEB0037="Enter site name (default): "
 # Вы можете ввести несколько значений разделенных запятой. Например:
 WEB0038="Separate multiple entries with a comma. Example: default, test"
-# Введите ДНС имя
-WEB0039="Enter DNS name(s): "
+# Введите домены (днс имена)
+WEB0039="Enter Domain(s): "
 # Вы можете использовать несколько значений разделенных запятой
 WEB0040="Separate multiple entries with a comma. Example: www.example.org, example.org"
 # Введите email адрес для оповещений Let's encrypt
@@ -93,7 +93,7 @@ WEB0044="These sites were not found: "
 
 # Пожалуйста, подтвердите обнволение сертификата для сайтов
 WEB0045="Please confirm you want to update certificate settings for the sites (N|y): "
-# Пожалуйста, подтвертиде установку сертификата для сайтов 
+# Пожалуйста, подтвертиде установку сертификата для сайтов
 WEB0046="Please confirm you want to install certificates for the sites (Y|n): "
 # Настройка Let's Encrypt
 WEB0047="Configure \"Let's Encrypt\""
@@ -102,13 +102,13 @@ WEB0047="Configure \"Let's Encrypt\""
 # СЕртификат, приватный ключ и цепочка должны быть в PEM-формате
 # Приватный ключ должен быть не зашифрован
 # Сертификат и приватный ключ - обязательные параметры
-# Вы должны использовать полные пути к сертификату, приватному ключу и цепочке 
+# Вы должны использовать полные пути к сертификату, приватному ключу и цепочке
 # или загрузить файлы в КАТАЛОГ и использовать относительные пути
-WEB0048="Requirements for Imported Certificates: 
+WEB0048="Requirements for Imported Certificates:
  * Certificate, private key, and certificate chain must all be PEM-encoded.
  * Private key must not be encrypted.
  * Certificate and private key are required.
- * You have to use full paths for certificate, private key, and certificate chain 
+ * You have to use full paths for certificate, private key, and certificate chain
    to use relative paths, upload the files to __OPT1__ first."
 
 # Путь к приватному ключу, сертификату и цепочке сертификатов
@@ -141,8 +141,10 @@ WEB0060="3. Restore default certificate"
 # Основное меню
 WEB0061="1. Create web role on server"
 WEB0062="4. Remove web role from server"
-WEB0063="2. Manage PHP extensions"
-WEB0064="3. Configure certificates"
+#WEB0063="2. Manage PHP extensions"
+#WEB0064="3. Configure certificates"
+WEB0063="1. Manage PHP extensions"
+WEB0064="2. Configure certificates"
 # Управление конфигурацией web-серверов
 WEB0065="Manage web server configuration"
 
@@ -156,7 +158,7 @@ WEB0069="There are no options to configure LE certificate for push-server only."
 
 # Введите путь к сертификату
 WEB0070="Enter certificate file path: "
-# 
+#
 WEB0071="Certificate path must not be empty!"
 WEB0072="There are no sites with certificate: __OPT1__"
 

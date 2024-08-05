@@ -5,42 +5,32 @@
 # from_php_version: 56 (value from {{ php_union_version }})
 # php_rollback_versions - list of available version for rollback
 # php_upgraded_versions - list of available version for upgrade
+
 # rollback
+
 - include_tasks: rollback_php82.yml
-  when: to_php_version <= 82
-    and 82 in php_rollback_versions
+  when: to_php_version <= 82 and 82 in php_rollback_versions
 
 - include_tasks: rollback_php81.yml
-  when: to_php_version <= 81
-    and 81 in php_rollback_versions
+  when: to_php_version <= 81 and 81 in php_rollback_versions
 
-- include_tasks: rollback_php80.yml
-  when: to_php_version <= 80
-    and 80 in php_rollback_versions
-
-- include_tasks: rollback_php74.yml
-  when: to_php_version <= 74
-    and 74 in php_rollback_versions
-
-- include_tasks: rollback_php73.yml
-  when: to_php_version <= 73
-    and 73 in php_rollback_versions
-
-- include_tasks: rollback_php72.yml
-  when: to_php_version <= 72
-    and 72 in php_rollback_versions
-
-- include_tasks: rollback_php71.yml
-  when: to_php_version <= 71
-    and 71 in php_rollback_versions
-
-- include_tasks: rollback_php70.yml
-  when: to_php_version <= 70
-    and 70 in php_rollback_versions
-
-- include_tasks: rollback_php7.yml
-  when: to_php_version <= 56
-    and 56 in php_rollback_versions
-
-
-
+#- include_tasks: rollback_php80.yml
+#  when: to_php_version <= 80 and 80 in php_rollback_versions
+#
+#- include_tasks: rollback_php74.yml
+#  when: to_php_version <= 74 and 74 in php_rollback_versions
+#
+#- include_tasks: rollback_php73.yml
+#  when: to_php_version <= 73 and 73 in php_rollback_versions
+#
+#- include_tasks: rollback_php72.yml
+#  when: to_php_version <= 72 and 72 in php_rollback_versions
+#
+#- include_tasks: rollback_php71.yml
+#  when: to_php_version <= 71 and 71 in php_rollback_versions
+#
+#- include_tasks: rollback_php70.yml
+#  when: to_php_version <= 70 and 70 in php_rollback_versions
+#
+#- include_tasks: rollback_php7.yml
+#  when: to_php_version <= 56 and 56 in php_rollback_versions

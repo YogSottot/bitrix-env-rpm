@@ -1,3 +1,5 @@
+#!/usr/bin/bash
+#
 BASE_DIR=/opt/webdir
 BIN_DIR=$BASE_DIR/bin
 
@@ -23,7 +25,7 @@ mysql_menu_fnc=$mysql_menu_dir/functions.sh
 # get status for web servers
 # return
 # WEB_SERVERS -list of web servers
-get_web_servers_status(){
+get_web_servers_status() {
     WEB_SERVERS=
     WEB_SERVERS_CNT=0
 
@@ -32,9 +34,7 @@ get_web_servers_status(){
     local erro=$(echo "$info" | grep '^error:' | sed -e "s/^error://")
     local mesg=$(echo "$info" | grep '^message:' | sed -e "s/^message://")
     if [[ -n $erro ]]; then
-        print_message \
-            "$WEB0001 $WEB0200" \
-            "$mesg" "" any_key
+        print_message "$WEB0001 $WEB0200" "$mesg" "" any_key
         exit
     fi
 
@@ -50,8 +50,7 @@ get_web_servers_status(){
         
         if [[ $(echo "$groups" | grep -wc "web") -gt 0 ]]; then
             web_instance=spare
-            [[ $(echo "$groups" | grep -wc "mgmt") -gt 0 ]] && \
-                web_instance=main
+            [[ $(echo "$groups" | grep -wc "mgmt") -gt 0 ]] && web_instance=main
         fi
         
         # get additional info
@@ -68,10 +67,8 @@ get_web_servers_status(){
             php_version=$(echo "$h_info" | awk -F':' '{print $8}')
             my_server_rootpw_f=$(echo "$h_info" | awk -F':' '{print $10}')
             my_server_rootcfg_f=$(echo "$h_info" | awk -F':' '{print $11}')
-            [[ $my_server_rootcfg_f == "/root/.my.cnf" ]] && \
-                my_server_rootcfg=Y
-            [[ $my_server_rootpw_f == "set" ]] && \
-                my_server_rootpw=Y
+            [[ $my_server_rootcfg_f == "/root/.my.cnf" ]] && my_server_rootcfg=Y
+            [[ $my_server_rootpw_f == "set" ]] && my_server_rootpw=Y
             my_server_status=$(echo "$h_info" | awk -F':' '{print $12}')
             os_version=$(echo "$h_info" | awk -F':' '{print $13}')
         fi
@@ -89,7 +86,7 @@ get_web_servers_status(){
     IFS_BAK=
 }
 
-cache_web_servers_status(){
+cache_web_servers_status() {
     WEB_SERVERS=
     WEB_SERVERS_CACHE=$CACHE_DIR/web_servers_status.cache             # cache file
     WEB_SERVERS_CACHE_LT=3600                                         # live time for cache file in seconds
@@ -109,14 +106,12 @@ cache_web_servers_status(){
     fi
 }
 
-
-print_web_servers_status(){
+print_web_servers_status() {
     local exclude=$1            # exclude servers by this type of service: spare or main
     local web_only=${2:-1}      # show only web servers
 
     cache_web_servers_status
-    [[ $web_only -gt 0 ]] && \
-        WEB_SERVERS=$(echo "$WEB_SERVERS" | grep ":\(spare\|main\):")
+    [[ $web_only -gt 0 ]] && WEB_SERVERS=$(echo "$WEB_SERVERS" | grep ":\(spare\|main\):")
 
     if [[ -n $exclude ]]; then
         WEB_FILTERED_SERVERS_CNT=$(echo "$WEB_SERVERS" | grep -v "^$" | egrep -cv ":$exclude:")
@@ -124,7 +119,6 @@ print_web_servers_status(){
         WEB_FILTERED_SERVERS_CNT=$(echo "$WEB_SERVERS" | grep -vc "^$")
     fi
 
-   
     if [[ $WEB_FILTERED_SERVERS_CNT -eq 0 ]]; then
         echo "$WEB0002"
         [[ -n $exclude ]] &&  echo "$WEB0003 $exclude"   
@@ -136,8 +130,7 @@ print_web_servers_status(){
     [[ -n $exclude  ]] && echo "$WEB0003 $exclude"
 
     echo $MENU_SPACER
-    printf "%-17s | %20s| %6s | %4s | %8s | %2s | %2s | %s\n" \
-        "Hostname" "IP" "Type" "OS" "PHP" "P" "C" "MySQL"
+    printf "%-17s | %20s| %6s | %4s | %8s | %2s | %2s | %s\n" "Hostname" "IP" "Type" "OS" "PHP" "P" "C" "MySQL"
     echo $MENU_SPACER
 
     IFS_BAK=$IFS
@@ -147,8 +140,7 @@ print_web_servers_status(){
             [[ $(echo "$line" | egrep -c ":$exclude:") -gt 0  ]] && continue
         fi
         echo "$line" | \
-            awk -F':' '{printf "%-17s | %20s| %6s | %4s | %8s | %2s | %2s | %s\n", \
-            $1, $2, $3, $4, $5, $6, $7, $8}'
+            awk -F':' '{printf "%-17s | %20s| %6s | %4s | %8s | %2s | %2s | %s\n", $1, $2, $3, $4, $5, $6, $7, $8}'
     done
     IFS=$IFS_BAK
     IFS_BAK=
@@ -168,12 +160,11 @@ print_web_servers_status(){
 # WEB_CLUSTER_TYPE to 
 # csync  - if the pool contains csync2 configuration
 # lsync  - in all other cases 
-check_web_options(){
+check_web_options() {
     # test site options
     test_sites_config
     if [[ $STOP_ALL_CONDITIONS -gt 0 ]]; then
-        print_color_text \
-            "$WEB0007" red
+        print_color_text "$WEB0007" red
         return 1
     fi
 
@@ -199,7 +190,7 @@ check_web_options(){
         print_color_text "$WEB0011" blue
         return 10
     fi
-    
+
     if [[ $MASTER_CLIENT_CNF != "Y" ]]; then
         print_color_text "$WEB0012 $MASTER_NAME"
         print_color_text "$WEB0011" blue

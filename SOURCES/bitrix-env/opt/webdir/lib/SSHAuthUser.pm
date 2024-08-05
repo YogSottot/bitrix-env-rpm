@@ -1,3 +1,4 @@
+#
 package SSHAuthUser;
 use Moose;
 use File::Basename qw( dirname basename );

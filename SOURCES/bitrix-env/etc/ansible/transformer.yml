@@ -4,13 +4,11 @@
   vars:
     ansible_playbook_file: NOT_DEFINED
     ansible_playbook_debug: NOT_DEFINED
-
   roles:
     - transformer
 
 - hosts: bitrix-hosts
   vars:
     cache_directory: /opt/webdir/tmp
-
   roles:
     - cleaner

@@ -1,11 +1,12 @@
-#!/bin/bash
+#!/usr/bin/bash
+#
 # manage ssh keys for ansible
 # 1. create ney key for host ( removes previous keys )
 # 2. removes the outdated keys
-
+#
 # auth E.Shemaeva
 # created 30/01/2014
-
+#
 PROGNAME=$(basename $0)
 PROGPATH=$(dirname $0)
 VERBOSE=0
@@ -16,7 +17,7 @@ TMPL_DIR=$BASE_DIR/templates
 LOGS_FILE=$LOGS_DIR/$(echo $PROGNAME | sed -e 's/\.sh$//').log
 
 # print help message
-print_usage(){
+print_usage() {
   _return_code=$1
 
   echo "Usage: $PROGNAME -o mgmt|key [-hv] [ -t livetime_for_key ] [ -u sshuser ] [-s secret] [ -k keyid ] [-b location]"
@@ -163,7 +164,7 @@ set_mgmt_role() {
 }
 
 # get ssh key info from config file
-ssh_key(){
+ssh_key() {
   _sshuser=$1
 
   #  home of user
@@ -186,7 +187,6 @@ ssh_key(){
   # print info about key
   print_and_exit 005 "$sshkey"
 }
-
 
 # parse command line argvs
 while getopts ":o:b:u:t:k:s:vh" opt; do

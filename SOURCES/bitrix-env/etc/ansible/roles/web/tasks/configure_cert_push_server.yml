@@ -46,4 +46,4 @@
     group: bitrix
   when: certificate_chain is defined
 
-- include: configure_nginx_push_server.yml
+- include_tasks: configure_nginx_push_server.yml

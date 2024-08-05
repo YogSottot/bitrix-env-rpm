@@ -4,4 +4,3 @@
 
 - include_tasks: configure_nodjs_push-server.yml
   when: "inventory_hostname == hostname"
-

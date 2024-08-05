@@ -21,4 +21,3 @@
 
 - include_tasks: configure_nodjs_push-server.yml
   when: "manage == 'configure_nodejs' and inventory_hostname == hostname"
-
