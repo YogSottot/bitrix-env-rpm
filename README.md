@@ -48,3 +48,7 @@ mock -r epel-9-x86_64 --rebuild ~/rpmbuild/SRPMS/bitrix-env-9.0-0.el9.src.rpm
 
 
 Получили пакет для centos 9.  
+
+* **Ссылка для скачивания браузером/wget**  
+  ```https://repo.bitrix.info/dnf/SRPMS/bitrix-env-9.0-1.el9.src.rpm```  
+  Подставить нужную версию.
