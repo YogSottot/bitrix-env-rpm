@@ -39,8 +39,7 @@
     group: "{{ site_bitrix }}"
     mode: 0660
   with_items:
-    - dbconn.php
-    - after_connect.php
+    - dbconn.php #    - after_connect.php
     - after_connect_d7.php
   tags: create_site_files
   when: inventory_hostname == cluster_web_server

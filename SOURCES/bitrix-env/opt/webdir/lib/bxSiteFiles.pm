@@ -71,12 +71,30 @@ sub bx_site_type {
             $bx_options->{'SiteInstall'} = 'ext_kernel';
         }
 
-        my $bx_setup_file = catfile( $site_root, 'bitrixsetup.php' );
-        $bx_options->{'SiteStatus'} = 'not_installed';
+#        my $bx_setup_file = catfile( $site_root, 'bitrixsetup.php' );
+#        $bx_options->{'SiteStatus'} = 'not_installed';
+#
+#        if ( ! -f $bx_setup_file ) {
+#            $bx_options->{'SiteStatus'} = 'finished';
+#        }
 
-        if ( ! -f $bx_setup_file ) {
-            $bx_options->{'SiteStatus'} = 'finished';
-        }
+	my $bx_index_file = $site_root.'/index.php';
+	my $bx_index_content;
+	open(my $fh, '<', $bx_index_file) or die "cannot open file $bx_index_file";
+	{
+	    local $/;
+	    $bx_index_content = <$fh>;
+	}
+	close($fh);
+	my $bx_index_key = grep /setup_text/, $bx_index_content;
+	if($bx_index_key eq "0")
+	{
+	    $bx_options->{'SiteStatus'} = 'finished';
+	}
+	else
+	{
+	    $bx_options->{'SiteStatus'} = 'not_installed';
+	}
     }
 }
 

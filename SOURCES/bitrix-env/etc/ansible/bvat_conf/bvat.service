@@ -2,7 +2,7 @@
 Description=Configure Bitrix-Env
 After=syslog.target
 After=network.target
-After=mariadb.service
+After=mysqld.service
 After=httpd.service
 Before=getty@tty1.service getty@tty2.service getty@rrt3.service getty@tty4.service getty@tty5.service getty@tty6.service
 

@@ -21,7 +21,7 @@
 %define bitrix_source		bitrix-env
 %define bitrix_type		general
 %define bitrix_conflicts	bitrix-env-crm
-%define bitrix_rel		0
+%define bitrix_rel		1
 
 Name:		bitrix-env
 Version:	9.0
@@ -69,7 +69,7 @@ Requires:	bx-ansible >= 2.7.9
 %endif
 
 %if 0%{?rhel}==9
-Requires:	bx-ansible-core >= 2.14.0
+Requires:	bx-ansible-core >= 2.14.0, bx-catdoc >= 0.95
 %endif
 
 Requires:	python-passlib, python-setuptools
@@ -189,7 +189,7 @@ BITRIX_ENV_VER=%{version}.%{bitrix_rel}
 BITRIX_ENV_TYPE=%{bitrix_type}
 
 /opt/webdir/bin/rpm_package/post.sh "$RPM_ACTION" "$BITRIX_ENV_VER" "$BITRIX_ENV_TYPE"
-/opt/webdir/bin/rpm_package/crm.sh "$RPM_ACTION" "$BITRIX_ENV_VER" "$BITRIX_ENV_TYPE"
+#/opt/webdir/bin/rpm_package/crm.sh "$RPM_ACTION" "$BITRIX_ENV_VER" "$BITRIX_ENV_TYPE"
 
 # Remove BitrixEnv
 %postun

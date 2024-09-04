@@ -20,6 +20,9 @@ server-id = 1
 authentication_policy = "*,,"
 disable_log_bin
 
+# Disable Percona Telemetry
+percona_telemetry_disable = 1
+
 # Basic mysql server configuration
 user = mysql
 port = 3306

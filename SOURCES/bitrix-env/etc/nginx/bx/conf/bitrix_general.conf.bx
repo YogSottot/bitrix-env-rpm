@@ -165,6 +165,21 @@ location ^~ /upload/bx_cloud_upload/ {
         #proxy_max_temp_file_size 0;
         proxy_pass $1://$2.selcdn.ru/$3;
     }
+    # Selectel as S3 compatible storage
+    location ~ ^/upload/bx_cloud_upload/(http[s]?)\.([^/:\s]+)\.selstorage\.ru/([^\s]+)$ {
+	internal;
+	resolver 8.8.8.8 ipv6=off;
+	proxy_method GET;
+	proxy_set_header X-Real-IP $remote_addr;
+	proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+	proxy_set_header X-Forwarded-Server $host;
+	more_clear_input_headers 'Authorization';
+	proxy_set_header "cookie" "";
+	proxy_set_header "content-type" "";
+	proxy_set_header "content-length" "";
+	#proxy_max_temp_file_size 0;
+	proxy_pass $1://$2.selstorage.ru/$3;
+    }
     # Yandex
     location ~ ^/upload/bx_cloud_upload/(http[s]?)\.([^/:\s]+)\.storage\.yandexcloud\.net/([^\s]+)$ {
         internal;

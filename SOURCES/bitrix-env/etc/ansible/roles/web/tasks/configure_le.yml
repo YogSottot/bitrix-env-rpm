@@ -36,6 +36,14 @@
     - /home/bitrix/dehydrated
     - /var/www/dehydrated
 
+- name: add dehydrated dir as safe directory global git option in .gitconfig
+  community.general.git_config:
+    repo: "https://github.com/lukas2511/dehydrated.git"
+    state: present
+    scope: global
+    name: safe.directory
+    value: "/home/bitrix/dehydrated"
+
 - name: create nginx LE config
   template:
     src: nginx/letsencrypt-challenge-tokens.conf.j2

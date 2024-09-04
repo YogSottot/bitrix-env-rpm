@@ -24,6 +24,9 @@ server-id = 1
 #authentication_policy=mysql_native_password
 authentication_policy = "*,,"
 
+# Disable Percona Telemetry
+percona_telemetry_disable = 1
+
 {% if setup_type_template == "slave" %}
 disable_log_bin
 {% else %}
