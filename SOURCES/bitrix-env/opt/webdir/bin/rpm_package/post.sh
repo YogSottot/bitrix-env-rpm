@@ -1644,6 +1644,27 @@ update_mycnf() {
     log_to_file "Update ${DEST_CONF} file"
 }
 
+mysqli_for_default_site() {
+    DEFAULT_DBCONN=/home/bitrix/www/bitrix/php_interface/dbconn.php
+    if [[ -f ${DEFAULT_DBCONN} ]];
+    then
+        is_use_mysqli_on_default_site=$(grep -v '^#' ${DEFAULT_DBCONN} | grep -w 'BX_USE_MYSQLI' | grep -wc true)
+        if [[ $is_use_mysqli_on_default_site -eq 0 ]];
+        then
+            sed -i 's|.*BX_UTF.*|define("BX_UTF", true);\ndefine("BX_USE_MYSQLI", true);|' ${DEFAULT_DBCONN}
+            log_to_file "Enable BX_USE_MYSQLI at ${DEFAULT_DBCONN}"
+        fi
+    fi
+}
+
+clear_cache() {
+    cache_directory=/opt/webdir/tmp
+    if [[ -d $cache_directory ]];
+    then
+        find $cache_directory -type f -delete
+    fi
+}
+
 bx_push_server() {
     # VMBITRIX_9.0
     [[ ${OS_VERSION} != "9" ]] && return 0
@@ -1836,10 +1857,7 @@ upgrade_fixes() {
       fi
 
         # clean cache
-        cache_directory=/opt/webdir/tmp
-        if [[ -d $cache_directory ]]; then
-            find $cache_directory -type f -delete
-        fi
+        clear_cache
 
 #    # VMBitrix 9.0.0 - disable scale module support, sudo no need anymore
 #    # http://jabber.bx/view.php?id=77187
@@ -2111,15 +2129,13 @@ upgrade_fixes() {
     # VMBITRIX_9.XXX
     if [[ ${OS_VERSION} -eq 9 ]];
     then
+        update_mycnf
 
-	update_mycnf
+        # add BX_USE_MYSQLI on dbconn default site if no string in file
+        mysqli_for_default_site
 
 	# clean cache
-        cache_directory=/opt/webdir/tmp
-        if [[ -d $cache_directory ]]; then
-            find $cache_directory -type f -delete
-        fi
-
+        clear_cache
     fi
 }
 

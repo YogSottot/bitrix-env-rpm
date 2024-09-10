@@ -68,7 +68,7 @@
 - name: delete old line from crontab
   lineinfile:
     dest: /etc/crontab
-    regexp: '0 12 1 .+ root /opt/webdir/bin/bx-dehydrated'
+    regexp: 'root /opt/webdir/bin/bx-dehydrated'
     state: absent
 
 - name: update crontab

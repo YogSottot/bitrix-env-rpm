@@ -14,6 +14,7 @@ define("BX_DIR_PERMISSIONS", 0755);
 define("BX_UTF", true);
 define("MYSQL_TABLE_TYPE", "INNODB");
 define("BX_DISABLE_INDEX_PAGE", true);
+define("BX_USE_MYSQLI", true);
 
 define("BX_TEMPORARY_FILES_DIRECTORY", "/home/bitrix/.bx_temp/__DBNAME__/");
 define("BX_CRONTAB_SUPPORT", true);

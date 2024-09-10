@@ -21,7 +21,7 @@
 %define bitrix_source		bitrix-env
 %define bitrix_type		general
 %define bitrix_conflicts	bitrix-env-crm
-%define bitrix_rel		1
+%define bitrix_rel		2
 
 Name:		bitrix-env
 Version:	9.0
