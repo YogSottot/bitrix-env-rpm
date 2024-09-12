@@ -31,8 +31,8 @@ dnf install mock dnf-utils -y
 # или
 yum install yum-utils mock -y
 ```
-Настроить mock по инструкции
-https://github.com/rpm-software-management/mock/wiki#setup
+Настроить mock по инструкции  
+https://rpm-software-management.github.io/mock/#setup  
 
 ```bash
 git clone https://github.com/YogSottot/bitrix-env-rpm ~/rpmbuild
