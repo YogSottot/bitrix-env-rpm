@@ -17,6 +17,7 @@ failovermethod=priority
 gpgkey=https://repo.bitrix.info/dnf/RPM-GPG-KEY-BitrixEnv-9
 ```
 ```bash
+dnf -y install 'dnf-command(download)' && \
 dnf download --source bitrix-env
 # или
 yum install yum-utils && yumdownloader --source bitrix-env
