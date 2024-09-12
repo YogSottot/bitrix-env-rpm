@@ -27,7 +27,10 @@ rpm -Uvh  bitrix-env-9.0-0.el9.src.rpm
 * **Сборка из исходных кодов**  
 
 ```bash
-dnf install mock dnf-utils -y
+dnf config-manager --set-enabled crb && \
+dnf -y install epel-release && \
+dnf -y install almalinux-release-devel && \
+dnf -y install mock dnf-utils rpmdevtools
 # или
 yum install yum-utils mock -y
 ```
