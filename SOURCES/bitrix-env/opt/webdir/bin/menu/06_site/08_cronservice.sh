@@ -21,7 +21,7 @@ logo=$(get_logo)
 #
 #    get_site_info $site_name $site_dir "cron_services"
 #    [[ $DEBUG -gt 0 ]] && echo "data=$site_info_dat"
-#    # data=cron_services:default:sitemanager0:enabled:smtpd
+#    # data=cron_services:default:sitemanager:enabled:smtpd
 #    service_status=$(echo "$site_info_dat" | awk -F':' '{print $4}')
 #    [[ $DEBUG -gt 0 ]] && echo "dir=$site_dir status=$backup_status"
 #

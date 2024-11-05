@@ -18,27 +18,26 @@ use File::Basename qw( dirname basename );
 my $prog_name = basename $0;
 my $prog_dir  = dirname $0;
 
-my $o_action = "status";    # type of action that script must do.
-     # status  - information about site(s) that live on this system
-my $o_format  = 'plain';    # format of stdout message
-my $o_site    = undef;      # site short name
-my $o_hiden   = 0;          # hiden or not password value
-my $o_verbose = 1;
-my $o_help    = undef;
-my $o_dbname =
-  undef;    # site_db|dbname - usage while search sites with the same databases
-my $o_kernel_site = undef;    # main site for created linked site
-my $o_kernel_root = undef;    # kernel directory
-my $o_charset     = undef;    # site charset
+my $o_action            = "status";     # type of action that script must do.
+                                        # status  - information about site(s) that live on this system
+my $o_format            = 'plain';      # format of stdout message
+my $o_site              = undef;        # site short name
+my $o_hiden             = 0;            # hiden or not password value
+my $o_verbose           = 1;
+my $o_help              = undef;
+my $o_dbname            = undef;        # site_db|dbname - usage while search sites with the same databases
+my $o_kernel_site       = undef;        # main site for created linked site
+my $o_kernel_root       = undef;        # kernel directory
+my $o_charset           = undef;        # site charset
 
-my $o_user     = undef;       # site_dbuser
-my $o_pass     = undef;       # site_dbpass
-my $o_type     = 'link';      # site_type
-my $o_root     = undef;       # site_dir
-my $o_enable   = 0;
-my $o_disable  = 0;
-my $o_hostname = undef;       # hostname for web cluster
-my $o_filters  = undef;
+my $o_user              = undef;        # site_dbuser
+my $o_pass              = undef;        # site_dbpass
+my $o_type              = 'link';       # site_type
+my $o_root              = undef;        # site_dir
+my $o_enable            = 0;
+my $o_disable           = 0;
+my $o_hostname          = undef;        # hostname for web cluster
+my $o_filters           = undef;
 
 # cron defaults ( run one per week)
 my $o_min   = '10';
@@ -48,12 +47,12 @@ my $o_month = '*';
 my $o_wday  = '6';
 
 # NTLM settings
-my $o_ntlm_domain      = undef;
-my $o_ntlm_full_domain = undef;
-my $o_ntlm_ads         = undef;
-my $o_ntlm_login       = 'Administrator';
-my $o_ntlm_password    = undef;
-my $o_ntlm_host        = undef;
+my $o_ntlm_domain       = undef;
+my $o_ntlm_full_domain  = undef;
+my $o_ntlm_ads          = undef;
+my $o_ntlm_login        = 'Administrator';
+my $o_ntlm_password     = undef;
+my $o_ntlm_host = undef;
 
 # cron service options
 my $o_service     = undef;
@@ -62,11 +61,21 @@ my $o_enable_cron = undef;
 my $o_push = 0;
 
 my (
-    $o_SMTPHost,     $o_SMTPPort,          $o_SMTPUser,
-    $o_SMTPPassword, $o_EmailAddress,      $o_SMTPTLS,
-    $o_SMTPAuth,     $o_password_file,     $o_tmpdir,
-    $o_fstype,       $o_extension,         $o_dns,
-    $o_private_key,  $o_certificate_chain, $o_certificate,
+    $o_SMTPHost,
+    $o_SMTPPort,
+    $o_SMTPUser,
+    $o_SMTPPassword,
+    $o_EmailAddress,
+    $o_SMTPTLS,
+    $o_SMTPAuth,
+    $o_password_file,
+    $o_tmpdir,
+    $o_fstype,
+    $o_extension,
+    $o_dns,
+    $o_private_key,
+    $o_certificate_chain,
+    $o_certificate,
     $o_domains
 );
 
@@ -165,23 +174,20 @@ if ( $o_wday =~ /^any$/ ) {
 # process request
 my $bx = bxSite->new(
     site_name => $o_site,
-    site_dir  => $o_root,
-    debug     => $o_verbose
+    site_dir => $o_root,
+    debug => $o_verbose
 );
 my $sites = undef;
 
 # get list all sites (you can apply filter for search)
 if ( $o_action =~ /^status$/ ) {
     $sites = $bx->statusSite();
-
 }
-
 # create my_cnf file with connection info for site database
 # create password files for ansible lookup
 elsif ( $o_action =~ /^(my_cnf|password_file)$/ ) {
     $sites = $bx->my_connect( $o_action, $o_tmpdir );
 }
-
 # get list of all sites
 elsif ( $o_action =~ /^(list)$/ ) {
     my $filters = {};
@@ -199,9 +205,8 @@ elsif ( $o_action =~ /^(list)$/ ) {
     }
     my $bxSites = bxSites->new( filters => $filters );
     $sites = $bxSites->listSite();
-
-    # testing configuration of sites for enable cluster features
 }
+# testing configuration of sites for enable cluster features
 elsif ( $o_action =~ /^extension_(enable|disable)$/ ) {
     my $bxSites = bxSites->new();
     $sites = $bxSites->php_extension( $o_extension, $1 );
@@ -209,60 +214,57 @@ elsif ( $o_action =~ /^extension_(enable|disable)$/ ) {
 elsif ( $o_action =~ /^cluster_test$/ ) {
     my $bxSites = bxSites->new();
     $sites = $bxSites->testClusterConfig();
-
-    # create site
 }
+# create site
 elsif ( $o_action =~ /^create$/ ) {
-    my $bxSites      = bxSites->new();
+    my $bxSites = bxSites->new();
     my $site_options = {
-        ServerName     => $o_site,
-        SiteInstall    => $o_type,
-        DocumentRoot   => $o_root,
-        DBName         => $o_dbname,
-        DBLogin        => $o_user,
-        DBPassword     => $o_pass,
+        ServerName => $o_site,
+        SiteInstall => $o_type,
+        DocumentRoot => $o_root,
+        DBName => $o_dbname,
+        DBLogin => $o_user,
+        DBPassword => $o_pass,
         SiteKernelName => $o_kernel_site,
-        SiteKernelDir  => $o_kernel_root,
-        SiteCharset    => $o_charset,
-        CronTask       => $o_enable_cron,
+        SiteKernelDir => $o_kernel_root,
+        SiteCharset => $o_charset,
+        CronTask => $o_enable_cron,
         DBPasswordFile => $o_password_file,
-        NodeJSPush     => $o_push,
+        NodeJSPush => $o_push,
     };
     $sites = $bxSites->CreateSite($site_options);
-
-    # delete site
 }
+# delete site
 elsif ( $o_action =~ /^delete$/ ) {
-    my $bxSites      = bxSites->new();
+    my $bxSites = bxSites->new();
     my $site_options = {
-        ServerName   => $o_site,
-        SiteInstall  => $o_type,
+        ServerName => $o_site,
+        SiteInstall => $o_type,
         DocumentRoot => $o_root,
     };
     $sites = $bxSites->DeleteSite($site_options);
-
-    # get status of host in the domain
 }
-#elsif ( $o_action =~ /^ntlm_status$/ ) {
-#    my $bxSites = bxSites->new( debug => $o_verbose );
-#    $sites = $bxSites->getNTLMServerStatus();
-#
-#    # enable NTML options for sites
-#}
-#elsif ( $o_action =~ /^ntlm$/ ) {
-#    my $bxSites = bxSites->new( debug => $o_verbose );
-#
-#    $sites =
-#      $bxSites->changeNTLMForSite( $o_ntlm_domain, $o_ntlm_full_domain,
-#        $o_ntlm_ads, $o_ntlm_login, $o_ntlm_host, $o_dbname, $o_password_file );
-#}
-#elsif ( $o_action =~ /^ntlm_update$/ ) {
-#    my $bxSites = bxSites->new( debug => $o_verbose );
-#
-#    $sites = $bxSites->updateNTLMForSite( $o_dbname, );
-#
-#    # add new host to web group, or delete host from it
-#}
+# get status of host in the domain
+elsif ( $o_action =~ /^ntlm_status$/ ) {
+    my $bxSites = bxSites->new( debug => $o_verbose );
+    $sites = $bxSites->getNTLMServerStatus();
+}
+# enable NTML options for sites
+elsif ( $o_action =~ /^ntlm_create$/ ) {
+    my $bxSites = bxSites->new( debug => $o_verbose );
+    $sites = $bxSites->changeNTLMForSite( $o_ntlm_domain, $o_ntlm_full_domain, $o_ntlm_ads, $o_ntlm_login, $o_ntlm_host, $o_dbname, $o_password_file );
+}
+# update NTML options for sites
+elsif ( $o_action =~ /^ntlm_update$/ ) {
+    my $bxSites = bxSites->new( debug => $o_verbose );
+    $sites = $bxSites->updateNTLMForSite( $o_dbname, );
+}
+# remove NTML options for sites and server
+elsif ( $o_action =~ /^ntlm_delete$/ ) {
+    my $bxSites = bxSites->new( debug => $o_verbose );
+    $sites = $bxSites->removeNTLM( $o_ntlm_domain, $o_ntlm_full_domain, $o_ntlm_ads, $o_ntlm_login, $o_password_file, $o_ntlm_host );
+}
+# add new host to web group, or delete host from it
 #elsif ( $o_action =~ /^(create_web|delete_web|web[12])$/ ) {
 #    my $bxSites = bxSites->new( debug => $o_verbose );
 #
@@ -273,31 +275,31 @@ elsif ( $o_action =~ /^(push_configure_nodejs|push_remove_nodjs)$/ ) {
     my $bxSites = bxSites->new( debug => $o_verbose );
     $sites = $bxSites->configurePushServer( $o_hostname, $o_action );
 }
-#elsif ( $o_action eq "configure_transformer" ){
-#    my $bxSites = bxSites->new( debug => $o_verbose  );
-#    my $opts = {
-#        web_site_name => $o_site,
-#        web_site_dir => $o_root,
-#        transformer_host => $o_hostname,
-#        transformer_domains => $o_domains,
-#    };
-#    $sites = $bxSites->configureTransformer($opts);
-#}
-#elsif ( $o_action eq "remove_transformer" ){
-#    my $bxSites = bxSites->new( debug => $o_verbose  );
-#    my $opts = {
-#        web_site_name => $o_site,
-#        web_site_dir => $o_root,
-#        transformer_host => $o_hostname,
-#    };
-#    $sites = $bxSites->removeTransformer($opts);
-#}
+elsif ( $o_action eq "configure_transformer" ) {
+    my $bxSites = bxSites->new( debug => $o_verbose );
+    my $opts = {
+        web_site_name => $o_site,
+        web_site_dir => $o_root,
+        transformer_host => $o_hostname,
+        transformer_domains => $o_domains,
+    };
+    $sites = $bxSites->configureTransformer($opts);
+}
+elsif ( $o_action eq "remove_transformer" ) {
+    my $bxSites = bxSites->new( debug => $o_verbose );
+    my $opts = {
+        web_site_name => $o_site,
+        web_site_dir => $o_root,
+        transformer_host => $o_hostname,
+    };
+    $sites = $bxSites->removeTransformer($opts);
+}
 elsif ( $o_action =~ /^(configure_le)$/ ) {
     my $bxSites = bxSites->new( debug => $o_verbose );
     my $opts = {
         site_names => $o_site,
-        dns        => $o_dns,
-        email      => $o_EmailAddress,
+        dns => $o_dns,
+        email => $o_EmailAddress,
     };
     $sites = $bxSites->configureLE($opts);
 }
@@ -343,14 +345,13 @@ elsif ( $o_action =~ /^backup$/ ) {
         else {
             $sites = Output->new(
                 error => 1,
-                message =>
-                  "You must define enable|disable flag for action=$o_action",
+                message => "You must define enable|disable flag for action=$o_action",
             );
         }
     }
     else {
         $sites = Output->new(
-            error   => 1,
+            error => 1,
             message => "You must define dbname for this operation",
         );
     }
@@ -361,13 +362,13 @@ elsif ( $o_action =~ /^email$/ ) {
     my $email_options;
     if ( $o_SMTPHost && $o_EmailAddress && $o_site ) {
         my $opts = {
-            SMTPHost         => $o_SMTPHost,
-            EmailAddress     => $o_EmailAddress,
-            SMTPPort         => ($o_SMTPPort) ? $o_SMTPPort : 25,
-            SMTPTLS          => ($o_SMTPTLS) ? 'on' : 'off',
-            SMTPAuth         => ($o_SMTPAuth) ? $o_SMTPAuth : 'auto',
-            SMTPUser         => $o_SMTPUser,
-            SMTPPassword     => $o_SMTPPassword,
+            SMTPHost => $o_SMTPHost,
+            EmailAddress => $o_EmailAddress,
+            SMTPPort => ($o_SMTPPort) ? $o_SMTPPort : 25,
+            SMTPTLS => ($o_SMTPTLS) ? 'on' : 'off',
+            SMTPAuth => ($o_SMTPAuth) ? $o_SMTPAuth : 'auto',
+            SMTPUser => $o_SMTPUser,
+            SMTPPassword => $o_SMTPPassword,
             SMTPPasswordFile => $o_password_file,
         };
 
@@ -376,7 +377,7 @@ elsif ( $o_action =~ /^email$/ ) {
     }
     else {
         $sites = Output->new(
-            error   => 1,
+            error => 1,
             message => "Options SMTPHost= EmailAddress= are mandatory",
         );
     }
@@ -392,14 +393,13 @@ elsif ( $o_action =~ /^composite$/ ) {
         else {
             $sites = Output->new(
                 error => 1,
-                message =>
-                  "You must define enable|disable flag for action=$o_action",
+                message => "You must define enable|disable flag for action=$o_action",
             );
         }
     }
     else {
         $sites = Output->new(
-            error   => 1,
+            error => 1,
             message => "You must define sitename for this operation",
         );
     }
@@ -415,14 +415,13 @@ elsif ( $o_action =~ /^cron$/ ) {
         else {
             $sites = Output->new(
                 error => 1,
-                message =>
-                  "You must define enable|disable flag for action=$o_action",
+                message => "You must define enable|disable flag for action=$o_action",
             );
         }
     }
     else {
         $sites = Output->new(
-            error   => 1,
+            error => 1,
             message => "You must define sitename for this operation",
         );
     }
@@ -445,14 +444,13 @@ elsif ( $o_action =~ /^https$/ ) {
         else {
             $sites = Output->new(
                 error => 1,
-                message =>
-                  "You must define enable|disable flag for action=$o_action",
+                message => "You must define enable|disable flag for action=$o_action",
             );
         }
     }
     else {
         $sites = Output->new(
-            error   => 1,
+            error => 1,
             message => "You must define define sitename for this operation",
         );
     }
@@ -467,14 +465,13 @@ elsif ( $o_action =~ /^service$/ ) {
     else {
         $sites = Output->new(
             error => 1,
-            message =>
-              "You must define enable|disable flag for action=$o_action",
+            message => "You must define enable|disable flag for action=$o_action",
         );
     }
 }
 else {
     $sites = Output->new(
-        error   => 1,
+        error => 1,
         message => "Unknown action option. PLease use -h for help message."
     );
 }
@@ -499,7 +496,7 @@ Options:
   -v|--verbose    - enable verbose mode.
   -a|--action     - site(s) management actions: status, email, cron, https, create, delete, web
   -s|--site       - site name (default_name is 'default')
-  -d|--dbname     - dbname for site(s) 
+  -d|--dbname     - dbname for site(s)
   -t|--type       - site type, kernel or link (default type is link)
   -u|--user       - create mysql login for site access
   -p|--password   - create logins's password fro site
@@ -531,7 +528,7 @@ Options:
   * get information about defined site name
  $prog -o json -a status -s alice
   * get information about all site with th same kernel
- $prog -o json -a list -d sitemanager0
+ $prog -o json -a list -d sitemanager
   * create email settings for site
  $prog -o json -a email --smtphost=smtp.yandex.ru \\
   --smtpuser='ivan\@yandex.ru' --password=XXXXXXXXXX \\
@@ -557,18 +554,18 @@ Options:
   * remove host from web group
  $prog -o json -a web -H vm2 --disable
   * create backup for kernel ( backup all sites and db)
- $prog -o json -a backup -d sitemanager0 --enable \\
-  --minute=10 --hour=23 --day='*' --month='*' --weekday=7 
+ $prog -o json -a backup -d sitemanager --enable \\
+  --minute=10 --hour=23 --day='*' --month='*' --weekday=7
   * delete backup for kernel ( backup all sites and db)
- $prog -o json -a backup -d sitemanager0 --disable
+ $prog -o json -a backup -d sitemanager --disable
   * add host to domain and enable NTLM auth on default site
- $prog -o json -a ntlm \\
-  --ntlm_domain=TEST --ntlm_fqdn=TEST.EXAMPLE.ORG --ntlm_ads=DC1.TEST.EXAMPLE.ORG \\
-  --ntlm_login=admin --ntlm_password=XXXXXXXXXXXXXXX --database=sitemanager0
+ $prog -o json -a ntlm_create --ntlm_domain=TEST --ntlm_fqdn=TEST.EXAMPLE.ORG --ntlm_ads=DC1.TEST.EXAMPLE.ORG --ntlm_login=admin --password_file=XXXXXXXXXXXXXXX --database=sitemanager
   * update site settings for NTLM usage
- $prog -o json -a ntlm_update --database=sitemanager0 
+ $prog -o json -a ntlm_update --database=sitemanager
   * get status host in the domain
  $prog -o json -a ntlm_status
+  * remove NTLM for all sites and server
+ $prog -o json -a ntlm_delete --ntlm_domain=TEST --ntlm_fqdn=TEST.EXAMPLE.ORG --ntlm_ads=DC1.TEST.EXAMPLE.ORG --ntlm_login=admin --password_file=XXXXXXXXXXXXXXX
   * disable|enable restart xmppd or smtpd service by the cron
  $prog -o json -a service --service=xmptd --enable --site=default
   * enable|disable usage composite cache by the nginx service

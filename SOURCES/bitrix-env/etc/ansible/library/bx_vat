@@ -248,7 +248,8 @@ get_sw_versions() {
     NGINX_VERSION_MID=0
     NGINX_VERSION_END=0
 
-    if [[ -n $NGINX_VERSION ]]; then
+    if [[ -n $NGINX_VERSION ]];
+    then
         NGINX_VERSION_UP=$(echo $NGINX_VERSION | awk -F'.' '{print $1}')
         NGINX_VERSION_MID=$(echo $NGINX_VERSION | awk -F'.' '{print $2}')
         NGINX_VERSION_END=$(echo $NGINX_VERSION | awk -F'.' '{print $3}')
@@ -261,12 +262,13 @@ get_sw_versions() {
     #[[ ( $NGINX_VERSION_UP -ge 1 ) && ( $NGINX_VERSION_MID -ge 10 ) && ( $NGINX_VERSION_END -ge 2 ) ]] && NGINX_SSL="ssl http2"
     #[[ ( $NGINX_VERSION_UP -ge 1 ) && ( $NGINX_VERSION_MID -ge 12 ) ]] && NGINX_SSL="ssl http2"
 
-    SPHINX_VERSION=$(rpm -qa --queryformat '%{version}' sphinx 2>/dev/null | head -1 )
+    SPHINX_VERSION=$(rpm -qa --queryformat '%{version}' bx-sphinx 2>/dev/null | head -1 )
     SPHINX_VERSION_UP=0
     SPHINX_VERSION_MID=0
     SPHINX_VERSION_END=0
 
-    if [[ -n $SPHINX_VERSION ]]; then
+    if [[ -n $SPHINX_VERSION ]];
+    then
         SPHINX_VERSION_UP=$(echo $SPHINX_VERSION | awk -F'.' '{print $1}')
         SPHINX_VERSION_MID=$(echo $SPHINX_VERSION | awk -F'.' '{print $2}')
         SPHINX_VERSION_END=$(echo $SPHINX_VERSION | awk -F'.' '{print $3}')
@@ -275,7 +277,8 @@ get_sw_versions() {
     fi
 
     SPHINX_TYPE=21
-    if [[ ( $SPHINX_VERSION_UP -ge 2 ) && ( $SPHINX_VERSION_MID -ge 2 ) ]]; then
+    if [[ ( $SPHINX_VERSION_UP -ge 2 ) && ( $SPHINX_VERSION_MID -ge 2 ) ]];
+    then
         SPHINX_TYPE=22
     fi
 }

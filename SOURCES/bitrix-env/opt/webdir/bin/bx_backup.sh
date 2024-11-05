@@ -41,7 +41,7 @@ sql_dir=/home/bitrix
 if [[ ( -z "$kernel_name" ) || ( -z $backup_dir ) ]]; then
     echo "Usage: $PROGNAME kernel_name backup_dir"
     echo "Ex."
-    echo "$PROGNAME sitemanager0 /home/bitrix/backup/archive"
+    echo "$PROGNAME sitemanager /home/bitrix/backup/archive"
     echo
     exit 1
 fi

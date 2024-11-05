@@ -3,25 +3,25 @@
 - include_tasks: gather_site_info.yml
 
 # rabbitmq
-- name: Delete user bitrix
+- name: delete user bitrix
   rabbitmq_user:
     user: "{{ redis_user }}"
     state: absent
 
-- name: Disable rabbitmq-server
+- name: disable rabbitmq-server service
   service:
     name: rabbitmq-server
     state: stopped
     enabled: no
 
 # transformer service
-- name: Disable service
+- name: disable transformer service
   service:
     name: transformer.service
     state: stopped
     enabled: no
 
-- include: execute_php_script.yml
+- include_tasks: execute_php_script.yml
   vars:
     php_script: transformers_cleanup.php
     php_server: "{{ cluster_web_server }}"
@@ -29,7 +29,7 @@
 - name: delete server to transformer group
   delegate_to: "{{ cluster_web_server }}"
   bx_conf:
-    hostname: "{{ inventory_hostname  }}"
+    hostname: "{{ inventory_hostname }}"
     state: absent
     group: transformer
 

@@ -11,17 +11,16 @@
 #  web_site_dbpass_file - user password file (escape special chars)
 #  bitrix_site_charset  - charset option (default: utf-8)
 
-######## load variables from groups config file
-####
+# load variables from groups config file
 - name: generate missing variables
   delegate_to: "{{ cluster_web_server }}"
   bx_generate_site_vars:
-    site_type={{ web_site_type }}
-    site_name={{ web_site_name }}
-    site_dir={{ web_site_dir }}
-    site_db={{ web_site_db }}
-    site_dbuser={{ web_site_dbuser }}
-    site_dbpass_file={{ web_site_dbpass_file }}
+    site_type: "{{ web_site_type }}"
+    site_name: "{{ web_site_name }}"
+    site_dir: "{{ web_site_dir }}"
+    site_db: "{{ web_site_db }}"
+    site_dbuser: "{{ web_site_dbuser }}"
+    site_dbpass_file: "{{ web_site_dbpass_file }}"
   register: site_vars
   tags: configure_site
 
@@ -41,8 +40,8 @@
 
 - name: remove temporary file
   file:
-    path={{ site_vars.site_dbpass_file }}
-    state=absent
+    path: "{{ site_vars.site_dbpass_file }}"
+    state: absent
 
 # cluster settings
 - name: set cluster mark to disabled state
@@ -59,6 +58,7 @@
   when: "is_cluster == 'enable'"
 
 # encoding and collation settings
+#
 #- name: set charset options for new site
 #  set_fact:
 #   bitrix_site_encoding: cp1251
@@ -71,12 +71,5 @@
 #    bitrix_site_php_internal: "php_admin_value default_charset cp1251"
 #  when: "bitrix_site_charset == 'windows-1251' and php_older_version == 1"
 
-####
-######## /load variables from groups config file
-
-######## testing input options - to avoid the situation with overwriting existing data
-####
+# testing input options - to avoid the situation with overwriting existing data
 - include_tasks: test_site_exist.yml
-
-####
-######## /testing input options - to avoid the situation with overwriting existing data

@@ -1,12 +1,19 @@
 ---
-# configure erlang repository and install package
-- name: Configure erlang repository
+- name: configure erlang repository
   template:
     src: rabbitmq_erlang.repo.j2
     dest: /etc/yum.repos.d/rabbitmq_erlang.repo
 
-- name: Install erlang
+# CentOS 7
+- name: install erlang
   yum:
     name: erlang
     state: latest
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
 
+# CentOS Stream 9
+- name: install erlang
+  dnf:
+    name: erlang
+    state: latest
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"

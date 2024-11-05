@@ -5,11 +5,11 @@
 # phpSessionDir
 - name: create basic directories for sites
   file:
-    path={{ item }}
-    state=directory
-    owner={{ site_bitrix }}
-    group={{ site_bitrix }}
-    mode=0770
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ site_bitrix }}"
+    group: "{{ site_bitrix }}"
+    mode: 0770
   with_items:
     - /tmp/php_sessions/ext_www
     - /tmp/php_upload/ext_www
@@ -18,22 +18,22 @@
 
 - name: create sessions directories for sites
   file:
-    path={{ item.phpSessionDir }}
-    state=directory
-    owner={{ site_bitrix }}
-    group={{ site_bitrix }}
-    mode=0770
+    path: "{{ item.phpSessionDir }}"
+    state: directory
+    owner: "{{ site_bitrix }}"
+    group: "{{ site_bitrix }}"
+    mode: 0770
   with_items: "{{ bx_sites_info }}"
   tags: sites
   when: item.SiteInstall == 'link' or item.SiteInstall == 'kernel'
 
 - name: create upload directories for sites
   file:
-    path={{ item.phpUploadDir }}
-    state=directory
-    owner={{ site_bitrix }}
-    group={{ site_bitrix }}
-    mode=0770
+    path: "{{ item.phpUploadDir }}"
+    state: directory
+    owner: "{{ site_bitrix }}"
+    group: "{{ site_bitrix }}"
+    mode: 0770
   with_items: "{{ bx_sites_info }}"
   tags: sites
   when: item.SiteInstall == 'link' or item.SiteInstall == 'kernel'
@@ -41,11 +41,11 @@
 - name: set access rights on main nginx directories
   delegate_to: "{{ cluster_web_server }}"
   file:
-    path={{ item }}
-    state=directory
-    owner={{ site_bitrix }}
-    group={{ site_bitrix }}
-    mode=755
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ site_bitrix }}"
+    group: "{{ site_bitrix }}"
+    mode: 0755
   with_items:
     - "{{ nginx_base_dir }}"
     - "{{ nginx_base_dir }}/bx"
@@ -53,20 +53,20 @@
 
 - name: create web-services directories
   file:
-    path={{ item }}
-    state=directory
-    owner={{ site_bitrix }}
-    group={{ site_bitrix }}
-    mode={{ site_dirs_mode }}
-    recurse=yes
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ site_bitrix }}"
+    group: "{{ site_bitrix }}"
+    mode: "{{ site_dirs_mode }}"
+    recurse: yes
   with_items:
-    - "{{ csync_configdir  }}"
+    - "{{ csync_configdir }}"
     - "{{ lsync_logdir }}"
-    - "{{ nginx_base_dir  }}/{{ nginx_config_dir }}"
-    - "{{ nginx_base_dir  }}/{{ nginx_maps_dir  }}"
-    - "{{ nginx_base_dir  }}/{{ nginx_available_sites_dir }}"
-    - "{{ nginx_base_dir  }}/{{ nginx_enabled_sites_dir }}"
-    - "{{ nginx_base_dir  }}/{{ nginx_available_sites_dir_cluster }}"
-    - "{{ httpd_base_dir  }}/{{ httpd_config_dir }}"
-    - "{{ nginx_base_dir  }}/bx/settings"
+    - "{{ nginx_base_dir }}/{{ nginx_config_dir }}"
+    - "{{ nginx_base_dir }}/{{ nginx_maps_dir }}"
+    - "{{ nginx_base_dir }}/{{ nginx_available_sites_dir }}"
+    - "{{ nginx_base_dir }}/{{ nginx_enabled_sites_dir }}"
+    - "{{ nginx_base_dir }}/{{ nginx_available_sites_dir_cluster }}"
+    - "{{ httpd_base_dir }}/{{ httpd_config_dir }}"
+    - "{{ nginx_base_dir }}/bx/settings"
   tags: web

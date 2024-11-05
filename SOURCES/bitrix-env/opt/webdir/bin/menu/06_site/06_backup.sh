@@ -121,7 +121,7 @@ update_backup() {
 #    get_site_info $site_name $site_dir "backup"
 #    [[ $DEBUG -gt 0 ]] && echo "data=$site_info_dat"
 #    # backup:ext_share:dbcp:disable:::::::
-#    # backup:default:sitemanager0:enable:v5:/home/bitrix/backup/archive:10:23:*:*:*
+#    # backup:default:sitemanager:enable:v5:/home/bitrix/backup/archive:10:23:*:*:*
 #    backup_status=$(echo "$site_info_dat" | awk -F':' '{print $4}')
 #    backup_kernel=$(echo "$site_info_dat" | awk -F':' '{print $3}')
 #    [[ $DEBUG -gt 0 ]] && echo "db=$backup_kernel status=$backup_status"

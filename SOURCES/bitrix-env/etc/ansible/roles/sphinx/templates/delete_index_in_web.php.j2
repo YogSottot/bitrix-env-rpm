@@ -9,14 +9,13 @@ require($_SERVER["DOCUMENT_ROOT"]."/bitrix/modules/main/include/prolog_before.ph
 
 if(!CModule::IncludeModule('search'))
 {
-  echo "Not found search module for {{ item.SiteName }}";
-  return 1;
+	echo "Not found search module for {{ item.SiteName }}";
+	return 1;
 }
-
 
 // update options
 COption::SetOptionString('search', 'full_text_engine', 'bitrix');
-echo "Bitrix search disable on site";
+echo "Sphinx search disabled on site";
 return 0;
 
 ?>

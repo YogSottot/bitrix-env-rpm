@@ -46,7 +46,6 @@ sql_mode = ""
 table_open_cache = 4096
 thread_cache_size = 32
 key_buffer_size = 16M
-thread_stack = 128K
 join_buffer_size = 2M
 sort_buffer_size = 2M
 thread_stack = 512K

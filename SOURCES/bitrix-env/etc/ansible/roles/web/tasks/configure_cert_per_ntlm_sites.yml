@@ -9,13 +9,13 @@
 
 - name: delete previously settings
   bx_blockinfile:
-    insertafter="CERTIFICATE ANSIBLE MANAGED BLOCK"
-    state="delete"
-    dest="{{ item.ApacheConfNTLM }}"
+    insertafter: "CERTIFICATE ANSIBLE MANAGED BLOCK"
+    state: "delete"
+    dest: "{{ item.ApacheConfNTLM }}"
   with_items: "{{ bx_sites_info }}"
   when: item.ApacheConfNTLM != ""
 
-- name: add new settings to nginx config 
+- name: add new settings to nginx config
   blockinfile:
     dest: "{{ item.ApacheConfNTLM }}"
     insertafter: "SSLEngine on"

@@ -10,16 +10,15 @@
 #  web_site_dir     - document root for new site
 #  
 #  ansible_playbook_file - all options can pass by yml file
-
-######## load variables from groups config file
-####
+#
+# load variables from groups config file
 - name: gathering facts about kernel
   delegate_to: "{{ cluster_web_server }}"
   bx_facts:
-    name=status
-    password=0
-    site={{ web_kernel_site }}
-    site_dir={{ web_kernel_root }}
+    name: status
+    password: 0
+    site: "{{ web_kernel_site }}"
+    site_dir: "{{ web_kernel_root }}"
   tags: sites_facts
 
 - name: create variable with kernel options
@@ -37,9 +36,9 @@
 - name: create additional variables when they not defined in the input
   delegate_to: "{{ cluster_web_server }}"
   bx_generate_site_vars:
-    site_type={{ web_site_type }}
-    site_name={{ web_site_name }}
-    site_dir={{ web_site_dir }}
+    site_type: "{{ web_site_type }}"
+    site_name: "{{ web_site_name }}"
+    site_dir: "{{ web_site_dir }}"
   register: site_vars
   tags: configure_site
 
@@ -67,14 +66,10 @@
 # defined is_cluster and bx_sites_info variables
 - include_tasks: bx_sites_info.yml
 
-####
-######## /load variables from groups config file
-
-######## testing input options - to avoid the situation with overwriting existing data
-######## 1. apache and nginx config
-######## 2. directories:  document root, sessions and uploads
-######## 3. kernel contains bitrix, upload and images directory
-####
+# testing input options - to avoid the situation with overwriting existing data
+# 1. apache and nginx config
+# 2. directories:  document root, sessions and uploads
+# 3. kernel contains bitrix, upload and images directory
 - include_tasks: test_site_exist.yml
 
 # test images, upload and bitrix directories
@@ -108,11 +103,8 @@
     msg: "There are no directory {{ kernel_default_root }}/images"
   when: not images_details.stat.exists|bool
 
-####
-######## /testing input options - to avoid the situation with overwriting existing data
-
-######## create site directories on all web servers in the pool
-####
+# create site directories on all web servers in the pool
+#
 #- name: test cp1251 locale
 #  shell: "locale -a | grep ru_RU.cp1251 -ic"
 #  register: locale_cmd
@@ -122,7 +114,7 @@
 #- name: ensure locale exists
 #  shell: localedef -c -i ru_RU -f CP1251 ru_RU.CP1251
 #  when: kernel_default_charset == 'windows-1251' and locale_cmd.stdout == "0"
-
+#
 - include_tasks: create_basic_dirs.yml
 
 - name: create folder for temporary files
@@ -162,22 +154,14 @@
   tags: create_site_files
   when: images_details.stat.exists|bool and 'bitrix-web' in group_names
 
-####
-######## /create site directories on all web servers in the pool
-
-######## create csync configuration and sync data for site between nodes for new site
-####
+# create csync configuration and sync data for site between nodes for new site
 - include_tasks: create_csync2_site.yml
   when: "cluster_web_configure == 'enable' and fstype == 'csync'"
 
 - include_tasks: configs_lsyncd_create_site.yml
   when: "cluster_web_configure == 'enable' and fstype =='lsync'"
 
-####
-######## /create csync configuration and sync data for site between nodes for new site
-
-######## create configs for web services
-####
+# create configs for web services
 - include_tasks: create_web_configs.yml
   when: "'bitrix-web' in group_names"
 
@@ -190,14 +174,8 @@
   notify: restart nginx
   when: "inventory_hostname == cluster_web_server"
 
-####
-######## /create configs for web services
-
-######## remove files
-####
+# remove files
 - file: 
     path: "{{ web_site_root_dir }}/bitrix/.settings.php.crm.orig"
     state: absent
   when: "'bitrix-web' in group_names"
-####
-####### /remove files

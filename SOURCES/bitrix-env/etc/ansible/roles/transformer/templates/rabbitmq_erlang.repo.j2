@@ -1,6 +1,6 @@
 # {{ ansible_managed }}
 [rabbitmq_erlang]
-name=rabbitmq_erlang
+name=Rabbitmq Erlang for Enterprise Linux {{ ansible_distribution_major_version }}
 baseurl=https://packagecloud.io/rabbitmq/erlang/el/{{ ansible_distribution_major_version }}/$basearch
 repo_gpgcheck=1
 gpgcheck=0
@@ -11,7 +11,7 @@ sslcacert=/etc/pki/tls/certs/ca-bundle.crt
 metadata_expire=300
 
 [rabbitmq_erlang-source]
-name=rabbitmq_erlang-source
+name=Rabbitmq Erlang Source for Enterprise Linux {{ ansible_distribution_major_version }}
 baseurl=https://packagecloud.io/rabbitmq/erlang/el/{{ ansible_distribution_major_version }}/SRPMS
 repo_gpgcheck=1
 gpgcheck=0

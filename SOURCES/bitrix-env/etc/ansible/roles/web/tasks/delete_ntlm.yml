@@ -1,0 +1,226 @@
+---
+# gathering facts
+- name: gathering facts about installed sites
+  bx_facts:
+    name: list
+    password: 0
+    install: '(kernel|link)'
+    status: finished
+
+- name: create variable bx_sites_info
+  set_fact:
+    bx_sites_info: "{{ hostvars[inventory_hostname]['bx_sites'] }}"
+
+- name: gathering facts about installed kernel site with defined DB
+  bx_facts:
+    name: list
+    password: 0
+    install: '(kernel|ext_kernel)'
+    status: finished
+
+- name: create variable bx_kernel_site
+  set_fact:
+    bx_kernel_site: "{{ hostvars[inventory_hostname]['bx_sites'] }}"
+
+# run php to remove settings in each site
+- name: create temporary directory for php scripts
+  file:
+    path: "/opt/webdir/.ansible"
+    state: directory
+    mode: 0750
+    owner: root
+    group: bitrix
+
+- name: create temporary directories for sites
+  with_items: "{{ bx_sites_info }}"
+  file:
+    path: "/opt/webdir/.ansible/{{ item.SiteName }}"
+    state: directory
+    mode: 0750
+    owner: root
+    group: bitrix
+
+- name: save ntlm script to temporary directory
+  template:
+    src: "ntlm_settings_remove.php.j2"
+    dest: "/opt/webdir/.ansible/{{ item.SiteName }}/ntlm_settings_remove.php"
+    mode: 0640
+    owner: root
+    group: bitrix
+  with_items: "{{ bx_sites_info }}"
+
+- name: disable NTLM in site settings, execute ntlm script
+  shell: php -f ntlm_settings_remove.php
+  args:
+    chdir: "/opt/webdir/.ansible/{{ item.SiteName }}"
+  with_items: "{{ bx_sites_info }}"
+  become: yes
+  become_user: "{{ bx_ansible_executer }}"
+
+- name: delete temporary files
+  file:
+    path: "/opt/webdir/.ansible"
+    state: absent
+  when: "ansible_playbook_debug != 'DEBUG'"
+
+# ntlm for httpd and httpd sites configs remove
+- name: delete apache config with mod_ntlm
+  file:
+    path: "/etc/httpd/bx/conf/mod_ntlm.conf"
+    state: absent
+  notify: restart httpd
+
+- name: delete apache config for sites
+  file:
+    path: "/etc/httpd/bx/conf/ntlm_{{ item.SiteName }}.conf"
+    state: absent
+  with_items: "{{ bx_sites_info }}"
+  notify: restart httpd
+
+- name: delete apache config for server
+  file:
+    path: "/etc/httpd/bx/conf/ntlm_{{ item.ServerName }}.conf"
+    state: absent
+  with_items: "{{ bx_sites_info }}"
+  notify: restart httpd
+
+- name: restart httpd and nginx
+  service:
+    name: "{{ item }}"
+    state: restarted
+  with_items:
+    - nginx
+    - httpd
+
+# update ansible group settings
+- name: update info in bitrix group
+  delegate_to: 127.0.0.1
+  bx_conf:
+    group: web
+    state: update
+    ntlm_web_configure: disable
+  tags: ansible_hosts
+
+# leave ads and clear tmp files
+- name: get current status
+  bx_ntlm:
+
+- name: ntlm_pass variable
+  set_fact:
+    ntlm_pass: "{{ lookup('file', ntlm_pass_file) }}"
+
+- name: create temp directory
+  file:
+    path: /opt/webdir/generator
+    state: directory
+    mode: 0700
+
+- name: generate file name for temporary save ntlm settings
+  set_fact:
+    leave_file: "/opt/webdir/generator/{{ lookup('password', '/tmp/generator_file chars=ascii_letters,digits length=20') }}"
+
+- name: save password info to the temprorary file
+  template:
+    src: options/ntlm_leave.j2
+    dest: "{{ leave_file }}"
+    mode: 0400
+
+- name: leave ADS domain
+  bx_ntlm:
+    state: leave
+    safe_file: "{{ leave_file }}"
+
+- name: delete generator file
+  file:
+    path: /tmp/generator_file
+    state: absent
+
+- name: delete ntlm temprorary file
+  file:
+    path: "{{ leave_file }}"
+    state: absent
+
+# disable and remove services
+- name: disable services smb and winbind in the system
+  service:
+    name: "{{ item }}"
+    enabled: no
+  with_items:
+    - smb
+    - winbind
+
+- name: shutdown smb and winbind service
+  service:
+    name: "{{ item }}"
+    state: stopped
+  with_items:
+    - smb
+    - winbind
+
+# remove packages
+- name: remove samba packages
+  dnf:
+    name: "{{ packages }}"
+    state: absent
+  vars:
+    packages:
+      - samba
+      - samba-winbind
+      - samba-common
+      - samba-client
+      - samba-winbind-clients
+      - bx-mod_auth_ntlm_winbind
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+
+# remove samba files
+- name: delete samba dirs and files in confs, logs, lib
+  with_items:
+    - /var/log/samba
+    - /var/lib/samba
+    - /etc/samba
+  file:
+    path: "{{ item }}"
+    state: "absent"
+
+# return default krb5.conf
+- name: return default kerberos config
+  template:
+    src: krb5_default.conf.j2
+    dest: /etc/krb5.conf
+
+# return defaults values in nsswitch.conf
+- name: remove login sources in /etc/nsswitch.conf
+  lineinfile:
+    dest: /etc/nsswitch.conf
+    regexp: '^passwd: compat winbind'
+    line: 'passwd: files sss systemd'
+
+- name: remove group sources in /etc/nsswitch.conf
+  lineinfile:
+    dest: /etc/nsswitch.conf
+    regexp: '^group: compat winbind'
+    line: 'group: files sss systemd'
+
+- name: remove password sources in /etc/nsswitch.conf
+  lineinfile:
+    dest: /etc/nsswitch.conf
+    regexp: '^shadow: compat'
+    line: 'shadow: files'
+
+# remove from resolv.conf
+- name: remove search in /etc/resolv.conf
+  lineinfile:
+    dest: /etc/resolv.conf
+    regexp: '^search\s+'
+    state: absent
+
+- name: remove domain in /etc/resolv.conf
+  lineinfile:
+    dest: /etc/resolv.conf
+    regexp: '^domain\s+'
+    state: absent
+
+- name: restart network manager
+  service:
+    name: NetworkManager
+    state: restarted

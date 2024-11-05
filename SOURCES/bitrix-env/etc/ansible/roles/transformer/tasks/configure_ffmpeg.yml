@@ -1,13 +1,57 @@
 ---
-- name: Install RpmFusion repo
+# CentOS 7
+- name: install RpmFusion repo
   yum:
     name: "{{ packages }}"
   vars:
     packages:
       - "https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm"
       - "https://download1.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-7.noarch.rpm"
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
 
-- name: Install Ffmpeg
+- name: install Ffmpeg
   yum:
     name: ffmpeg
     state: present
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
+
+# CentOS Stream 9
+- name: import RPM-GPG-KEY-rpmfusion-free-el-9 key from a url
+  rpm_key:
+    state: present
+    key: https://download1.rpmfusion.org/free/el/RPM-GPG-KEY-rpmfusion-free-el-9
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+
+- name: import RPM-GPG-KEY-rpmfusion-nonfree-el-9 key from a url
+  rpm_key:
+    state: present
+    key: https://download1.rpmfusion.org/nonfree/el/RPM-GPG-KEY-rpmfusion-nonfree-el-9
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+
+- name: install Rpm-Fusion free repo
+  dnf:
+    name: "https://download1.rpmfusion.org/free/el/rpmfusion-free-release-9.noarch.rpm"
+    state: present
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+
+- name: install Rpm-Fusion nonfree repo
+  dnf:
+    name: "https://download1.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-9.noarch.rpm"
+    state: present
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+
+#- name: install RpmFusion repo
+#  dnf:
+#    name: "{{ packages }}"
+#  vars:
+#    packages:
+#      - "https://download1.rpmfusion.org/free/el/rpmfusion-free-release-9.noarch.rpm"
+#      - "https://download1.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-9.noarch.rpm"
+#  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+
+- name: install Ffmpeg
+  dnf:
+    name: ffmpeg
+    state: present
+    update_cache: true
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"

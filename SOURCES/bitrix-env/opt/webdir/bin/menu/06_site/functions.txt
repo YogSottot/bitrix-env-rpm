@@ -4,12 +4,12 @@ CS0003="Create new site"
 CS0005="Enter 0 to exit: "
 CS0006="Enter the site name (e.g. example.org) or 0 to exit: "
 CS0007="The following site types are available:"
-CS0008="      link - the new site will share database and kernel files with an existing site; 
+CS0008="      link - the new site will share database and kernel files with an existing site;
                      web server configuration files will be created"
-CS0009="    kernel - the new site will have a dedicated database 
+CS0009="    kernel - the new site will have a dedicated database
                      and a private set of kernel files;
                      web server configuration files will be created"
-CS0010="ext_kernel - the new site will have a dedicated database and a private set of kernel files; 
+CS0010="ext_kernel - the new site will have a dedicated database and a private set of kernel files;
                      it will not be accessible from the web"
 CS0011="Default: link"
 CS0012="Enter site type (link|kernel|ext_kernel): "
@@ -62,7 +62,7 @@ SM0007="Apache config config file"
 SM0008="Site root directory"
 SM0009="Session directory"
 SM0010="Upload directory"
-# Хотите ли Вы удалить его 
+# Хотите ли Вы удалить его
 SM0011="Do you want to delete it (N|y): "
 # Удаляем кофнигурационный файл
 # Удаляем каталог
@@ -89,7 +89,7 @@ SM0022="Enter From email address (ex. bob@example.org):"
 # Введите адрес почтового сервера или DNS имя
 SM0023="Enter server address or DNS"
 # Введите порт почтового сервера
-SM0024="Enter server port" 
+SM0024="Enter server port"
 # Используется ли SMTP авторизация на СЕРВЕР:ПОРТ
 SM0025="Do you want to use SMTP authentication on __OPT1__:__OPT2__? (N|y)"
 # Введите логин
@@ -158,7 +158,7 @@ SM0056="Backup time is set to __OPT1__:__OPT2__"
 # Некорректное значение для часов
 SM0057="Invalid hour value, please try again."
 # Выбирите день недели для создания бэкапа
-SM0058="Enter the day of the week when the backup starts 
+SM0058="Enter the day of the week when the backup starts
 (1 - Monday, 2 - Tuesday, 3 - Wednesday, 4 - Thursday, 5 - Friday, 6 - Saturday, 7 - Sunday): "
 # День недели установлен в значение __OPT1__
 SM0059="Day is set to __OPT1__"
@@ -172,7 +172,7 @@ SM0062="Day is set to __OPT1__"
 SM0063="Invalid day of month, please try again."
 # НЕкорректно выбран тип расписания
 SM0064="Incorrect schedule choice."
-# Запущено обновление бэкапных настроек сайт 
+# Запущено обновление бэкапных настроек сайт
 SM0065="Started backup settings update for the site"
 # Настройки бэкапа обновлены для сайта
 SM0066="Backup settings has been updated for the site"
@@ -208,7 +208,7 @@ SM0088="Domain Password"
 SM0089="Domain Password File"
 SM9990="Password cannot be empty. Try again."
 
-# Введите имя сайта: 
+# Введите имя сайта:
 # Он и его сатый-ссылки будет настроены на использование NTLM.
 SM0090="Enter the site name (default): "
 SM0091="The site and its shared sites will be configured to use NTLM."
@@ -241,7 +241,7 @@ SM0104="Configure NTLM authentication for the sites"
 # Введите имя службы, которую необходимо настроить:
 SM0105="Enter the service name you want to configure (xmppd|smtpd): "
 # Указано некорректное имя. Вы можете указать одно из следующих имен: smtpd or xmppd
-SM0106="Service name is invalid. 
+SM0106="Service name is invalid.
 Please use a valid service name: smtpd or xmppd"
 # Вы хотите удалить задание в кроне для сервиса ИМЯ для сайта ИМЯ?
 # Вы хотите добавть задание в крон для сервиса ИМЯ для сайта ИМЯ?
@@ -250,7 +250,7 @@ SM0108="Do you want to enable cron task for the service __OPT1__ on the site __O
 # Меню
 SM0109="Manage XMPPD/SMTPD services for the sites"
 # Не найдены настройки композита для сата ИМЯ. Возможно Вы захотите изменить это в веб-интерфейсе.
-SM0110="Composite preferences were not found for the site __OPT1__. 
+SM0110="Composite preferences were not found for the site __OPT1__.
 You may want to update settings in Control Panel."
 # Хотите ли Вы обновить настройки композита для сайта ИМЯ
 # Хотите ли Вы удалить настройки композита для сайта ИМЯ
@@ -304,6 +304,13 @@ SM0152="Personal configs are already configured on the site __OPT1__."
 # Настройка BX_TEMPORARY_FILES_DIRECTORY уже добавлена для сайта
 SM0153="BX_TEMPORARY_FILES_DIRECTORY setting already added for the site __OPT1__."
 
+# Удаление NTLM настроек
+SM0160="3. Delete NTLM settings"
+# Пожалуйста, подтвердите удаление NTLM
+SM0161="Please confirm you want to delete NTLM (N|y): "
+# Удаление NTLM
+SM0162="Delete NTLM"
+
 # Главное меню
 SM1001="Create a site"
 SM1002="Delete a site"
@@ -323,7 +330,8 @@ SM0123="3. $SM1003"
 SM0124="4. $SM1004"
 SM0125="5. $SM1005"
 SM0129="6. $SM1009"
-SM0131="7. $SM1011"
+SM0127="7. $SM1007"
+SM0131="8. $SM1011"
 
 #SM0121="1.  $SM1001"
 #SM0122="2.  $SM1002"

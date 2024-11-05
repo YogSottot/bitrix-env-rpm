@@ -1,9 +1,17 @@
 ---
-- name: Update system
+# CentOS 7
+- name: update system
   yum:
     name: '*'
     state: latest
-  when: inventory_hostname == transformer_host
+  when: inventory_hostname == transformer_host and ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
+
+# CentOS Stream 9
+- name: update system
+  dnf:
+    name: '*'
+    state: latest
+  when: inventory_hostname == transformer_host and ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
 
 # test site information
 - include_tasks: gather_site_info.yml
@@ -27,14 +35,14 @@
 
 # Copy Files
 - include_tasks: configure_sync_docroot.yml
-  when: transformer_host != cluster_web_server 
+  when: (transformer_host != cluster_web_server) and ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
 
 # Configure worker service
 - include_tasks: configure_transformer_worker.yml
   when: inventory_hostname == transformer_host
 
 # Update /etc/hosts
-- name: Update hosts file
+- name: update hosts file
   lineinfile:
     path: /etc/hosts
     insertbefore: "ANSIBLE MANAGED BLOCK"

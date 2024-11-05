@@ -3,7 +3,7 @@
 push_server: "{{ cluster_web_server }}"
 push_port: 8895
 
-## nginx settings:
+### nginx settings:
 # default http port
 nginx_server_http_port: 80
 # default https port
@@ -54,7 +54,7 @@ nginx_https_balancer_conf: https_balancer.conf
 nginx_upstream_conf: upstream.conf
 nginx_default_site_conf: s1.conf
 
-## httpd settings
+### httpd settings
 httpd_server_listen_port: 8888
 httpd_server_listen_addr: 127.0.0.1
 
@@ -65,7 +65,7 @@ httpd_custom_dir: bx/custom
 httpd_enabled_sites_dir: bx/conf
 httpd_available_sites_dir: bx/conf
 
-## csync option
+### csync option
 csync_configdir: /etc/csync2
 csync_cluster_key:  csync2_cluster.key
 # cluster certificate
@@ -77,7 +77,7 @@ csync_cluster_priv: csync2_ssl_key.pem
 csync_db_dir: /var/lib/csync2
 csync_lock_file: /etc/csync2/csync2.lock
 
-## sites
+### sites
 # error pages for sites
 site_errors_root: /var/www/bitrixenv_error
 # default site name
@@ -89,7 +89,7 @@ site_default_php_sess: /tmp/php_sessions/www
 # default folder for uploaded files
 site_default_upload: /tmp/php_upload/www
 # site default db
-site_default_database: sitemanager0
+site_default_database: sitemanager
 # site default archive
 site_archive_name: vm
 
@@ -123,7 +123,7 @@ bitrix_site_php_internal: " "
 # debug for web part
 web_debug: prod
 
-# 
+### ntlm
 ntlm_web_configure: disable
 ntlm_web_dir: /home/bitrix/www_ntlm
 ntlm_http_port: 8890
@@ -142,7 +142,7 @@ bx_ansible_executer: bitrix
 idmap_range_start: 10000
 idmap_range_end: 40000
 
-lsync_logdir: /var/log/lsyncd 
+lsync_logdir: /var/log/lsyncd
 # temporary files
 cache_directory: /opt/webdir/tmp
 # mysql connect: local or cluster

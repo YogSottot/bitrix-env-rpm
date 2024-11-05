@@ -1,6 +1,5 @@
 ---
-######## default options for sphinx: searchd and indexer
-####
+# default options for sphinx: searchd and indexer
 sphinx_base_dir: /etc/sphinx
 sphinx_log_dir: /var/log/sphinx
 sphinx_run_dir: /var/run/sphinx
@@ -11,14 +10,13 @@ sphinx_inx_dir: /etc/sphinx/bx/search_index
 # dictionary directory
 sphinx_dct_dir: /etc/sphinx/bx/dicts
 
-### service options
+# service options
 sphinx_general_listen: 9312
 sphinx_mysqlproto_listen: 9306
 
-# log  files
+# log files
 sphinx_main_log: "{{ sphinx_log_dir }}/searchd.log"
 sphinx_query_log: "{{ sphinx_log_dir }}/query.log"
-
 # pid file
 sphinx_run_file: "{{ sphinx_run_dir }}/searchd.pid"
 

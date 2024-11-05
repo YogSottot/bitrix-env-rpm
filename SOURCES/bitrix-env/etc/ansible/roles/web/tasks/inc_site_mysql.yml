@@ -1,6 +1,5 @@
 ---
-######## create database and user for site
-####
+# create database and user for site
 - name: create new mysql user for kernel site - non-cluster case
   delegate_to: "{{ web_site_dbserv }}"
   mysql_user: "name={{ web_site_dbuser }}
@@ -20,11 +19,8 @@
 - name: create mysql database for site - non-cluster case
   delegate_to: "{{ web_site_dbserv }}"
   mysql_db:
-    name={{ web_site_db }}
-    collation={{ bitrix_site_collation }}
-    encoding={{ bitrix_site_encoding }}
-    login_unix_socket={{ mysql_socket }}
+    name: "{{ web_site_db }}"
+    collation: "{{ bitrix_site_collation }}"
+    encoding: "{{ bitrix_site_encoding }}"
+    login_unix_socket: "{{ mysql_socket }}"
   tags: site_mysql
-
-####
-######## /create database and user for site

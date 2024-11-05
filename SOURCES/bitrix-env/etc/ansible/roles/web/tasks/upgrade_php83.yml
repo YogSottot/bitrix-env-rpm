@@ -76,6 +76,15 @@
   tags: php83
   when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
 
+- name: remove php-fpm
+  dnf:
+    name:
+    - php-fpm
+    - nginx-filesystem
+    state: absent
+  tags: php83
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+
 - include_tasks: php_ext_dublicates.yml
   when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
 

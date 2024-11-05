@@ -33,11 +33,10 @@
     reload: yes
   when: inventory_hostname == cluster_web_server
 
-- include: configs_lsyncd.yml
+- include_tasks: configs_lsyncd.yml
   vars:
     lsync_server: "{{ cluster_web_server }}"
     lsync_config: "balancer"
     lsync_started: true
     lsync_server_version: "{{ lb_distribution_version }}"
   when: inventory_hostname == transformer_host
-

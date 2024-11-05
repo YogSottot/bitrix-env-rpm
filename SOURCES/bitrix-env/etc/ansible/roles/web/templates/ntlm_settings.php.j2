@@ -1,21 +1,34 @@
-<?
+<?php
 // {{ ansible_managed }}
-// site: {{ item.SiteName }} 
+// site: {{ item.SiteName }}
 // root: {{ item.DocumentRoot }}
-$_SERVER["DOCUMENT_ROOT"] = '{{ item.DocumentRoot }}';
+// name: {{ ntlm_name }}
+$_SERVER["DOCUMENT_ROOT"] = "{{ item.DocumentRoot }}";
 $DOCUMENT_ROOT = $_SERVER["DOCUMENT_ROOT"];
 define("NO_KEEP_STATISTIC", true);
 define("NOT_CHECK_PERMISSIONS",true);
 define('BX_NO_ACCELERATOR_RESET', true);
 require($_SERVER["DOCUMENT_ROOT"]."/bitrix/modules/main/include/prolog_before.php");
 
-if(!CModule::IncludeModule('ldap'))
-	return false;
+if(!\Bitrix\Main\Loader::includeModule('ldap'))
+        return false;
 
+$code = "{{ ntlm_name }}";
+$arOrder = [];
+$arFilter = ["CODE" => $code];
+$rsLdapServers = CLdapServer::GetList($arOrder, $arFilter);
+while ($arLdapServer = $rsLdapServers->Fetch())
+{
+        $ldapServerID = $arLdapServer["ID"];
+}
 
+RegisterModuleDependences("main", "OnBeforeProlog", "ldap", "CLDAP", "NTLMAuth", 40);
 $ipMask = COption::GetOptionString("ldap", "bitrixvm_auth_net", false);
 CLdapUtil::SetBitrixVMAuthSupport(true, $ipMask);
+\Bitrix\Main\Config\Option::set("ldap", "use_ntlm", "Y");
+\Bitrix\Main\Config\Option::set("ldap", "ntlm_default_server", $ldapServerID);
+$CACHE_MANAGER->CleanAll();
+$stackCacheManager->CleanAll();
 
-echo 'Ntlm auth on {{ item.SiteName }} and links';
-
+echo 'Ntlm auth on {{ item.SiteName }} and links configured';
 ?>

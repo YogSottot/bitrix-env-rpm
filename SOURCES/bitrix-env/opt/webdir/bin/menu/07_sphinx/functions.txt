@@ -14,25 +14,22 @@ SPH0007="Re-index the site after creating a sphinx instance? (N|y)"
 SPH0008="configure Sphinx on __OPT1__"
 # Пункт меню
 SPH0009="Configure Sphinx instance"
-
 # Обновление Sphinx на ИМЯ_СЕРВЕРА ( оповещение в запущенной задаче )
 SPH0010="Update Sphinx on __OPT1__"
 # Пункт меню
 SPH0011="Update Sphinx instance"
-
 # Введите имя БД, которая использует данный Sphinx сервис:
 SPH0012="Enter the name of the database that is using this sphinx service: "
 # Удаление Sphinx на ИМЯ_СЕРВЕРА ( оповещение в запущенной задаче )
 SPH0013="Remove Sphinx on __OPT1__"
 # Пункт меню
 SPH0014="Remove Sphinx instance"
-
 # Основное меню
 SPH0015="1. Create sphinx instance on the server"
 SPH0016="2. Update sphinx instance on the server (add index)"
 SPH0017="3. Remove sphinx instance on the server"
 SPH0018="Manage sphinx configuration in the pool"
-
+#
 SPH0200="Press ENTER to exit."
 SPH0201="0. Previous screen or exit"
 SPH0202="Enter 0 to exit:"

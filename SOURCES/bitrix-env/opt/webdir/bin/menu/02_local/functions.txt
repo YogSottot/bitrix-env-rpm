@@ -32,7 +32,8 @@ CH015="Configuration error detected: the IP address is empty."
 # Введите IP, широковещательный адрес и сетевую маску
 CH016="Enter IP address (e.g. 192.168.0.1): "
 CH017="Enter broadcast address (e.g. 192.168.0.255): "
-CH018="Enter network mask (e.g. 255.255.255.0): "
+#CH018="Enter network mask (e.g. 255.255.255.0): "
+CH018="Enter network mask (e.g. 16, 20, 23, 24, 27 etc): "
 CH019="Enter default gateway address: "
 # Хотите ли Вы настроить DNS сервер:
 CH020="Would you like to configure the DNS server? (Y|n)"

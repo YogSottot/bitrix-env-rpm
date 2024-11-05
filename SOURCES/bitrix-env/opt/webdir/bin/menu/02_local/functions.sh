@@ -187,10 +187,14 @@ configure_network_by_dhcp() {
             return 1
         fi
 
-        nmcli connection modify $INT ipv4.method auto >/dev/null 2>&1
+        # get connection name for device
+        CONNECTION=$(nmcli -t -f GENERAL.CONNECTION device show $INT | cut -c 20-)
+        # modify connection and reconnect
+        nmcli connection modify "${CONNECTION}" ipv4.method auto >/dev/null 2>&1
+        # reload settings and restart connection
         nmcli connection reload >/dev/null 2>&1
-        nmcli connection down $INT >/dev/null 2>&1
-        nmcli connection up $INT >/dev/null 2>&1
+        nmcli connection down "${CONNECTION}" >/dev/null 2>&1
+        nmcli connection up "${CONNECTION}" >/dev/null 2>&1
 
         nohup $PROGPATH/restart_network_daemon.sh $IP $INT &>/dev/null &
 
@@ -257,10 +261,11 @@ configure_network_by_hand() {
 
         print_message "$CH016" "" "" address
         #print_message "$CH017" "" "" broadcast
-        #print_message "$CH018" "" "" netmask
+        print_message "$CH018" "" "" netmask
 
-        # nmcli has no params like broadcast, netmask always 24
-        netmask="24"
+        # nmcli has no params like broadcast
+        # nmcli netmask param
+        #netmask="24"
 
         IF_ROUTE_CONFIGURE=1
         [[ ( $HOST_ROUTE_EXIST -gt 0 ) && ( "$HOST_ROUTE_INTERFACE" != "$INT" ) ]] && IF_ROUTE_CONFIGURE=0
@@ -294,26 +299,34 @@ configure_network_by_hand() {
             nmcli device
             echo ""
         fi
+
+        # get connection name for device
+        CONNECTION=$(nmcli -t -f GENERAL.CONNECTION device show $INT | cut -c 20-)
         # set ipv4 address
-        nmcli connection modify $INT ipv4.addresses $address/$netmask >/dev/null 2>&1
+        nmcli connection modify "${CONNECTION}" ipv4.addresses $address/$netmask >/dev/null 2>&1
         # set gateway
-        nmcli connection modify $INT ipv4.gateway $gateway >/dev/null 2>&1
+        nmcli connection modify "${CONNECTION}" ipv4.gateway $gateway >/dev/null 2>&1
         # set dns - for multiple dns, specify with space separated "10.0.0.10 10.0.0.11 10.0.0.12"
-        nmcli connection modify $INT ipv4.dns $dns >/dev/null 2>&1
+        nmcli connection modify "${CONNECTION}" ipv4.dns $dns >/dev/null 2>&1
         # set dns search base (your domain name - for multiple one, specify with space separated "rr.bx zz.bb")
         # nmcli connection modify $INT ipv4.dns-search example.com
         # set manual for static setting
-        nmcli connection modify $INT ipv4.method manual >/dev/null 2>&1
-        # restart the interface to reload settings
+        nmcli connection modify "${CONNECTION}" ipv4.method manual >/dev/null 2>&1
+        # reload settings and restart connection
         nmcli connection reload >/dev/null 2>&1
-        nmcli connection down $INT >/dev/null 2>&1
-        nmcli connection up $INT >/dev/null 2>&1
-        if [[ $DEBUG -gt 0 ]]; then
+        nmcli connection down "${CONNECTION}" >/dev/null 2>&1
+        nmcli connection up "${CONNECTION}" >/dev/null 2>&1
+
+        if [[ $DEBUG -gt 0 ]];
+        then
             echo "nmcli: show dev status"
-            nmcli dev status
+            nmcli device status
             echo ""
             echo "nmcli: show $INT settings"
             nmcli device show $INT
+            echo ""
+            echo "nmcli: show connections"
+            nmcli connection show
             echo ""
             echo "ip: show settings"
             ip a

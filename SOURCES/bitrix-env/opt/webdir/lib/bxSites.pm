@@ -51,9 +51,9 @@ sub listAllSite {
     my $message_t = 'bxSite';
 
     my $logOutput = Output->new(
-        error   => 0,
+        error => 0,
         logfile => $self->logfile,
-        debug   => $self->debug,
+        debug => $self->debug,
     );
     $logOutput->log_data("$message_p: get all sites info");
 
@@ -61,7 +61,7 @@ sub listAllSite {
     my $apache_config_dir = $self->apache;
     opendir( my $ach, $apache_config_dir )
       or return Output->new(
-        error   => 1,
+        error => 1,
         message => "Can't open $apache_config_dir: $!",
       );
     my $pref = $self->pref;
@@ -84,8 +84,7 @@ sub listAllSite {
     foreach my $site_name (@found_sites) {
         $site_name =~ s/^$pref//;
         $site_name =~ s/\.$ext$//;
-        $logOutput->log_data(
-            "$message_p: process $site_name; get site_options");
+        $logOutput->log_data("$message_p: process $site_name; get site_options");
 
         my $bxSites = bxSite->new( site_name => $site_name );
         my $bxSiteOptions = $bxSites->site_options;
@@ -97,7 +96,7 @@ sub listAllSite {
     my $sites_count = keys %list_sites;
     if ( $sites_count == 0 ) {
         return Output->new(
-            error   => 1,
+            error => 1,
             message => "$message_p: Not found sites on teh server"
         );
     }
@@ -176,7 +175,7 @@ sub listAllSite {
 
         return Output->new(
             error => 0,
-            data  => [ $message_t, \%list_sites ],
+            data => [ $message_t, \%list_sites ],
         );
     }
 
@@ -196,9 +195,9 @@ sub testClusterConfig {
     my $message_t = "testClusterConfig";
 
     my $logOutput = Output->new(
-        error   => 0,
+        error => 0,
         logfile => $self->logfile,
-        debug   => $self->debug,
+        debug => $self->debug,
     );
 
     my $test_result = {
@@ -214,7 +213,7 @@ sub testClusterConfig {
     if ( $listAllSite->is_error ) {
         return Output->new(
             error => 0,
-            data  => [ $message_t, $test_result ],
+            data => [ $message_t, $test_result ],
         );
     }
 
@@ -233,9 +232,9 @@ sub testClusterConfig {
             if ( $site_module_scale =~ /^not_installed$/ ) {
                 push @{ $test_result->{'without_scale'} },
                   {
-                    SiteName     => $site_name,
+                    SiteName => $site_name,
                     DocumentRoot => $site_dir,
-                    SiteInstall  => $site_type,
+                    SiteInstall => $site_type,
                   };
             }
 
@@ -243,9 +242,9 @@ sub testClusterConfig {
             if ( $site_module_cluster =~ /^not_installed$/ ) {
                 push @{ $test_result->{'without_cluster'} },
                   {
-                    SiteName     => $site_name,
+                    SiteName => $site_name,
                     DocumentRoot => $site_dir,
-                    SiteInstall  => $site_type,
+                    SiteInstall => $site_type,
                   };
             }
 
@@ -253,9 +252,9 @@ sub testClusterConfig {
             if ( $site_type =~ /kernel$/ ) {
                 push @{ $test_result->{'kernels'} },
                   {
-                    SiteName     => $site_name,
+                    SiteName => $site_name,
                     DocumentRoot => $site_dir,
-                    SiteInstall  => $site_type,
+                    SiteInstall => $site_type,
                   };
             }
         }
@@ -269,7 +268,7 @@ sub testClusterConfig {
 
     return Output->new(
         error => 0,
-        data  => [ $message_t, $test_result ],
+        data => [ $message_t, $test_result ],
     );
 }
 
@@ -281,9 +280,9 @@ sub listSite {
     my $message_t = 'bxSite';
 
     my $logOutput = Output->new(
-        error   => 0,
+        error => 0,
         logfile => $self->logfile,
-        debug   => $self->debug,
+        debug => $self->debug,
     );
     $logOutput->log_data("$message_p: get all sites info with filters");
 
@@ -327,14 +326,14 @@ sub listSite {
         }
 
         return Output->new(
-            error   => 1,
+            error => 1,
             message => "$message_p: $user_message"
         );
     }
     else {
         return Output->new(
             error => 0,
-            data  => [ $message_t, \%list_sites ],
+            data => [ $message_t, \%list_sites ],
         );
     }
 
@@ -354,9 +353,9 @@ sub enableBackupForDB {
     my $message_t = 'bxSite';
 
     my $logOutput = Output->new(
-        error   => 0,
+        error => 0,
         logfile => $self->logfile,
-        debug   => $self->debug
+        debug => $self->debug
     );
     $logOutput->log_data(
         "$message_p: enable backup for kernel_name=$kernel_name");
@@ -374,13 +373,13 @@ sub enableBackupForDB {
     # this task can do replace for backup and we need temporary file
     open( my $hb, ">$task_crontab_bak" )
       or return Output->new(
-        error   => 1,
+        error => 1,
         message => "Cannot open $task_crontab_bak: $!",
       );
 
     open( my $hc, "$task_crontab" )
       or return Output->new(
-        error   => 1,
+        error => 1,
         message => "Cannot open $task_crontab: $!",
       );
 
@@ -441,7 +440,7 @@ m|^(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+\S+\s+test\s+\-f\s+$task_backup_v4|
 
     my ( $task_login, $task_pass, $task_uid, $task_guid ) = getpwnam($task_user)
       or return Output->new(
-        error   => 1,
+        error => 1,
         message => "User $task_user not found in password file",
       );
 
@@ -454,7 +453,7 @@ m|^(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+\S+\s+test\s+\-f\s+$task_backup_v4|
     my $cron_cmd = qq(/sbin/service crond restart 1>/dev/null 2>/dev/null);
     system($cron_cmd) == 0
       or return Output->new(
-        error   => 1,
+        error => 1,
         message => "Failed restart crond service"
       );
 
@@ -463,7 +462,7 @@ m|^(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+\S+\s+test\s+\-f\s+$task_backup_v4|
 
 # disable backup cron task for dbname
 sub disableBackupForDB {
-    my $self        = shift;
+    my $self = shift;
     my $kernel_name = shift;
 
     my $message_p = ( caller(0) )[3];
@@ -472,7 +471,7 @@ sub disableBackupForDB {
     # get cron info
     my $task_backup_v5 = '/opt/webdir/bin/bx_backup.sh';
     my $task_backup_v4 = '/home/bitrix/backup/scripts/bxbackup.sh';
-    my $task_crontab   = '/etc/crontab';
+    my $task_crontab = '/etc/crontab';
 
     my $task_crontab_bak = '/etc/crontab.bak';
 
@@ -635,15 +634,15 @@ m|^(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+\S+\s+test\s+\-f\s+$task_backup_v4|
 # ServerName
 # SiteInstall
 sub CreateSite {
-    my $self         = shift;
+    my $self = shift;
     my $site_options = shift;
 
     my $message_p = ( caller(0) )[3];
     my $message_t = 'bxSite';
     my $logOutput = Output->new(
-        error   => 0,
+        error => 0,
         logfile => $self->logfile,
-        debug   => $self->debug
+        debug => $self->debug
     );
 
     # set option to default values
@@ -679,13 +678,13 @@ sub CreateSite {
     # charset option test
     if ( defined $site_options->{'SiteCharset'} ) {
 #        if ( $site_options->{'SiteCharset'} !~ /^(utf-8|windows-1251)$/i ) {
-	if ( $site_options->{'SiteCharset'} !~ /^(utf-8)$/i ) {
+        if ( $site_options->{'SiteCharset'} !~ /^(utf-8)$/i ) {
             return Output->new(
-                error   => 1,
+                error => 1,
                 message => "$message_p: charset="
                   . $site_options->{'SiteCharset'}
 #                  . "; it can contain only 'utf-8' or 'windows-1251'",
-		  . "; it can contain only 'utf-8'",
+                  . "; it can contain only 'utf-8'",
             );
         }
         $site_options->{'SiteCharset'} =~ tr/A-Z/a-z/;
@@ -693,7 +692,7 @@ sub CreateSite {
 
     # transform site_options to playbook options
     my $p_opts = {
-        manage_web    => "create_site",
+        manage_web => "create_site",
         web_site_name => $site_options->{'ServerName'},
         web_site_type => $site_options->{'SiteInstall'},
     };
@@ -710,8 +709,8 @@ sub CreateSite {
         if ( not defined $site_options->{DBPasswordFile} ) {
             my $tmp = File::Temp->new(
                 TEMPLATE => '.siteXXXXXXXX',
-                UNLINK   => 0,
-                DIR      => $TMPDIR,
+                UNLINK => 0,
+                DIR => $TMPDIR,
             );
 
             print $tmp $site_options->{'DBPassword'};
@@ -752,12 +751,12 @@ sub CreateSite {
           . $site_options->{'SiteInstall'} );
 
     # create site by ansible task
-    my $po       = Pool->new();
-    my $ansData  = $po->ansible_conf;
+    my $po = Pool->new();
+    my $ansData = $po->ansible_conf;
     my $cmd_play = $ansData->{'playbook'};
     my $cmd_conf = catfile( $ansData->{'base'}, "web.yml" );
-    my $dh       = bxDaemon->new(
-        debug    => $self->debug,
+    my $dh = bxDaemon->new(
+        debug => $self->debug,
         task_cmd => qq($cmd_play $cmd_conf)
     );
     my $created_process = $dh->startAnsibleProcess( "site_create", $p_opts );
@@ -770,15 +769,15 @@ sub CreateSite {
 # mandatory:
 # ServerName or DocumentRoot
 sub DeleteSite {
-    my $self         = shift;
+    my $self = shift;
     my $site_options = shift;
 
     my $message_p = ( caller(0) )[3];
     my $message_t = 'bxSite';
     my $logOutput = Output->new(
-        error   => 0,
+        error => 0,
         logfile => $self->logfile,
-        debug   => $self->debug
+        debug => $self->debug
     );
 
     # test mandatory options
@@ -808,12 +807,12 @@ sub DeleteSite {
     $logOutput->log_data("$message_p: $log_str");
 
     # create site by ansible task
-    my $po       = Pool->new();
-    my $ansData  = $po->ansible_conf;
+    my $po = Pool->new();
+    my $ansData = $po->ansible_conf;
     my $cmd_play = $ansData->{'playbook'};
     my $cmd_conf = catfile( $ansData->{'base'}, "web.yml" );
-    my $dh       = bxDaemon->new(
-        debug    => $self->debug,
+    my $dh = bxDaemon->new(
+        debug => $self->debug,
         task_cmd => qq($cmd_play $cmd_conf)
     );
     my $created_process = $dh->startAnsibleProcess( "site_delete", $p_opts );
@@ -823,54 +822,49 @@ sub DeleteSite {
 
 # create NTLM settings for all sites on the server
 sub changeNTLMForSite {
-    my ( $self, $domain, $fqdn, $ads, $login, $host, $dbname, $password_file )
-      = @_;
+    my ( $self, $domain, $fqdn, $ads, $login, $host, $dbname, $password_file ) = @_;
     my $message_p = ( caller(0) )[3];
     my $message_t = 'bxSite';
 
     my $logOutput = Output->new(
-        error   => 0,
+        error => 0,
         logfile => $self->logfile,
-        debug   => $self->debug
+        debug => $self->debug
     );
 
-    if (   !$domain
-        || !$fqdn
-        || !$ads
-        || !$login
-        || !$password_file
-        || !$dbname )
+    if ( !$domain || !$fqdn || !$ads || !$login || !$password_file || !$dbname )
     {
         return Output->new(
             error => 1,
-            message =>
-"$message_p: Options ntlm_domain= ntlm_fqdn= ntlm_ads= and password_file= dbname= are mandatory",
+            message => "$message_p: Options ntlm_domain= ntlm_fqdn= ntlm_ads= login= password_file= dbname= are mandatory",
         );
     }
     my $p_opts;
-    $p_opts->{'manage_web'}     = 'ntlm_on';
-    $p_opts->{'ntlm_name'}      = $domain;
-    $p_opts->{'ntlm_fqdn'}      = $fqdn;
-    $p_opts->{'ntlm_dps'}       = $ads;
-    $p_opts->{'manage_kernel'}  = $dbname;
-    $p_opts->{'ntlm_user'}      = $login;
+    $p_opts->{'manage_web'} = 'ntlm_on';
+    $p_opts->{'ntlm_name'} = $domain;
+    $p_opts->{'ntlm_fqdn'} = $fqdn;
+    $p_opts->{'ntlm_dps'} = $ads;
+    $p_opts->{'manage_kernel'} = $dbname;
+    $p_opts->{'ntlm_user'} = $login;
     $p_opts->{'ntlm_pass_file'} = $password_file;
-    if ($host) { $p_opts->{'ntlm_host'} = $host; }
+    $p_opts->{'ntlm_site_action'} = 'create';
+    if ($host)
+    {
+        $p_opts->{'ntlm_host'} = $host;
+    }
 
     # create ansible task
-    my $po       = Pool->new();
-    my $ansData  = $po->ansible_conf;
+    my $po = Pool->new();
+    my $ansData = $po->ansible_conf;
     my $cmd_play = $ansData->{'playbook'};
     my $cmd_conf = catfile( $ansData->{'base'}, "web.yml" );
-    my $dh       = bxDaemon->new(
-        debug    => $self->debug,
+    my $dh = bxDaemon->new(
+        debug => $self->debug,
         task_cmd => qq($cmd_play $cmd_conf)
     );
-    $logOutput->log_data(
-        "$message_p: start create ntlm settings for host and db="
-          . $p_opts->{'manage_kernel'} );
+    $logOutput->log_data( "$message_p: start create ntlm settings for host and db=". $p_opts->{'manage_kernel'} );
 
-    my $created_process = $dh->startAnsibleProcess( 'change_ntlm', $p_opts );
+    my $created_process = $dh->startAnsibleProcess( 'ntlm_create', $p_opts );
     return $created_process;
 }
 
@@ -881,35 +875,34 @@ sub updateNTLMForSite {
     my $message_t = 'bxSite';
 
     my $logOutput = Output->new(
-        error   => 0,
+        error => 0,
         logfile => $self->logfile,
-        debug   => $self->debug
+        debug => $self->debug
     );
 
     if ( !$dbname ) {
         return Output->new(
-            error   => 1,
+            error => 1,
             message => "$message_p: Options dbname= are mandatory",
         );
     }
     my $p_opts;
-    $p_opts->{'manage_web'}    = 'ntlm_on';
+    $p_opts->{'manage_web'} = 'ntlm_on';
     $p_opts->{'manage_kernel'} = $dbname;
+    $p_opts->{'ntlm_site_action'} = 'update';
 
     # start playbook
-    my $po       = Pool->new();
-    my $ansData  = $po->ansible_conf;
+    my $po = Pool->new();
+    my $ansData = $po->ansible_conf;
     my $cmd_play = $ansData->{'playbook'};
     my $cmd_conf = catfile( $ansData->{'base'}, "web.yml" );
-    my $dh       = bxDaemon->new(
-        debug    => $self->debug,
+    my $dh = bxDaemon->new(
+        debug => $self->debug,
         task_cmd => qq($cmd_play $cmd_conf)
     );
-    $logOutput->log_data(
-        "$message_p: start create ntlm settings for host and db="
-          . $p_opts->{'manage_kernel'} );
+    $logOutput->log_data( "$message_p: start create ntlm settings for host and db=". $p_opts->{'manage_kernel'} );
 
-    my $created_process = $dh->startAnsibleProcess( 'change_ntlm', $p_opts );
+    my $created_process = $dh->startAnsibleProcess( 'ntlm_update', $p_opts );
     return $created_process;
 }
 
@@ -922,18 +915,18 @@ sub getNTLMServerStatus {
 
     my $ntlm_options = {
         'LDAPServer' => '',
-        'LDAPPort'   => '',
-        'Realm'      => '',
-        'BindPath'   => '',
-        'KDCServer'  => '',
+        'LDAPPort' => '',
+        'Realm' => '',
+        'BindPath' => '',
+        'KDCServer' => '',
         'TimeOffset' => '',
-        'Status'     => 'not_configured',
+        'Status' => 'not_configured',
     };
 
     my $net_cmd = qq(/usr/bin/net ads info);
     open( my $nh, "-|", "$net_cmd 2>/dev/null" )
       or return Output->new(
-        error   => 1,
+        error => 1,
         message => "$message_p: command \`$net_cmd\` return error: $!",
       );
     while ( my $line = <$nh> ) {
@@ -968,8 +961,55 @@ sub getNTLMServerStatus {
 
     return Output->new(
         error => 0,
-        data  => [ 'NTLMStatus', $ntlm_options ]
+        data => [ 'NTLMStatus', $ntlm_options ]
     );
+}
+
+# remove NTLM settings for all sites and server
+sub removeNTLM {
+    my ( $self, $domain, $fqdn, $ads, $login, $password_file, $host ) = @_;
+    my $message_p = ( caller(0) )[3];
+    my $message_t = 'bxSite';
+
+    my $logOutput = Output->new(
+        error => 0,
+        logfile => $self->logfile,
+        debug => $self->debug
+    );
+
+    if ( !$domain || !$fqdn || !$ads || !$login || !$password_file )
+    {
+        return Output->new(
+            error => 1,
+            message => "$message_p: Options ntlm_domain= ntlm_fqdn= ntlm_ads= login= password_file= are mandatory",
+        );
+    }
+    my $p_opts;
+    $p_opts->{'manage_web'} = 'ntlm_off';
+    $p_opts->{'ntlm_name'} = $domain;
+    $p_opts->{'ntlm_fqdn'} = $fqdn;
+    $p_opts->{'ntlm_dps'} = $ads;
+    $p_opts->{'ntlm_user'} = $login;
+    $p_opts->{'ntlm_pass_file'} = $password_file;
+    $p_opts->{'ntlm_site_action'} = 'delete';
+    if ($host)
+    {
+        $p_opts->{'ntlm_host'} = $host;
+    }
+
+    # start playbook
+    my $po = Pool->new();
+    my $ansData = $po->ansible_conf;
+    my $cmd_play = $ansData->{'playbook'};
+    my $cmd_conf = catfile( $ansData->{'base'}, "web.yml" );
+    my $dh = bxDaemon->new(
+        debug => $self->debug,
+        task_cmd => qq($cmd_play $cmd_conf)
+    );
+    $logOutput->log_data( "$message_p: start remove ntlm settings for all sites and server" );
+
+    my $created_process = $dh->startAnsibleProcess( 'ntlm_delete', $p_opts );
+    return $created_process;
 }
 
 # enable|disable php extension
@@ -979,14 +1019,14 @@ sub php_extension {
     my $message_t = 'bxSite';
 
     my $logOutput = Output->new(
-        error   => 0,
+        error => 0,
         logfile => $self->logfile,
-        debug   => $self->debug
+        debug => $self->debug
     );
 
     if ( !$ext || !$type ) {
         return Output->new(
-            error   => 1,
+            error => 1,
             message => "$message_p: Options ext= and type= are mandatory",
         );
     }
@@ -996,12 +1036,12 @@ sub php_extension {
     $p_opts->{'manage_web'} = "php_extension";
 
     # start playbook
-    my $po       = Pool->new();
-    my $ansData  = $po->ansible_conf;
+    my $po = Pool->new();
+    my $ansData = $po->ansible_conf;
     my $cmd_play = $ansData->{'playbook'};
     my $cmd_conf = catfile( $ansData->{'base'}, "web.yml" );
-    my $dh       = bxDaemon->new(
-        debug    => $self->debug,
+    my $dh = bxDaemon->new(
+        debug => $self->debug,
         task_cmd => qq($cmd_play $cmd_conf)
     );
     $logOutput->log_data( "$message_p: change settiongs for php extension=="
@@ -1023,9 +1063,9 @@ sub configurePushServer {
     my $hostname = $get_hi->data->[1];
 
     my $logOutput = Output->new(
-        error   => 0,
+        error => 0,
         logfile => $self->logfile,
-        debug   => $self->debug
+        debug => $self->debug
     );
 
     if ( !$manage ) {
@@ -1042,12 +1082,12 @@ sub configurePushServer {
     $p_opts->{'manage'}   = $manage;
 
     # start playbook
-    my $po       = Pool->new();
-    my $ansData  = $po->ansible_conf;
+    my $po = Pool->new();
+    my $ansData = $po->ansible_conf;
     my $cmd_play = $ansData->{'playbook'};
     my $cmd_conf = catfile( $ansData->{'base'}, "push-server.yml" );
-    my $dh       = bxDaemon->new(
-        debug    => $self->debug,
+    my $dh = bxDaemon->new(
+        debug => $self->debug,
         task_cmd => qq($cmd_play $cmd_conf)
     );
     $logOutput->log_data(
@@ -1066,7 +1106,7 @@ sub testListSites {
 
     if ( not defined $opts->{site_names} ) {
         return Output->new(
-            error   => 1,
+            error => 1,
             message => "Sites list cannot be empty",
         );
     }
@@ -1146,7 +1186,7 @@ sub testListSites {
 
     return Output->new(
         error => 0,
-        data  => [ "site_names", \@site_names, $sites_filter, \@special_sites ],
+        data => [ "site_names", \@site_names, $sites_filter, \@special_sites ],
     );
 
 }
@@ -1210,7 +1250,7 @@ sub statusCerts {
             open( $hh, '<', $push_config )
               or return Output->new(
                 error => 0,
-                data  => [
+                data => [
                     "site_certs",
                     {
                         certs => \%certs,
@@ -1262,7 +1302,7 @@ sub statusCerts {
 
     return Output->new(
         error => 0,
-        data  => [
+        data => [
             "site_certs",
             {
                 certs => \%certs,
@@ -1281,9 +1321,9 @@ sub configureLE {
     my $message_p = ( caller(0) )[3];
     my $message_t = __PACKAGE__;
     my $logOutput = Output->new(
-        error   => 0,
+        error => 0,
         logfile => $self->logfile,
-        debug   => $self->debug
+        debug => $self->debug
     );
 
     my $test_sites = $self->testListSites($opts);
@@ -1299,7 +1339,7 @@ sub configureLE {
     foreach my $k ( "dns", "email" ) {
         if ( not defined $opts->{$k} ) {
             return Output->new(
-                error    => 1,
+                error => 1,
                 messages => "$message_p: Option $k cannot be empty",
             );
         }
@@ -1312,11 +1352,11 @@ sub configureLE {
     }
 
     my $a_opts = {
-        dns_names  => \@dns,
-        sites_cnt  => $sites_cnt,
-        email      => $opts->{email},
+        dns_names => \@dns,
+        sites_cnt => $sites_cnt,
+        email => $opts->{email},
         manage_web => 'configure_le',
-        specs_cnt  => $specs_cnt,
+        specs_cnt => $specs_cnt,
     };
     if ($sites_cnt) {
         $a_opts->{site_names}   = \@site_names;
@@ -1331,17 +1371,16 @@ sub configureLE {
           . $opts->{site_names} );
 
     # create site by ansible task
-    my $po       = Pool->new();
-    my $ansData  = $po->ansible_conf;
+    my $po = Pool->new();
+    my $ansData = $po->ansible_conf;
     my $cmd_play = $ansData->{'playbook'};
     my $cmd_conf = catfile( $ansData->{'base'}, "web.yml" );
-    my $dh       = bxDaemon->new(
-        debug    => $self->debug,
+    my $dh = bxDaemon->new(
+        debug => $self->debug,
         task_cmd => qq($cmd_play $cmd_conf)
     );
 
-    my $created_process =
-      $dh->startAnsibleProcess( "site_certificate", $a_opts );
+    my $created_process = $dh->startAnsibleProcess( "site_certificate", $a_opts );
     return $created_process;
 }
 
@@ -1352,9 +1391,9 @@ sub configureCert {
     my $message_p = ( caller(0) )[3];
     my $message_t = __PACKAGE__;
     my $logOutput = Output->new(
-        error   => 0,
+        error => 0,
         logfile => $self->logfile,
-        debug   => $self->debug
+        debug => $self->debug
     );
 
     my $test_sites = $self->testListSites($opts);
@@ -1370,7 +1409,7 @@ sub configureCert {
     foreach my $k ( "private_key", "certificate" ) {
         if ( not defined $opts->{$k} ) {
             return Output->new(
-                error    => 1,
+                error => 1,
                 messages => "$message_p: Option $k cannot be empty",
             );
         }
@@ -1416,12 +1455,12 @@ sub configureCert {
           . $opts->{site_names} );
 
     # create site by ansible task
-    my $po       = Pool->new();
-    my $ansData  = $po->ansible_conf;
+    my $po = Pool->new();
+    my $ansData = $po->ansible_conf;
     my $cmd_play = $ansData->{'playbook'};
     my $cmd_conf = catfile( $ansData->{'base'}, "web.yml" );
-    my $dh       = bxDaemon->new(
-        debug    => $self->debug,
+    my $dh = bxDaemon->new(
+        debug => $self->debug,
         task_cmd => qq($cmd_play $cmd_conf)
     );
 
@@ -1436,26 +1475,26 @@ sub resetCert {
     my $message_p = ( caller(0) )[3];
     my $message_t = __PACKAGE__;
     my $logOutput = Output->new(
-        error   => 0,
+        error => 0,
         logfile => $self->logfile,
-        debug   => $self->debug
+        debug => $self->debug
     );
 
     my $test_sites = $self->testListSites($opts);
     return $test_sites if ( $test_sites->is_error );
-    @site_names    = @{ $test_sites->data->[1] };
-    $sites_filter  = $test_sites->data->[2];
+    @site_names = @{ $test_sites->data->[1] };
+    $sites_filter = $test_sites->data->[2];
     @special_sites = @{ $test_sites->data->[3] };
 
     my $sites_cnt = @site_names;
     my $specs_cnt = @special_sites;
 
     $opts->{manage_web} = "reset_cert";
-    $opts->{sites_cnt}  = $sites_cnt;
-    $opts->{specs_cnt}  = $specs_cnt;
+    $opts->{sites_cnt} = $sites_cnt;
+    $opts->{specs_cnt} = $specs_cnt;
 
     if ($sites_cnt) {
-        $opts->{site_names}   = \@site_names;
+        $opts->{site_names} = \@site_names;
         $opts->{sites_filter} = $sites_filter;
     }
 
@@ -1471,12 +1510,12 @@ sub resetCert {
     );
 
     # create site by ansible task
-    my $po       = Pool->new();
-    my $ansData  = $po->ansible_conf;
+    my $po = Pool->new();
+    my $ansData = $po->ansible_conf;
     my $cmd_play = $ansData->{'playbook'};
     my $cmd_conf = catfile( $ansData->{'base'}, "web.yml" );
-    my $dh       = bxDaemon->new(
-        debug    => $self->debug,
+    my $dh = bxDaemon->new(
+        debug => $self->debug,
         task_cmd => qq($cmd_play $cmd_conf)
     );
 
@@ -1491,24 +1530,24 @@ sub siteCustomSettings {
     my $message_p = ( caller(0) )[3];
     my $message_t = __PACKAGE__;
     my $logOutput = Output->new(
-        error   => 0,
+        error => 0,
         logfile => $self->logfile,
-        debug   => $self->debug
+        debug => $self->debug
     );
 
     my $a_opts = {
-        option     => $opt,
-        value      => $val,
+        option => $opt,
+        value => $val,
         manage_web => 'custom_configs',
     };
 
     # create site by ansible task
-    my $po       = Pool->new();
-    my $ansData  = $po->ansible_conf;
+    my $po = Pool->new();
+    my $ansData = $po->ansible_conf;
     my $cmd_play = $ansData->{'playbook'};
     my $cmd_conf = catfile( $ansData->{'base'}, "web.yml" );
-    my $dh       = bxDaemon->new(
-        debug    => $self->debug,
+    my $dh = bxDaemon->new(
+        debug => $self->debug,
         task_cmd => qq($cmd_play $cmd_conf)
     );
 
@@ -1516,126 +1555,121 @@ sub siteCustomSettings {
     return $created_process;
 }
 
-#sub configureTransformer {
-#    my ( $self, $opts ) = @_;
-#
-#    my $message_p = ( caller(0) )[3];
-#    my $message_t = __PACKAGE__;
-#    my $logOutput = Output->new(
-#        error   => 0,
-#        logfile => $self->logfile,
-#        debug   => $self->debug
-#    );
-#
-#    if (   not defined $opts->{transformer_host}
-#        || \not defined $opts->{web_site_name}
-#        || \not defined $opts->{web_site_dir} )
-#    {
-#        return Output->new(
-#            error   => 1,
-#            message => "$message_p: Some mandatory options are missing.",
-#        );
-#    }
-#
-#    if ( not defined $opts->{transformer_domains} ){
-#        $opts->{transformer_domains} = ['localhost', $opts->{web_site_name}];
-#    }else{
-#        if ( $opts->{transformer_domains} =~ /,/ ){
-#            my @transformer_domains = split(',' , $opts->{transformer_domains} );
-#            $opts->{transformer_domains} = \@transformer_domains;
-#        }else{
-#            $opts->{transformer_domains} = [$opts->{transformer_domains}];
-#        }
-#    }
-#
-#    my $host = Host->new( host => $opts->{transformer_host} );
-#    my $is_host_in_pool = $host->host_in_pool();
-#    if ( $is_host_in_pool->is_error ) {
-#        return $is_host_in_pool;
-#    }
-#
-#    my $bx_pool = Pool->new();
-#    my $an_data = $bx_pool->ansible_conf;
-#    my $host_vars_path =
-#      catfile( $an_data->{'host_vars'}, $opts->{transformer_host} );
-#    if ( -f $host_vars_path ){
-#        my $inventory = get_from_yaml($host_vars_path);
-#        if ( $inventory->is_error ){
-#            return $inventory;
-#        }
-#        if (defined $inventory->{redis_password}){
-#            $opts->{redis_password} = $inventory->{redis_password};
-#        }
-#        if (defined $inventory->{redis_root_password}){
-#            $opts->{redis_root_password} = $inventory->{redis_root_password};
-#        }
-#    }
-#
-#    $opts->{is_create} = "true";
-#    if ( not defined $opts->{redis_password} ) {
-#        $opts->{redis_password} = generate_simple_password();
-#    }
-#    if ( not defined $opts->{redis_root_password} ) {
-#        $opts->{redis_root_password} = generate_simple_password();
-#    }
-#
-#    $logOutput->log_data(
-#        "$message_p: configure transformer-service" . $opts->{web_site_name} );
-#
-#    # create site by ansible task
-#    my $po       = Pool->new();
-#    my $ansData  = $po->ansible_conf;
-#    my $cmd_play = $ansData->{'playbook'};
-#    my $cmd_conf = catfile( $ansData->{'base'}, "transformer.yml" );
-#    my $dh       = bxDaemon->new(
-#        debug    => $self->debug,
-#        task_cmd => qq($cmd_play $cmd_conf)
-#    );
-#
-#    my $created_process =
-#      $dh->startAnsibleProcess( "configure_transformer", $opts );
-#    return $created_process;
-#}
+sub configureTransformer {
+    my ( $self, $opts ) = @_;
 
-#sub removeTransformer {
-#    my ( $self, $opts ) = @_;
-#
-#    my $message_p = ( caller(0) )[3];
-#    my $message_t = __PACKAGE__;
-#    my $logOutput = Output->new(
-#        error   => 0,
-#        logfile => $self->logfile,
-#        debug   => $self->debug
-#    );
-#
-#    if (   not defined $opts->{transformer_host}
-#        || \not defined $opts->{web_site_name}
-#        || \not defined $opts->{web_site_dir} )
-#    {
-#        return Output->new(
-#            error   => 1,
-#            message => "$message_p: Some mandatory options are missing.",
-#        );
-#    }
-#
-#    $opts->{is_remove} = "true";
-#
-#    $logOutput->log_data(
-#        "$message_p: remove transformer-service" . $opts->{web_site_name} );
-#
-#    # create site by ansible task
-#    my $po       = Pool->new();
-#    my $ansData  = $po->ansible_conf;
-#    my $cmd_play = $ansData->{'playbook'};
-#    my $cmd_conf = catfile( $ansData->{'base'}, "transformer.yml" );
-#    my $dh       = bxDaemon->new(
-#        debug    => $self->debug,
-#        task_cmd => qq($cmd_play $cmd_conf)
-#    );
-#
-#    my $created_process =
-#      $dh->startAnsibleProcess( "remove_transformer", $opts );
-#    return $created_process;
-#}
+    my $message_p = ( caller(0) )[3];
+    my $message_t = __PACKAGE__;
+    my $logOutput = Output->new(
+        error => 0,
+        logfile => $self->logfile,
+        debug => $self->debug
+    );
+
+    if ( not defined $opts->{transformer_host}
+        || \not defined $opts->{web_site_name}
+        || \not defined $opts->{web_site_dir} )
+    {
+        return Output->new(
+            error => 1,
+            message => "$message_p: Some mandatory options are missing.",
+        );
+    }
+
+    if ( not defined $opts->{transformer_domains} ) {
+        $opts->{transformer_domains} = ['localhost', $opts->{web_site_name}];
+    } else {
+        if ( $opts->{transformer_domains} =~ /,/ ) {
+            my @transformer_domains = split(',' , $opts->{transformer_domains});
+            $opts->{transformer_domains} = \@transformer_domains;
+        } else {
+            $opts->{transformer_domains} = [$opts->{transformer_domains}];
+        }
+    }
+
+    my $host = Host->new( host => $opts->{transformer_host} );
+    my $is_host_in_pool = $host->host_in_pool();
+    if ( $is_host_in_pool->is_error ) {
+        return $is_host_in_pool;
+    }
+
+    my $bx_pool = Pool->new();
+    my $an_data = $bx_pool->ansible_conf;
+    my $host_vars_path = catfile( $an_data->{'host_vars'}, $opts->{transformer_host} );
+    if ( -f $host_vars_path ) {
+        my $inventory = get_from_yaml($host_vars_path);
+        if ( $inventory->is_error ) {
+            return $inventory;
+        }
+        if (defined $inventory->{redis_password}) {
+            $opts->{redis_password} = $inventory->{redis_password};
+        }
+        if (defined $inventory->{redis_root_password}) {
+            $opts->{redis_root_password} = $inventory->{redis_root_password};
+        }
+    }
+
+    $opts->{is_create} = "true";
+    if ( not defined $opts->{redis_password} ) {
+        $opts->{redis_password} = generate_simple_password();
+    }
+    if ( not defined $opts->{redis_root_password} ) {
+        $opts->{redis_root_password} = generate_simple_password();
+    }
+
+    $logOutput->log_data( "$message_p: configure transformer-service" . $opts->{web_site_name} );
+
+    # create site by ansible task
+    my $po = Pool->new();
+    my $ansData  = $po->ansible_conf;
+    my $cmd_play = $ansData->{'playbook'};
+    my $cmd_conf = catfile( $ansData->{'base'}, "transformer.yml" );
+    my $dh = bxDaemon->new(
+        debug => $self->debug,
+        task_cmd => qq($cmd_play $cmd_conf)
+    );
+
+    my $created_process = $dh->startAnsibleProcess( "configure_transformer", $opts );
+    return $created_process;
+}
+
+sub removeTransformer {
+    my ( $self, $opts ) = @_;
+
+    my $message_p = ( caller(0) )[3];
+    my $message_t = __PACKAGE__;
+    my $logOutput = Output->new(
+        error => 0,
+        logfile => $self->logfile,
+        debug => $self->debug
+    );
+
+    if ( not defined $opts->{transformer_host}
+        || \not defined $opts->{web_site_name}
+        || \not defined $opts->{web_site_dir} )
+    {
+        return Output->new(
+            error => 1,
+            message => "$message_p: Some mandatory options are missing.",
+        );
+    }
+
+    $opts->{is_remove} = "true";
+
+    $logOutput->log_data( "$message_p: remove transformer-service" . $opts->{web_site_name} );
+
+    # create site by ansible task
+    my $po = Pool->new();
+    my $ansData = $po->ansible_conf;
+    my $cmd_play = $ansData->{'playbook'};
+    my $cmd_conf = catfile( $ansData->{'base'}, "transformer.yml" );
+    my $dh = bxDaemon->new(
+        debug => $self->debug,
+        task_cmd => qq($cmd_play $cmd_conf)
+    );
+
+    my $created_process = $dh->startAnsibleProcess( "remove_transformer", $opts );
+    return $created_process;
+}
 
 1;

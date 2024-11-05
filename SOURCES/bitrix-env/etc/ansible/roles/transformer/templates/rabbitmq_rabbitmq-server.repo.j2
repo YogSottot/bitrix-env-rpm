@@ -1,0 +1,21 @@
+[rabbitmq_rabbitmq-server]
+name=Rabbitmq Rabbitmq-server for Enterprise Linux {{ ansible_distribution_major_version }}
+baseurl=https://packagecloud.io/rabbitmq/rabbitmq-server/el/{{ ansible_distribution_major_version }}/$basearch
+repo_gpgcheck=1
+gpgcheck=0
+enabled=1
+gpgkey=https://packagecloud.io/rabbitmq/rabbitmq-server/gpgkey
+sslverify=1
+sslcacert=/etc/pki/tls/certs/ca-bundle.crt
+metadata_expire=300
+
+[rabbitmq_rabbitmq-server-source]
+name=Rabbitmq Rabbitmq-server Source for Enterprise Linux {{ ansible_distribution_major_version }}
+baseurl=https://packagecloud.io/rabbitmq/rabbitmq-server/el/{{ ansible_distribution_major_version }}/SRPMS
+repo_gpgcheck=1
+gpgcheck=0
+enabled=1
+gpgkey=https://packagecloud.io/rabbitmq/rabbitmq-server/gpgkey
+sslverify=1
+sslcacert=/etc/pki/tls/certs/ca-bundle.crt
+metadata_expire=300

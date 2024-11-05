@@ -1,24 +1,25 @@
---- 
-######## restart nginx and apache services
-# ntlm_name: netbios domain name (ex. BX)                       DN
-# ntlm_fqdn: full domain name (ex. BX.OFFICE)                   DNF
+---
+######## restart nginx and httpd services
+#
+# ntlm_name: netbios domain name (ex. BX)                                       DN
+# ntlm_fqdn: full domain name (ex. BX.OFFICE)                                   DNF
 # ntlm_host: netbios hostname, user can set it or will be use server hostname
-# ntlm_dps: domain password server (ex. DC1.BX.OFFICE)          DPS
-# ntlm_user: domain admin user                                  DU
-# ntlm_pass_file: password for domain user 
+# ntlm_dps: domain password server (ex. DC1.BX.OFFICE)                          DPS
+# ntlm_user: domain admin user                                                  DU
+# ntlm_pass_file: password for domain user
 # manage_kernel: define all sites with the same kernel. NTLM auth will be working for all of them.
 # ntlm_web_configure - switch to enable after succefull install NTLM
+#
+#########
 
-######### Gathering facts
-####
-# bx_sites_info - usage when created apache configuration
+# gathering facts - bx_sites_info - usage when created httpd configuration
 - name: gathering facts about installed sites with the same DB
   bx_facts:
-    name=list
-    password=0
-    install='(kernel|link)'
-    status=finished
-    dbname={{ manage_kernel | default('sitemanager0') }}
+    name: list
+    password: 0
+    install: '(kernel|link)'
+    status: finished
+    dbname: "{{ manage_kernel | default('sitemanager') }}"
 
 - name: create variable bx_sites_info - all sites with the same DB
   set_fact:
@@ -26,38 +27,31 @@
 
 - name: gathering facts about installed kernel site with defined DB
   bx_facts:
-    name=list
-    password=0
-    install='(kernel|ext_kernel)'
-    status=finished
-    dbname={{ manage_kernel | default('sitemanager0') }}
+    name: list
+    password: 0
+    install: '(kernel|ext_kernel)'
+    status: finished
+    dbname: "{{ manage_kernel | default('sitemanager') }}"
 
 - name: create variable bx_kernel_site - installed kernel site with defined DB
   set_fact:
     bx_kernel_site: "{{ hostvars[inventory_hostname]['bx_sites'] }}"
 
-############ Configure Winbind (samba, kerberos and etc.)
-####
+# configure winbind (samba, kerberos and etc.)
 - include_tasks: samba_configs.yml
   when: ntlm_dps != 'NOT_DEFINED'
-####
-############ /Configure Winbind (samba, kerberos and etc.)
 
-############ Test domain
-####
+# test domain
 - name: test that the domain has successfully been joined by
-  bx_ntlm: idmap_id={{ idmap_range_start }}  
+  bx_ntlm:
+    idmap_id: "{{ idmap_range_start }}"
 
 - name: exit if check returned that the host is not added to domain
-  fail: 
+  fail:
     msg: "AD status={{ domain_status }} winbind status={{ nss_status }}"
   when: domain_status == 'not_configured' or nss_status == 'not_configured'
-####
-############ /Test domain
 
-############ Apache and sites configs
-#### in case web cluster, apache settings will created on master server only
-####
+# apache and sites configs - in case web cluster, apache settings will created on master server only
 - name: create apache config with main settings (listen and ntlm module enable)
   template:
     src: httpd/mod_ntlm.conf.j2
@@ -103,6 +97,21 @@
     group: bitrix
   with_items: "{{ bx_sites_info }}"
 
+- name: create variable ntlm_name - update site only action
+  set_fact:
+    ntlm_name: "{{ domain_name }}"
+  when: ntlm_site_action == 'update'
+
+- name: save ntlm script to temporary directory - update site only action
+  template:
+    src: "ntlm_settings.php.j2"
+    dest: "/opt/webdir/.ansible/{{ item.SiteName }}/ntlm_settings.php"
+    mode: 0640
+    owner: root
+    group: bitrix
+  with_items: "{{ bx_sites_info }}"
+  when: ntlm_site_action == 'update'
+
 - name: enable NTLM in site settings - execute ntlm script
   shell: php -f ntlm_settings.php
   args:
@@ -116,17 +125,12 @@
     path: "/opt/webdir/.ansible"
     state: absent
   when: "ansible_playbook_debug != 'DEBUG'"
-####
-############ /Apache and sites configs
 
-############ update ansible group settings
-####
+# update ansible group settings
 - name: update info in bitrix group
   delegate_to: 127.0.0.1
   bx_conf:
-    group=web
-    state=update
-    ntlm_web_configure=enable
+    group: web
+    state: update
+    ntlm_web_configure: enable
   tags: ansible_hosts
-####
-############ /update ansible group settings

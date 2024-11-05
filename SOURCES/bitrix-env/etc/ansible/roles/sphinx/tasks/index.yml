@@ -1,18 +1,27 @@
 ---
 # create site configuration; use bx_sites_info variable
 - name: create indexer configs
-  template: src=index.conf.j2
-    dest={{ sphinx_inx_dir }}/{{ item.SiteCsync2 }}.conf
-    owner=root group=root
-    mode=0644
+  template:
+    src: index.conf.j2
+    dest: "{{ sphinx_inx_dir }}/{{ item.SiteCsync2 }}.conf"
+    owner: root
+    group: root
+    mode: 0644
   with_items: "{{ bx_sites_info }}"
   tags: site_index
 
 - name: create data directory
-  file: path="{{ sphinx_lib_dir }}/{{ item.SiteCsync2 }}" state=directory owner=sphinx group=sphinx mode=0770
+  file:
+    path: "{{ sphinx_lib_dir }}/{{ item.SiteCsync2 }}"
+    state: directory
+    owner: sphinx
+    group: sphinx
+    mode: 0770
   with_items: "{{ bx_sites_info }}"
   tags: site_index
 
 - name: restart searchd service
-  service: name=searchd state=restarted
+  service:
+    name: searchd
+    state: restarted
   tags: sphinx

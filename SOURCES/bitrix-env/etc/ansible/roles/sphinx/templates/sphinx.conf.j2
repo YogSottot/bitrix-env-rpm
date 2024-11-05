@@ -28,38 +28,38 @@ echo $includeConfig;
 
 index testrt
 {
-    type            = rt
-    rt_mem_limit        = 128M
+    type		= rt
+    rt_mem_limit	= 128M
 
-    path            = /var/lib/sphinx/testrt
+    path		= /var/lib/sphinx/testrt
 
-    rt_field        = title
-    rt_field        = content
-    rt_attr_uint        = gid
+    rt_field		= title
+    rt_field		= content
+    rt_attr_uint	= gid
 
 }
 
 searchd
 {
-	listen			  = {{ sphinx_general_listen }}
-	listen			  = {{ sphinx_mysqlproto_listen }}:mysql41
-	log			      = {{ sphinx_main_log }}
-	query_log		  = {{ sphinx_query_log }}
-	pid_file		  = {{ sphinx_run_file }}
+	listen			= {{ sphinx_general_listen }}
+	listen			= {{ sphinx_mysqlproto_listen }}:mysql41
+	log			= {{ sphinx_main_log }}
+	query_log		= {{ sphinx_query_log }}
+	pid_file		= {{ sphinx_run_file }}
 	binlog_path		= {{ sphinx_lib_dir }}
 
-	read_timeout		      = 5
-	max_children		      = 30
-	max_matches		        = 1000
-	seamless_rotate		    = 1
-	preopen_indexes		    = 1
-	unlink_old		        = 1
-	workers			          = threads # for RT to work
-	binlog_max_log_size 	= 512M
-  #  2 - flush every transaction, sync every second. Good performance, and every committed transaction is guaranteed to be saved in case of daemon crash.
-  #  1 - flush and sync every transaction. Worst performance, but every committed transaction data is guaranteed to be saved
-	binlog_flush		      = 2
-	rt_flush_period		    = 3600
+	read_timeout		= 5
+	max_children		= 30
+	max_matches		= 1000
+	seamless_rotate		= 1
+	preopen_indexes		= 1
+	unlink_old		= 1
+	workers			= threads # for RT to work
+	binlog_max_log_size	= 512M
+	#  2 - flush every transaction, sync every second. Good performance, and every committed transaction is guaranteed to be saved in case of daemon crash.
+	#  1 - flush and sync every transaction. Worst performance, but every committed transaction data is guaranteed to be saved
+	binlog_flush		= 2
+	rt_flush_period		= 3600
 }
 
 # {{ sphinx_type }}
@@ -76,6 +76,6 @@ indexer
 }
 common
 {
-    lemmatizer_base       = /usr/share/sphinx/dicts
+	lemmatizer_base		= /usr/share/sphinx/dicts
 }
 {% endif %}

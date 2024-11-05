@@ -1,44 +1,51 @@
 #!/usr/bin/bash
 #
-# test ntlm settings on server 
+# test ntlm settings on server
 #
 export LANG=en_EN.UTF-8
 export PATH=$PATH:/sbin:/usr/sbin
 
 [[ -z $DEBUG ]] && DEBUG=0
+
 TMP=/opt/webdir/logs
 LOG=$TMP/bx_ntlm.log
+
 [[ $DEBUG -gt 0 ]] 2>/dev/null && echo -n "" > $LOG
 
 debug() {
-  msg=$1
-  [[ $DEBUG -gt 1 ]] && printf "%s: %d: %s\n" "$(date +%F-%H-%M-%S)" "$$" "$msg" >> $LOG
+    msg=$1
+    [[ $DEBUG -gt 1 ]] && printf "%s: %d: %s\n" "$(date +%F-%H-%M-%S)" "$$" "$msg" >> $LOG
 }
 
-# print ansible message 
+# print ansible message
 print() {
     msg=${1}
     type=${2:-facts}
     debug "$msg"
     code=0
-    if [[ "$type" == "error" ]]; then
+    if [[ "$type" == "error" ]];
+    then
         msg_out=$(echo "$msg" | head -1)
         echo "{\"changed\":false,\"failed\":true,\"msg\":\"$msg_out\"}"
         code=1
-    elif [[ "$type" == "facts" ]]; then
+    elif [[ "$type" == "facts" ]];
+    then
         ansible_facts='{'
         ansible_facts=$ansible_facts'"ldap_server":"'$LDAP_SERVER'",'
         ansible_facts=$ansible_facts'"ldap_server_name":"'$LDAP_SERVER_NAME'",'
         ansible_facts=$ansible_facts'"realm":"'$REALM'",'
         ansible_facts=$ansible_facts'"kdc":"'$KDC_SERVER'",'
         ansible_facts=$ansible_facts'"offset":"'$OFFSET_TIME'",'
+        ansible_facts=$ansible_facts'"domain_name":"'$DOMAIN_NAME'",'
         ansible_facts=$ansible_facts'"domain_status":"'$DOMAIN_STATUS'",'
         ansible_facts=$ansible_facts'"nss_status":"'$NSS_STATUS'"'
         ansible_facts=$ansible_facts'}'
         echo "{\"changed\":false,\"failed\":false,\"ansible_facts\":$ansible_facts,\"msg\":\"$msg\"}"
-    elif [[ "$type" == "changed" ]]; then
+    elif [[ "$type" == "changed" ]];
+    then
         echo "{\"changed\":true,\"failed\":false,\"msg\":\"$msg\"}"
-    elif [[ "$type" == "not_changed" ]]; then
+    elif [[ "$type" == "not_changed" ]];
+    then
         echo "{\"changed\":false,\"failed\":false,\"msg\":\"$msg\"}"
     fi
     [[ ( $DEBUG -eq 0 ) && ( -f $safe_file ) ]] 2>/dev/null && rm -f $safe_file
@@ -56,6 +63,7 @@ get_net_ads_info() {
     REALM=$(echo "$net_info" | awk -F':' '/^Realm:/{print $2}' | sed -e 's/^\s\+//;s/\s\+$//;')
     KDC_SERVER=$(echo "$net_info" | awk -F':' '/^KDC server:/{print $2}' | sed -e 's/^\s\+//;s/\s\+$//;')
     OFFSET_TIME=$(echo "$net_info" | awk -F':' '/^Server time offset:/{print $2}' | sed -e 's/^\s\+//;s/\s\+$//;')
+    DOMAIN_NAME=$(echo "$net_info" | awk -F':' '/^Workgroup:/{print $2}' | sed -e 's/^\s\+//;s/\s\+$//;')
     DOMAIN_STATUS="configured"
 }
 
@@ -67,17 +75,15 @@ get_nss_groups() {
 
 # parse safe file, convert data to the safe value
 parse_data() {
-    if [[ -n "$safe_file" ]]; then
+    if [[ -n "$safe_file" ]];
+    then
         [[ -f $safe_file ]] || print "Not found file=$safe_file" error
         ntlm_user=$(grep '# NTLM_USER' $safe_file -A 1 | tail -n1)
         ntlm_pass=$(grep '# NTLM_PASSWORD' $safe_file -A 1 | tail -n1)
-
         ntlm_dps=$(grep '# NTLM_DPS' $safe_file -A 1 | tail -n1)
         ntlm_dnf=$(grep '# NTLM_DNF' $safe_file -A 1 | tail -n1)
-
         #ntlm_user=$(printf "%q" "$ntlm_user_file")
         #ntlm_pass=$(printf "%q" "$ntlm_pass_file")
-
         [[ $DEBUG -gt 0 ]] && echo $ntlm_pass
     fi
 }
@@ -100,14 +106,17 @@ LDAP_SERVER_NAME=
 REALM=
 KDC_SERVER=
 OFFSET_TIME=
-DOMAIN_STATUS='not_configured'          # describe if host in the domain
-NSS_STATUS='not_configured'             # describe nss database status, use winbind or not
+DOMAIN_NAME=
+DOMAIN_STATUS='not_configured'  # describe if host in the domain
+NSS_STATUS='not_configured'     # describe nss database status, use winbind or not
 
-if [[ "$state" == "status" ]]; then
+if [[ "$state" == "status" ]];
+then
     get_net_ads_info
     [[ $idmap_id -gt 0 ]] 2>/dev/null && get_nss_groups
     print "Found options"
-elif [[ "$state" == "join" ]]; then
+elif [[ "$state" == "join" ]];
+then
     parse_data
     [[ -z $ntlm_pass ]] && print "You must set ntlm_pass=" error
     [[ -z $ntlm_user ]] && ntlm_user="Administrator"
@@ -116,8 +125,9 @@ elif [[ "$state" == "join" ]]; then
     net_join_code=$?
 
     debug "net ads join return=$net_join_code"
-    
-    if [[ $net_join_code -gt 0 ]]; then
+
+    if [[ $net_join_code -gt 0 ]];
+    then
         # try use ntlm_dps and ntlm_fqdn
         net ads join -S $ntlm_dps -D $NTLM_DNF -U $ntlm_user%$ntlm_pass 1>>$LOG 2>&1
         net_join_code=$?
@@ -125,5 +135,27 @@ elif [[ "$state" == "join" ]]; then
     fi
 
     [[ $net_join_code -gt 0 ]] && print "Error: net ads join returned error=$net_join_code" error
-    print "Success join to domain" changed
+    print "Success join host to domain" changed
+elif [[ "$state" == "leave" ]];
+then
+    parse_data
+    [[ -z $ntlm_pass ]] && print "You must set ntlm_pass=" error
+    [[ -z $ntlm_user ]] && ntlm_user="Administrator"
+    debug "Remove host from AD"
+
+    net ads leave -U $ntlm_user%$ntlm_pass 1>>$LOG 2>&1
+    net_leave_code=$?
+
+    debug "net ads leave return=$net_leave_code"
+
+    if [[ $net_leave_code -gt 0 ]];
+    then
+        # try use ntlm_dps and ntlm_fqdn
+        net ads leave -S $ntlm_dps -D $NTLM_DNF -U $ntlm_user%$ntlm_pass 1>>$LOG 2>&1
+        net_leave_code=$?
+        debug "net ads leave return=$net_leave_code"
+    fi
+
+    [[ $net_leave_code -gt 0 ]] && print "Error: net ads leave returned error=$net_leave_code" error
+    print "Success leave host from domain" changed
 fi

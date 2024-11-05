@@ -1,8 +1,8 @@
-<?
+<?php
 
 if(!isset($argv[0]) || empty($argv[0]))
 {
-	die(json_encode(['error' => 'for console only']));
+        die(json_encode(['error' => 'for console only']));
 }
 
 $address = "{{ web_site_name }}";
@@ -18,7 +18,7 @@ $_SERVER['DOCUMENT_ROOT'] = $docroot;
 
 if(!file_exists($_SERVER['DOCUMENT_ROOT'].'/bitrix/modules/main/include/prolog_before.php'))
 {
-	die(json_encode(['error' => 'Bitrix core not found']));
+        die(json_encode(['error' => 'Bitrix core not found']));
 }
 /** @noinspection PhpIncludeInspection */
 require_once($_SERVER['DOCUMENT_ROOT'].'/bitrix/modules/main/include/prolog_before.php');

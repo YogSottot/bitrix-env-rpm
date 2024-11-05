@@ -1,164 +1,154 @@
 # {{ ansible_managed }}
-# create virtual hosts for NTLM 
+# create virtual hosts for NTLM
 # site: {{ item.SiteName }}
 #
 {%- set is_require = 0 %}
-{%- if ansible_distribution == 'CentOS' and ansible_distribution_major_version == '7' %}
+{%- if ansible_distribution == 'CentOS' and ansible_distribution_major_version == '9' %}
 {%- set is_require = 1 %}
 {% endif %}
 
 <VirtualHost *:{{ ntlm_http_port }}>
+        ServerAdmin webmaster@localhost
+        ServerName {{ item.ServerName }}
+        ServerAlias *.{{ item.ServerName }}
+        DocumentRoot {{ item.DocumentRoot }}
+        KeepAlive On
+        # Possible values include: debug, info, notice, warn, error, crit, alert, emerg.
+        LogLevel warn
+        ErrorLog logs/{{ item.SiteShort }}_error_log
+        #CustomLog logs/{{ item.SiteShort }}_access_log combined
 
-    ServerAdmin webmaster@localhost
-    ServerName {{ item.ServerName }}
-    ServerAlias *.{{ item.ServerName }}
-	DocumentRoot {{ item.DocumentRoot }}
-	KeepAlive On
-
-	# Possible values include: debug, info, notice, warn, error, crit, alert, emerg.
-	LogLevel warn
-	ErrorLog logs/{{ item.SiteShort }}_error_log
-    #CustomLog logs/{{ item.SiteShort }}_access_log combined
-    #
-
-    {% if item.SiteCharset == 'windows-1251' -%}
-    # configure {{ item.SiteCharset }}
-    php_admin_value mbstring.internal_encoding cp1251
-    php_admin_value mbstring.func_overload 0
-    php_admin_value default_charset cp1251
-    {% endif %}
-
-    <Directory />
-        Options FollowSymLinks
-        AllowOverride None
-    </Directory>
-
-    <DirectoryMatch .*\.(svn|git|hg)/.*>
-    {% if is_require > 0 -%}
-        Require all denied
-    {% else -%}
-        Deny From All
-    {% endif %}
-    </DirectoryMatch>
-
-    <DirectoryMatch {{ item.DocumentRoot }}/bitrix/(cache|managed_cache|local_cache|stack_cache)>
-        AllowOverride none
-        AddType text/plain php,php3,php4,php5,php6,phtml,pl,asp,aspx,cgi,dll,exe,ico,shtm,shtml,fcg,fcgi,fpl,asmx,pht
-        php_value engine off
-    </DirectoryMatch>
-
-    <DirectoryMatch {{ item.DocumentRoot }}/(upload|bitrix/images|bitrix/tmp)>
-        AllowOverride none
-        AddType text/plain php,php3,php4,php5,php6,phtml,pl,asp,aspx,cgi,dll,exe,ico,shtm,shtml,fcg,fcgi,fpl,asmx,pht
-        php_value engine off
-    </DirectoryMatch>
-
-	<Directory {{ item.DocumentRoot }}/>
-		Options FollowSymLinks MultiViews
-		AllowOverride All
-		DirectoryIndex index.php index.html index.htm
-
-		AuthName "NTLM Authentication thingy"
-		NTLMAuth on
-		NTLMAuthHelper "/usr/bin/ntlm_auth --helper-protocol=squid-2.5-ntlmssp"
-		NTLMBasicAuthoritative on
-		AuthType NTLM
-		Require valid-user
-
-		php_admin_value session.save_path {{ item.phpSessionDir }}
-		php_admin_value upload_tmp_dir {{ item.phpUploadDir }}
-	</Directory>
-
-    <Directory {{ item.DocumentRoot }}/upload/support/not_image>
-        AllowOverride none
-        {% if is_require > 0 -%}
-            Require all denied
-        {% else -%}
-            Order allow,deny
-            Deny from all
+        {% if item.SiteCharset == 'windows-1251' -%}
+        # configure {{ item.SiteCharset }}
+        php_admin_value mbstring.internal_encoding cp1251
+        php_admin_value mbstring.func_overload 0
+        php_admin_value default_charset cp1251
         {% endif %}
-    </Directory>
 
+        <Directory />
+                Options FollowSymLinks
+                AllowOverride None
+        </Directory>
+
+        <DirectoryMatch .*\.(svn|git|hg)/.*>
+        {% if is_require > 0 -%}
+                Require all denied
+        {% else -%}
+                Deny From All
+        {% endif %}
+        </DirectoryMatch>
+
+        <DirectoryMatch {{ item.DocumentRoot }}/bitrix/(cache|managed_cache|local_cache|stack_cache)>
+                AllowOverride none
+                AddType text/plain php,php3,php4,php5,php6,phtml,pl,asp,aspx,cgi,dll,exe,ico,shtm,shtml,fcg,fcgi,fpl,asmx,pht
+                php_value engine off
+        </DirectoryMatch>
+
+        <DirectoryMatch {{ item.DocumentRoot }}/(upload|bitrix/images|bitrix/tmp)>
+                AllowOverride none
+                AddType text/plain php,php3,php4,php5,php6,phtml,pl,asp,aspx,cgi,dll,exe,ico,shtm,shtml,fcg,fcgi,fpl,asmx,pht
+                php_value engine off
+        </DirectoryMatch>
+
+        <Directory {{ item.DocumentRoot }}/>
+                Options FollowSymLinks MultiViews
+                AllowOverride All
+                DirectoryIndex index.php index.html index.htm
+                AuthName "NTLM Authentication thingy"
+                NTLMAuth on
+                NTLMAuthHelper "/usr/bin/ntlm_auth --helper-protocol=squid-2.5-ntlmssp"
+                NTLMBasicAuthoritative on
+                AuthType NTLM
+                Require valid-user
+                php_admin_value session.save_path {{ item.phpSessionDir }}
+                php_admin_value upload_tmp_dir {{ item.phpUploadDir }}
+        </Directory>
+
+        <Directory {{ item.DocumentRoot }}/upload/support/not_image>
+                AllowOverride none
+                {% if is_require > 0 -%}
+                Require all denied
+                {% else -%}
+                Order allow,deny
+                Deny from all
+                {% endif %}
+        </Directory>
 </VirtualHost>
 
 {% if item.HTTPSConf != '' -%}
 <VirtualHost *:{{ ntlm_https_port }}>
-	ServerAdmin webmaster@localhost
-    ServerName {{ item.ServerName }}
-    ServerAlias *.{{ item.ServerName }}
-	DocumentRoot {{ item.DocumentRoot }}
-	KeepAlive On
-  
-	# Possible values include: debug, info, notice, warn, error, crit, alert, emerg.
-	LogLevel warn
-	ErrorLog logs/{{ item.SiteShort }}_error_log
-  #CustomLog logs/{{ item.SiteShort }}_access_log combined
+        ServerAdmin webmaster@localhost
+        ServerName {{ item.ServerName }}
+        ServerAlias *.{{ item.ServerName }}
+        DocumentRoot {{ item.DocumentRoot }}
+        KeepAlive On
+        # Possible values include: debug, info, notice, warn, error, crit, alert, emerg.
+        LogLevel warn
+        ErrorLog logs/{{ item.SiteShort }}_error_log
+        #CustomLog logs/{{ item.SiteShort }}_access_log combined
 
-	SSLEngine on
-	SSLProtocol all -SSLv2
-	SSLCipherSuite ALL:!ADH:!EXPORT:!SSLv2:RC4+RSA:+HIGH:+MEDIUM:+LOW
-    # CERTIFICATE ANSIBLE MANAGED BLOCK
-	SSLCertificateFile {{ item.HTTPSCert }}
-	SSLCertificateKeyFile {{ item.HTTPSPriv }}
-    # CERTIFICATE ANSIBLE MANAGED BLOCK
+        SSLEngine on
+        SSLProtocol all -SSLv2
+        SSLCipherSuite ALL:!ADH:!EXPORT:!SSLv2:RC4+RSA:+HIGH:+MEDIUM:+LOW
+        # CERTIFICATE ANSIBLE MANAGED BLOCK
+        SSLCertificateFile {{ item.HTTPSCert }}
+        SSLCertificateKeyFile {{ item.HTTPSPriv }}
+        # CERTIFICATE ANSIBLE MANAGED BLOCK
 
-    {% if item.SiteCharset == 'windows-1251' -%}
-    # configure {{ item.SiteCharset }}
-    php_admin_value mbstring.internal_encoding cp1251
-    php_admin_value default_charset cp1251
-    {% endif %}
-
-
-    <Directory />
-        Options FollowSymLinks
-        AllowOverride None
-    </Directory>
-
-    <DirectoryMatch .*\.(svn|git|hg)/.*>
-    {% if is_require > 0 -%}
-        Require all denied
-    {% else -%}
-        Deny From All
-    {% endif %}
-    </DirectoryMatch>
-
-    <DirectoryMatch {{ item.DocumentRoot }}/bitrix/(cache|managed_cache|local_cache|stack_cache)>
-        AllowOverride none
-        AddType text/plain php,php3,php4,php5,php6,phtml,pl,asp,aspx,cgi,dll,exe,ico,shtm,shtml,fcg,fcgi,fpl,asmx,pht
-        php_value engine off
-    </DirectoryMatch>
-
-    <DirectoryMatch {{ item.DocumentRoot }}/(upload|bitrix/images|bitrix/tmp)>
-        AllowOverride none
-        AddType text/plain php,php3,php4,php5,php6,phtml,pl,asp,aspx,cgi,dll,exe,ico,shtm,shtml,fcg,fcgi,fpl,asmx,pht
-        php_value engine off
-    </DirectoryMatch>
-
-	<Directory {{ item.DocumentRoot }}/>
-		Options FollowSymLinks MultiViews
-		AllowOverride All
-		DirectoryIndex index.php index.html index.htm
-
-		AuthName "NTLM Authentication thingy"
-		NTLMAuth on
-		NTLMAuthHelper "/usr/bin/ntlm_auth --helper-protocol=squid-2.5-ntlmssp"
-		NTLMBasicAuthoritative on
-		AuthType NTLM
-		Require valid-user
-
-		php_admin_value session.save_path {{ item.phpSessionDir }}
-		php_admin_value upload_tmp_dir {{ item.phpUploadDir }}
-	</Directory>
-
-    <Directory {{ item.DocumentRoot }}/upload/support/not_image>
-        AllowOverride none
-        {% if is_require > 0 -%}
-            Require all denied
-        {% else -%}
-            Order allow,deny
-            Deny from all
+        {% if item.SiteCharset == 'windows-1251' -%}
+        # configure {{ item.SiteCharset }}
+        php_admin_value mbstring.internal_encoding cp1251
+        php_admin_value default_charset cp1251
         {% endif %}
-    </Directory>
+
+        <Directory />
+                Options FollowSymLinks
+                AllowOverride None
+        </Directory>
+
+        <DirectoryMatch .*\.(svn|git|hg)/.*>
+                {% if is_require > 0 -%}
+                Require all denied
+                {% else -%}
+                Deny From All
+                {% endif %}
+        </DirectoryMatch>
+
+        <DirectoryMatch {{ item.DocumentRoot }}/bitrix/(cache|managed_cache|local_cache|stack_cache)>
+                AllowOverride none
+                AddType text/plain php,php3,php4,php5,php6,phtml,pl,asp,aspx,cgi,dll,exe,ico,shtm,shtml,fcg,fcgi,fpl,asmx,pht
+                php_value engine off
+        </DirectoryMatch>
+
+        <DirectoryMatch {{ item.DocumentRoot }}/(upload|bitrix/images|bitrix/tmp)>
+                AllowOverride none
+                AddType text/plain php,php3,php4,php5,php6,phtml,pl,asp,aspx,cgi,dll,exe,ico,shtm,shtml,fcg,fcgi,fpl,asmx,pht
+                php_value engine off
+        </DirectoryMatch>
+
+        <Directory {{ item.DocumentRoot }}/>
+                Options FollowSymLinks MultiViews
+                AllowOverride All
+                DirectoryIndex index.php index.html index.htm
+                AuthName "NTLM Authentication thingy"
+                NTLMAuth on
+                NTLMAuthHelper "/usr/bin/ntlm_auth --helper-protocol=squid-2.5-ntlmssp"
+                NTLMBasicAuthoritative on
+                AuthType NTLM
+                Require valid-user
+                php_admin_value session.save_path {{ item.phpSessionDir }}
+                php_admin_value upload_tmp_dir {{ item.phpUploadDir }}
+        </Directory>
+
+        <Directory {{ item.DocumentRoot }}/upload/support/not_image>
+                AllowOverride none
+                {% if is_require > 0 -%}
+                Require all denied
+                {% else -%}
+                Order allow,deny
+                Deny from all
+                {% endif %}
+        </Directory>
 </VirtualHost>
 {%- endif %}
 

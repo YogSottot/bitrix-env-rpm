@@ -1,8 +1,34 @@
 ---
 - name: disable searchd service
-  service: name=searchd state=stopped enabled=no
+  service:
+    name: searchd
+    state: stopped
+    enabled: no
+  tags: sphinx
+
+- name: remove all sphinx directories
+  file:
+    path: "{{ item }}"
+    state: absent
+  with_items:
+    - "{{ sphinx_base_dir }}"
+    - "{{ sphinx_log_dir }}"
+    - "{{ sphinx_run_dir }}"
+    - "{{ sphinx_lib_dir }}"
+  tags: sphinx
+
+# CentOS Stream 9
+- name: remove software
+  dnf:
+    name: bx-sphinx
+    state: absent
+  tags: packages
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
 
 - name: update inventory file
   delegate_to: 127.0.0.1
-  bx_conf: hostname={{ inventory_hostname }} state=absent group=sphinx
+  bx_conf:
+    hostname: "{{ inventory_hostname }}"
+    state: absent
+    group: sphinx
   tags: ansible

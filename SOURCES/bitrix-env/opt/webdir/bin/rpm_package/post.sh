@@ -2286,8 +2286,45 @@ disable_percona_telemetry() {
     PERCONA_MICRO_VERSION=$(rpm -qa --queryformat '%{version}' percona-server-server | head -1 | awk -F'.' '{printf "%d", $3}')
     if [[ ${PERCONA_MICRO_VERSION} -ge 37 ]];
     then
+        # stop and disable service
         systemctl stop percona-telemetry-agent.service
         systemctl disable percona-telemetry-agent.service > /dev/null 2>&1
+        # remove log rotation template, restart service
+        rm -f /etc/logrotate.d/percona-telemetry-agent
+        systemctl restart logrotate.service > /dev/null 2>&1
+        # clear logs dir
+        rm -rf /var/log/percona
+    fi
+#
+}
+
+httpd_conf_if_no_default_site_exist() {
+#
+    if [[ ! -d /home/bitrix/www ]];
+    then
+	HTTPD_CONF_FILE=/etc/httpd/conf/httpd.conf
+	sed -i "s/.*DocumentRoot.*/DocumentRoot \'\/var\/www\/html\'/" ${HTTPD_CONF_FILE}
+	sed -i "s/.*Listen.*//" ${HTTPD_CONF_FILE}
+	echo "Listen 127.0.0.1:8888" >> ${HTTPD_CONF_FILE}
+	log_to_file "No default site found, prepare httpd configuration on ${HTTPD_CONF_FILE}"
+    fi
+#
+}
+
+install_community_rabbitmq_ansible_collection_on_upgrade() {
+#
+    if [[ ! -d /root/.ansible/collections/ansible_collections/community/rabbitmq ]];
+    then
+	COMMUNITY_RABBITMQ_ANSIBLE_GALAXY_COLLECTION_URL=https://github.com/ansible-collections/community.rabbitmq/archive/refs/tags/
+	COMMUNITY_RABBITMQ_ANSIBLE_GALAXY_COLLECTION_VERSION=1.3.0
+	mkdir -p /root/.ansible/collections/ > /dev/null 2>&1
+	cd /root  > /dev/null 2>&1
+	wget ${COMMUNITY_RABBITMQ_ANSIBLE_GALAXY_COLLECTION_URL}${COMMUNITY_RABBITMQ_ANSIBLE_GALAXY_COLLECTION_VERSION}.tar.gz  > /dev/null 2>&1
+	tar xvf ${COMMUNITY_RABBITMQ_ANSIBLE_GALAXY_COLLECTION_VERSION}.tar.gz  > /dev/null 2>&1
+	ansible-galaxy collection install community.rabbitmq-${COMMUNITY_RABBITMQ_ANSIBLE_GALAXY_COLLECTION_VERSION} > /dev/null 2>&1
+	rm -f ${COMMUNITY_RABBITMQ_ANSIBLE_GALAXY_COLLECTION_VERSION}.tar.gz  > /dev/null 2>&1
+	rm -rf community.rabbitmq-${COMMUNITY_RABBITMQ_ANSIBLE_GALAXY_COLLECTION_VERSION} > /dev/null 2>&1
+	log_to_file "Install ansible collection community.rabbitmq"
     fi
 #
 }
@@ -2579,6 +2616,12 @@ upgrade() {
 
         # disable percona telemetry agent by default
         disable_percona_telemetry
+
+	# modify httpd config if default site removed
+	httpd_conf_if_no_default_site_exist
+
+	# if no community.rabbitmq ansible collection exist install it
+	install_community_rabbitmq_ansible_collection_on_upgrade
     fi
 
     # configure crontab

@@ -18,7 +18,7 @@ manage_composite() {
     service_site_exe=
     service_site_status=
 
-    #default:sitemanager0:kernel:finished:srv01.ksh.bx:/home/bitrix/www:utf-8:Y:N:N:N:
+    #default:sitemanager:kernel:finished:srv01.ksh.bx:/home/bitrix/www:utf-8:Y:N:N:N:
     site_composite=$(echo "$POOL_SITES_LIST" | grep "^$site_name:" | awk -F':' '{print $10}')
     site_nginx=$(echo "$POOL_SITES_LIST" | grep "^$site_name:" | awk -F':' '{print $11}')
     [[ $DEBUG -gt 0 ]] && echo "site_name=$site_name composite=$site_composite nginx_settings=$site_nginx"

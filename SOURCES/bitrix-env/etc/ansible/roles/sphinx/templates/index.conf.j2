@@ -43,8 +43,8 @@ index {{ item.SiteCsync2 }}
 	# Depends on settings of your site
 	# For UTF use utf-8 else sdcs
 	{% if item.SiteCharset == "utf-8" %}
-  charset_type 		= utf-8
-  {% else %}
-  charset_type    = sbcs
-  {% endif %}
+        charset_type 		= utf-8
+	{% else %}
+	charset_type		= sbcs
+	{% endif %}
 }

@@ -1,6 +1,7 @@
 #!/usr/bin/bash
 #
 # manage sites and site's options
+#
 #set -x
 PROGNAME=$(basename $0)
 PROGPATH=$(dirname $0)
@@ -70,6 +71,7 @@ _menu_sites() {
     _menu_sites_03=" $SM0123"
     _menu_sites_04=" $SM0124"
     _menu_sites_05=" $SM0125"
+    _menu_sites_07=" $SM0127"
     _menu_sites_09=" $SM0129"
     _menu_sites_11=" $SM0131"
 
@@ -83,21 +85,25 @@ _menu_sites() {
         get_task_by_type site POOL_SITE_TASK_LOCK POOL_SITE_TASK_INFO
         print_task_by_type site "$POOL_SITE_TASK_LOCK" "$POOL_SITE_TASK_INFO"
 
-        if [[ $DEBUG -gt 0 ]]; then
+        if [[ $DEBUG -gt 0 ]];
+        then
             echo "POOL_SITE_TASK_LOCK=$POOL_SITE_TASK_LOCK"
             echo "POOL_SITE_TASK_INFO=$POOL_SITE_TASK_INFO"
         fi
 
-        if [[ $POOL_SITE_TASK_LOCK -eq 1 ]]; then
+        if [[ $POOL_SITE_TASK_LOCK -eq 1 ]];
+        then
             menu_list="
 $_menu_sites_00"
         else
             # define menu points
-            if [[ $POOL_SITES_KERNEL_COUNT -eq 0 ]]; then
+            if [[ $POOL_SITES_KERNEL_COUNT -eq 0 ]];
+            then
                 menu_list="$_menu_sites_01\n\t\t $_menu_sites_00"
             else
-                menu_list="$_menu_sites_01\n\t\t$_menu_sites_02\n\t\t$_menu_sites_03\n\t\t$_menu_sites_04\n\t\t$_menu_sites_05\n\t\t$_menu_sites_09"
-                if [[ $POOL_SITES_ERRORS_COUNT -gt 0 ]]; then
+                menu_list="$_menu_sites_01\n\t\t$_menu_sites_02\n\t\t$_menu_sites_03\n\t\t$_menu_sites_04\n\t\t$_menu_sites_05\n\t\t$_menu_sites_09\n\t\t$_menu_sites_07"
+                if [[ $POOL_SITES_ERRORS_COUNT -gt 0 ]];
+                then
                     menu_list=$menu_list"\n\t\t$_menu_sites_11\n\t\t $_menu_sites_00"
                 else
                     menu_list=$menu_list"\n\t\t $_menu_sites_00"
@@ -129,7 +135,8 @@ $_menu_sites_00"
             "4") _email_site ;;
             "5") _http_site ;;
             "6") _composite_site ;;
-            "7") print_pool_sites_error ;;
+            "7") _ntlm_menu ;;
+            "8") print_pool_sites_error ;;
             "0") exit ;;
             *) error_pick ;;
         esac

@@ -1,12 +1,11 @@
 ---
-######## create cron task for site
-####
+# create cron task for site
 - name: create cron task for site
-  template: src=cron-bx_site.j2
-    dest=/etc/cron.d/bx_{{ web_site_db }}
-    owner={{ site_root }} group={{ site_root }} mode=0644
+  template:
+    src: cron-bx_site.j2
+    dest: "/etc/cron.d/bx_{{ web_site_db }}"
+    owner: "{{ site_root }}"
+    group: "{{ site_root }}"
+    mode: 0644
   tags: web_config
   when: "inventory_hostname == cluster_web_server"
-####
-######## /create cron task for site
-

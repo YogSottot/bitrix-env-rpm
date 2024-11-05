@@ -1,17 +1,18 @@
 --- 
-######## restart nginx and apache services
+# restart nginx and apache services
 - name: debug
-  debug: msg="new_web_server={{ new_web_server }} deleted_web_server={{ deleted_web_server }} manage_web={{ manage_web }}"
+  debug:
+    msg: "new_web_server={{ new_web_server }} deleted_web_server={{ deleted_web_server }} manage_web={{ manage_web }}"
   when: "inventory_hostname == cluster_web_server"
 
 - name: restart nginx service
   service:
-    name=nginx
-    state=restarted
+    name: nginx
+    state: restarted
   when: "'bitrix-web' in group_names"
 
 - name: restart apache service
   service:
-    name=httpd
-    state=restarted
+    name: httpd
+    state: restarted
   when: "'bitrix-web' in group_names"

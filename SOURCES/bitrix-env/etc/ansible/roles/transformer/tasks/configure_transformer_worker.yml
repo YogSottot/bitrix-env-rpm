@@ -1,22 +1,22 @@
 ---
-- include: execute_php_script.yml
+- include_tasks: execute_php_script.yml
   vars:
     php_script: transformers_install.php
     php_server: "{{ cluster_web_server }}"
 
-- name: Create runing scripts
+- name: create runing scripts
   template:
     src: init.d-transformer-workerd.j2
     dest: /usr/local/sbin/transformer-workerd
     mode: 0755
 
-- name: Create service
+- name: create transformer service
   template:
     src: transformer.service.j2
     dest: /etc/systemd/system/transformer.service
 
 # /var/run/transformer
-- name: Create directories
+- name: create directories
   file:
     path: "{{ item }}"
     state: directory
@@ -26,29 +26,29 @@
     - "/var/run/transformer"
     - "/var/log/transformer"
 
-- name: Create tmpfiles.d config
+- name: create tmpfiles.d config
   copy:
     src: transformer.conf
     dest: /etc/tmpfiles.d/transformer.conf
 
-- name: Re-run systemd-tmpfiles
+- name: re-run systemd-tmpfiles
   shell: systemd-tmpfiles --create /etc/tmpfiles.d/transformer.conf
 
-- name: Reload systemctl-daemon
+- name: reload systemctl-daemon
   shell: systemctl daemon-reload
 
-- name: Start service
+- name: start transformer service
   service:
     name: transformer.service
     state: started
     enabled: yes
 
-- name: Create crontab file
+- name: create crontab file
   file:
     path: "/etc/cron.d/bx_{{ site_db }}"
     state: touch
 
-- name: Configure Cleaner
+- name: configure cleaner
   lineinfile:
     path: "/etc/cron.d/bx_{{ site_db }}"
     line: "10 * * * * bitrix /opt/webdir/bin/bx_cleanup.sh {{ web_site_name }}"
@@ -62,7 +62,7 @@
 - name: add server to transformer group
   delegate_to: "{{ cluster_web_server }}"
   bx_conf:
-    hostname: "{{ inventory_hostname  }}"
+    hostname: "{{ inventory_hostname }}"
     state: update
     group: transformer
 

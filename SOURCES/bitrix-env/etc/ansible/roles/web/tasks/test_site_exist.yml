@@ -1,33 +1,32 @@
 ---
-######## testing input options - to avoid the situation with overwriting existing data
-######## 1. apache and nginx config
-######## 2. directories:  document root, sessions and uploads
-####
+# testing input options - to avoid the situation with overwriting existing data
+# 1. apache and nginx config
+# 2. directories:  document root, sessions and uploads
 - name: check that site does not exist in configs
   delegate_to: "{{ cluster_web_server }}"
   bx_test_site_in_config:
-    search=server_name\s+{{ web_site_name }}
+    search: server_name\s+"{{ web_site_name }}"
   register: site_config_status
   tags: configure_site
 
 - name: exit because apache or nginx config exists with site name
-  fail: msg="Sitename {{ web_site_name }} exists in in the system"
+  fail:
+    msg: "Sitename {{ web_site_name }} exists in in the system"
   when: "site_config_status.found == 1"
   tags: configure_site
 
 - name: check that site does not exists in directories
   delegate_to: "{{ cluster_web_server }}"
   bx_test_site_in_directories:
-    base={{ site_extentend_base }}
-    phpsess={{ site_extentend_php_sess }}
-    upload={{ site_extentend_upload }}
-    sitedir={{ web_site_dir }}
+    base: "{{ site_extentend_base }}"
+    phpsess: "{{ site_extentend_php_sess }}"
+    upload: "{{ site_extentend_upload }}"
+    sitedir: "{{ web_site_dir }}"
   register: site_dirs_status
   tags: configure_site
 
 - name: exit because site directories exists  in the system
-  fail: msg="Directories for {{ web_site_name }} exists in in the system"
+  fail:
+    msg: "Directories for {{ web_site_name }} exists in in the system"
   when: "site_dirs_status.found == 1"
   tags: configure_site
-####
-######## /testing input options - to avoid the situation with overwriting existing data

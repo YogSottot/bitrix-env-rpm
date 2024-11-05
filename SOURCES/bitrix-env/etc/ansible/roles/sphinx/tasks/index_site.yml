@@ -4,40 +4,31 @@
 # manage_node
 # manage_site
 
-######## create, upload variables that used in playbook
-####
+# create, upload variables that used in playbook
 - name: gathering facts about installed sites
   delegate_to: "{{ cluster_web_server }}"
-  bx_facts: name=status password=0 site={{ manage_site }}
+  bx_facts:
+    name: status
+    password: 0
+    site: "{{ manage_site }}"
   tags: sites_facts
 
 - name: create variable bx_sites_info
   set_fact:
     bx_sites_info: "{{ hostvars[inventory_hostname]['bx_sites'] }}"
   tags: sites_facts
-####
-######## /create, upload variables that used in playbook
 
-####### configure sphinx service
-####
+# configure sphinx service
 - include_tasks: install.yml
   when: "inventory_hostname == manage_node and manage_sphinx == 'add_site'"
-####
-######## /configure sphinx service
 
-######## create index for sites
-####
+# create index for sites
 - include_tasks: index.yml
   when: "inventory_hostname == manage_node and manage_sphinx == 'add_site'"
-#####
-######### /create index for sites
 
-######### create or delete sphinx instance in the site
-#####
+# create or delete sphinx instance in the site
 - include_tasks: sites-cache_directory-execute.yml
   vars:
     php_script: "{{ manage_sphinx }}_index_in_web.php"
     php_server: "{{ cluster_web_server }}"
   when: "inventory_hostname == manage_node"
-#####
-######### /create or delete sphinx instance in the site

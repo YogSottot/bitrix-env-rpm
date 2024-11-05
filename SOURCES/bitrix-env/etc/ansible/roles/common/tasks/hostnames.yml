@@ -1,13 +1,21 @@
 ---
 # configure hostname on localhost
 # hostname var
-- name: set hostname on Centos6
+- name: set hostname on CentOS 6
   shell: hostname {{ hostname }}; echo {{ hostname }} > /etc/hostname
   tags: hostname
   when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "6"
 
+- name: set sysnetwork on host
+  lineinfile:
+    dest=/etc/sysconfig/network
+    regexp="^\s*HOSTNAME="
+    line="HOSTNAME={{ hostname }}"
+  tags: hostname
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "6"
+
 # CentOS 7
-- name: set hostname on Centos7
+- name: set hostname on CentOS 7
   shell: hostnamectl set-hostname {{ hostname }}
   tags: hostname
   when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
@@ -17,13 +25,6 @@
   shell: hostnamectl set-hostname {{ hostname }}
   tags: hostname
   when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
-
-- name: set sysnetwork on host
-  lineinfile:
-    dest=/etc/sysconfig/network
-    regexp="^\s*HOSTNAME="
-    line="HOSTNAME={{ hostname }}"
-  tags: hostname
 
 # configure hosts file
 - name: remove temporary directory

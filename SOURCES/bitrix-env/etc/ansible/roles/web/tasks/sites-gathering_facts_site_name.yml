@@ -3,9 +3,9 @@
 # save info to: bx_sites_info
 - name: gathering facts about installed sites
   bx_facts:
-    name=list
-    password=0
-    site="{{ site_name }}"
+    name: list
+    password: 0
+    site: "{{ site_name }}"
   delegate_to: "{{ cluster_web_server }}"
   tags: gathering_facts
 

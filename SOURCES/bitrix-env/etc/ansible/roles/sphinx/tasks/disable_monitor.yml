@@ -1,7 +1,7 @@
 ---
 - name: munin - disable plugins
-  file: 
-    dest: /etc/munin/plugins/process_status_searchd 
+  file:
+    dest: /etc/munin/plugins/process_status_searchd
     state: absent
   tags: monin
   with_items:

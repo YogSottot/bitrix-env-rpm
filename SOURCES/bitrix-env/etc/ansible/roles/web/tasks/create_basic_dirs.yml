@@ -1,10 +1,9 @@
 ---
-######## create site directories on all web servers in the pool
-######## 1. php_sessions dir: /tmp/php_sessions/ext_www/<site_name>
-######## 2. php_upload dir:   /tmp/php_upload/ext_www/<site_name>
-######## 3. document root:    /home/bitrix/ext_www/<site_name> (default, may replaced by input opt)
-######## 4. upload basic files to document root
-####
+# create site directories on all web servers in the pool
+# 1. php_sessions dir: /tmp/php_sessions/ext_www/<site_name>
+# 2. php_upload dir:   /tmp/php_upload/ext_www/<site_name>
+# 3. document root:    /home/bitrix/ext_www/<site_name> (default, may replaced by input opt)
+# 4. upload basic files to document root
 - name: create common site directories
   file:
     path: "{{ item }}"
@@ -90,5 +89,3 @@
   with_items:
     - "php_interface/dbconn.php.crm"
     - ".settings.php.crm"
-####
-######## /create site directories on all web servers in the pool

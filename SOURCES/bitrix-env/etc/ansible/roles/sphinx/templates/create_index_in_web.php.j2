@@ -8,30 +8,31 @@ define("BX_NO_ACCELERATOR_RESET", true);
 require($_SERVER["DOCUMENT_ROOT"]."/bitrix/modules/main/include/prolog_before.php");
 
 // if $oReIndex == Y than start reindex operation for site
-$oReIndex = {{ manage_reindex|default('N') }};
+$oReIndex = '{{ manage_reindex|default('N') }}';
 
 if(!CModule::IncludeModule("search"))
 {
-  echo "Not found serach module for {{ item.SiteName }}";
-  return 1;
+	echo "Not found serach module for {{ item.SiteName }}";
+	return 1;
 }
-
 
 // update options
 COption::SetOptionString("search", "full_text_engine", "sphinx");
 COption::SetOptionString("search", "sphinx_connection", "{{ inventory_hostname }}:{{ sphinx_mysqlproto_listen }}");
 COption::SetOptionString("search", "sphinx_index_name", "{{ item.SiteCsync2 }}");
-echo "Sphinx search on on site";
+echo "Sphinx search enabled on site";
 
 if($oReIndex == "Y")
 {
-	@ini_set("max_execution_time", 0);
-	@set_time_limit(0);
+        @ini_set("max_execution_time", 0);
+        @set_time_limit(0);
 
-	$res = CSearch::ReIndexAll(true, 0, false);
+        $res = CSearch::ReIndexAll(true, 0, false);
 
-	if(intval($res) > 0)
-		echo "Index created";
+        if(intval($res) > 0)
+                echo "Index created";
 }
 
 return 0;
+
+?>

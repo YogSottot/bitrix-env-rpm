@@ -29,4 +29,3 @@
     group: bitrix
     recurse: yes
   when: not index_stat.stat.exists
-

@@ -40,21 +40,19 @@ sub bx_site_type {
     my $site_root = $self->site_dir;
 
     my $logOutput = Output->new(
-        error   => 0,
+        error => 0,
         logfile => $self->logfile,
-        debug   => $self->debug
+        debug => $self->debug
     );
-
 
     my $site_conf = $self->site_conf;
 
-    # LINK - status of the install
+    # link site type: status of the install
     if ( -l $site_kernel_dir ) {
-
         # link file can contain own index.php => not found file, not found data
         my $basic_kernel_dir = readlink($site_kernel_dir);
-        my $kernel_dir       = dirname($basic_kernel_dir);
- 
+        my $kernel_dir = dirname($basic_kernel_dir);
+
         $bx_options->{'SiteInstall'} = 'link';
         $bx_options->{'SiteKernelDir'} = $kernel_dir;
         $bx_options->{'SiteStatus'} = 'not_installed';
@@ -65,7 +63,7 @@ sub bx_site_type {
         }
     }
     else {
-        # if folder contains bitrixsetup => suspect that finished installation doesn't contain it
+        # from 9.x not actual -> if folder contains bitrixsetup => suspect that finished installation doesn't contain it
         $bx_options->{'SiteInstall'} = 'kernel';
         if ( $site_conf !~ /^found$/ ) {
             $bx_options->{'SiteInstall'} = 'ext_kernel';
@@ -78,23 +76,52 @@ sub bx_site_type {
 #            $bx_options->{'SiteStatus'} = 'finished';
 #        }
 
-	my $bx_index_file = $site_root.'/index.php';
-	my $bx_index_content;
-	open(my $fh, '<', $bx_index_file) or die "cannot open file $bx_index_file";
-	{
-	    local $/;
-	    $bx_index_content = <$fh>;
-	}
-	close($fh);
-	my $bx_index_key = grep /setup_text/, $bx_index_content;
-	if($bx_index_key eq "0")
-	{
-	    $bx_options->{'SiteStatus'} = 'finished';
-	}
-	else
-	{
-	    $bx_options->{'SiteStatus'} = 'not_installed';
-	}
+        # kernel site type:
+        # - if index.php exist and contains setup_text - status not_installed, default index template file with text
+        # - if index.php exist and not contains setup_text - status finished, index file replace with distro or site file
+        if ( $site_conf =~ /^found$/ ) {
+            my $bx_index_file = $site_root.'/index.php';
+            my $bx_index_content;
+            open(my $fh, '<', $bx_index_file) or die "cannot open file $bx_index_file";
+            {
+                local $/;
+                $bx_index_content = <$fh>;
+            }
+            close($fh);
+            my $bx_index_key = grep /setup_text/, $bx_index_content;
+            if($bx_index_key eq "0")
+            {
+                $bx_options->{'SiteStatus'} = 'finished';
+            }
+            else
+            {
+                $bx_options->{'SiteStatus'} = 'not_installed';
+            }
+        }
+
+        # ext_kernel site type:
+        # - if index.php exist and contains setup_text - status not_installed, default index template file with text
+        # - if index.php not exist - status finished (ext_kernel has not any public part on httpd and nginx, index.php no needed)
+        if ( $site_conf !~ /^found$/ ) {
+            my $bx_index_file = $site_root.'/index.php';
+            if ( -f $bx_index_file ) {
+                my $bx_index_content;
+                open(my $fh, '<', $bx_index_file) or die "cannot open file $bx_index_file";
+                {
+                    local $/;
+                    $bx_index_content = <$fh>;
+                }
+                close($fh);
+                my $bx_index_key = grep /setup_text/, $bx_index_content;
+                if($bx_index_key eq "1")
+                {
+                    $bx_options->{'SiteStatus'} = 'not_installed';
+                }
+            }
+            if ( ! -f $bx_index_file ) {
+                $bx_options->{'SiteStatus'} = 'finished';
+            }
+        }
     }
 }
 
@@ -125,7 +152,7 @@ sub bx_test_mysql_opts {
         $logOutput->log_data(
             "$message_p: not found some mandatory options in config file."
         );
-        
+
         $logOutput->log_data("$message_p: $test_options");
         $bx_options->{'error'} = 3;
         $bx_options->{'message'} =
@@ -190,7 +217,7 @@ sub bx_test_mysql_opts {
 #                    'windows-1251';
 #                }
 #            elsif ( $create_db_str =~ /\s+utf8\s+/ ) {
-	    if ( $create_db_str =~ /\s+utf8\s+/ ) {
+            if ( $create_db_str =~ /\s+utf8\s+/ ) {
                 $bx_options->{'SiteCharset'} = 'utf-8';
             }
             else {
@@ -248,9 +275,9 @@ sub bx_settings {
     my $cp_cmd = qq(cp /opt/webdir/lib/settings2json.php $rand_file);
     system ($cp_cmd) == 0
         or die "Cannot copy temporary file to $rand_file";
-    
+
     my $cmd = qq(cd $site_root && php $rand_name);
-    open( my $ch, "$cmd |"  ) 
+    open( my $ch, "$cmd |"  )
         or bx_error($rand_file, "Cannot run temporary file in $site_root");
 
     my $cmd_out;
@@ -383,10 +410,10 @@ sub bx_install_options {
 
             if ( !-f $settings_config ) {
                 my $msg = "$message_p: There are no config files: "
-                  . $self->file_dbconn 
+                  . $self->file_dbconn
                   . ", "
                   . $self->file_settings;
-  
+
                 $bx_options->{'error'} = 3;
                 $bx_options->{'message'} = $msg;
                 $logOutput->log_data( $msg );
@@ -411,7 +438,7 @@ sub bx_install_options {
 
             if ( $bx_options->{DBHost} eq "" ||
             $bx_options->{DBLogin} eq "" ||
-            $bx_options->{DBPassword} eq "" || 
+            $bx_options->{DBPassword} eq "" ||
             $bx_options->{DBName} eq ""){
                 $self->bx_settings($settings_config, $bx_options);
             }
@@ -471,7 +498,7 @@ sub bx_modules_options {
     }
 
     # upload directory
-    my $upload_dir_select = qq(select VALUE from b_option 
+    my $upload_dir_select = qq(select VALUE from b_option
     where MODULE_ID="main" and NAME="upload_dir");
 
     # test if b_options exists on site

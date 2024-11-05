@@ -1,9 +1,13 @@
 ---
-# restart memcached service
+# restart services
 - name: restart searchd
-  service: name=searchd state=restarted
+  service:
+    name: searchd
+    state: restarted
   tags: service
 
 - name: restart munin-node
-  service: name=munin-node state=restarted
+  service:
+    name: munin-node
+    state: restarted
   tags: service

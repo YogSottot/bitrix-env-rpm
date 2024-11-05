@@ -9,12 +9,11 @@
 # Short-Description: starts transformer workers
 # Description:       starts transformer workers
 ### END INIT INFO
+#
 PROGRAM_DIR={{ site_dir }}/bitrix/modules/transformercontroller/tools
 PROGRAM_NAME=sys_workerd.php
 CHILDREN=30
-
 LOG_DIR=/var/log/transformer
-
 PID_DIR=/var/run/transformer
 PID_FILE=/var/run/transformer/workerd.pid
 
@@ -23,20 +22,18 @@ PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 # Source function library.
 . /etc/rc.d/init.d/functions
 
-start(){
+start() {
     status -p $PID_FILE && exit $?
 
     echo -n $"Starting $PROGRAM_NAME: "
 
-    /usr/bin/php -f $PROGRAM_DIR/$PROGRAM_NAME $CHILDREN \
-        >> $LOG_DIR/workerd.log 2>&1 & 
+    /usr/bin/php -f $PROGRAM_DIR/$PROGRAM_NAME $CHILDREN >> $LOG_DIR/workerd.log 2>&1 &
     echo $! > $PID_FILE
-
 }
 
 stop() {
     status -p $PID_FILE || exit $?
-    
+
     echo -n $"Stop $PROGRAM_NAME: "
 
     killproc -p $PID_FILE
@@ -52,9 +49,8 @@ case "$1" in
   "stop") stop ;;
   "restart") restart ;;
   *)
-  echo "Usage: $0 {start|stop|restart}"
-  exit 1
-  ;;
+    echo "Usage: $0 {start|stop|restart}"
+    exit 1 ;;
 esac
 
 exit 0

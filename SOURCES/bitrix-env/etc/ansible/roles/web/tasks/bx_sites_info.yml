@@ -1,10 +1,7 @@
 ---
-#  fill up bx_sites_info variable for cluster cases (create common csync files)
-#  ONLY usage in create/delete site tasks
-#
-
-######## load variables from groups config file
-####
+# fill up bx_sites_info variable for cluster cases (create common csync files)
+# ONLY usage in create/delete site tasks
+# load variables from groups config file
 - name: set cluster mark to disabled state
   set_fact:
     is_cluster: "disable"
@@ -22,9 +19,9 @@
 - name: gathering facts about installed sites
   delegate_to: "{{ cluster_web_server }}"
   bx_facts:
-    name=list
-    password=0
-    status=finished
+    name: list
+    password: 0
+    status: finished
   tags: sites_facts
   when: "is_cluster == 'enable'"
 

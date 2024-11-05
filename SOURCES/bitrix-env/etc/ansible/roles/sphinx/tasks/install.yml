@@ -1,16 +1,32 @@
 ---
 # install searchd and perform base configuration
+
+# CentOS 7
 - name: install software
-  yum: pkg=sphinx state=latest
+  yum:
+    pkg: sphinx
+    state: latest
   tags: packages
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
+
+# CentOS Stream 9
+- name: install software
+  dnf:
+    name: bx-sphinx
+    state: latest
+  tags: packages
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
 
 - name: gathering facts
   bx_vat:
 
 - name: create config directories
-  file: path={{ item }}
-    state=directory mode=0755
-    owner=root group=root
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: 0755
+    owner: root
+    group: root
   with_items:
     - "{{ sphinx_base_dir }}"
     - "{{ sphinx_bx_dir }}"
@@ -19,10 +35,12 @@
   tags: sphinx
 
 - name: install dictionaries
-  copy: src=dicts/{{ item }}
-    dest={{ sphinx_dct_dir }}/{{ item }}
-    mode=0644
-    owner=root group=root
+  copy:
+    src: "dicts/{{ item }}"
+    dest: "{{ sphinx_dct_dir }}/{{ item }}"
+    mode: 0644
+    owner: root
+    group: root
   with_items:
     - de.pak
     - en.pak
@@ -30,17 +48,25 @@
   tags: sphinx
 
 - name: create main config
-  template: src=sphinx.conf.j2
-    dest={{ sphinx_base_dir }}/sphinx.conf
-    mode=0644
-    owner=root group=root
+  template:
+    src: sphinx.conf.j2
+    dest: "{{ sphinx_base_dir }}/sphinx.conf"
+    mode: 0644
+    owner: root
+    group: root
   tags: sphinx
 
 - name: enable searchd service
-  service: name=searchd state=started enabled=yes
+  service:
+    name: searchd
+    state: started
+    enabled: yes
   tags: sphinx
 
 - name: update inventory file
   delegate_to: 127.0.0.1
-  bx_conf: hostname={{ inventory_hostname }} state=update group=sphinx
+  bx_conf:
+    hostname: "{{ inventory_hostname }}"
+    state: update
+    group: sphinx
   tags: ansible

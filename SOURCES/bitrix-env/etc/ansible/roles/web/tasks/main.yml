@@ -2,7 +2,7 @@
 - include_tasks: /etc/ansible/inc_vars.yml
 
 - name: additional gathering facts
-  bx_vat: 
+  bx_vat:
 
 # manage sites
 - include_tasks: create_link.yml
@@ -63,6 +63,9 @@
 - include_tasks: create_ntlm.yml
   when: manage_web == 'ntlm_on' and inventory_hostname == cluster_web_server
 
+- include_tasks: delete_ntlm.yml
+  when: manage_web == 'ntlm_off' and inventory_hostname == cluster_web_server
+
 - include_tasks: restart_web.yml
   when: manage_web == 'restart_web'
 
@@ -77,6 +80,6 @@
 
 - name: delete temporary config
   file:
-    path="{{ ansible_playbook_file }}"
-    state=absent
+    path: "{{ ansible_playbook_file }}"
+    state: absent
   when: ansible_playbook_file != 'NOT_DEFINED'

@@ -1,30 +1,38 @@
 ---
-- name: Install additional packages
+# CentOS 7
+- name: install additional packages
   yum:
-    name:
-      - unzip
+    name: unzip
     state: latest
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
 
-- name: Create source directory
+# CentOS Stream 9
+- name: install additional packages
+  dnf:
+    name: unzip
+    state: latest
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+
+- name: create source directory
   file:
     path: "{{ item }}"
     state: directory
   loop:
     - /usr/local/src
 
-- name: Get LibreOffice archive
+- name: get LibreOffice archive
   get_url:
     url: "{{ libreoffice_url }}"
     dest: "/usr/local/src/{{ libreoffice_file }}"
 
-- name: Unpack LibreOffice archive
+- name: unpack LibreOffice archive
   unarchive:
     src: "/usr/local/src/{{ libreoffice_file  }}"
     dest: "/usr/local/src"
     remote_src: yes
 
 # find /usr/local/src/ -maxdepth 1 -name "LibreOffice_6.4.4*" -type d
-- name: Find basic directory
+- name: find basic directory
   find:
     paths: /usr/local/src
     patterns: "LibreOffice_{{ libreoffice_version }}*"
@@ -35,14 +43,13 @@
 - debug:
     msg: "{{ loo_find.files.0.path }}"
 
-- name: Find all rpm-files
+- name: find all rpm-files
   find:
     paths: "{{ loo_find.files.0.path }}/RPMS"
     patterns: "*.rpm"
   register: libreoffice_rpms
 
-
-- name: Create rpm list
+- name: create rpm list
   set_fact:
     libreoffice_list: "{{ libreoffice_rpms.files | map(attribute='path') | list }}"
     libre_path: "/bin/libreoffice{{ libreoffice_version.split('.')[0] }}.{{ libreoffice_version.split('.')[1] }}"
@@ -50,8 +57,17 @@
 - debug:
     msg: "{{ libre_path }}"
 
-- name: Install Rpm-packages
+# CentOS 7
+- name: install rpm packages
   yum:
     name: "{{ libreoffice_list }}"
     state: present
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
 
+# CentOS Stream 9
+- name: install rpm packages
+  dnf:
+    name: "{{ libreoffice_list }}"
+    state: present
+    disable_gpg_check: true
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"

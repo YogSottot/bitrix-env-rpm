@@ -5,7 +5,7 @@
 # gathering facts about sites
 # options:
 # "name=list password=0 status=finished type=DBName site=default"
-# dbname=sitemanager0
+# dbname=sitemanager
 #
 use strict;
 use warnings;

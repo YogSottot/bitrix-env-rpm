@@ -3,15 +3,14 @@
 # site_name - name site 
 # site_dir  - direcory name for site
 
-######## create, upload variables that used in playbook
-#####
+# create, upload variables that used in playbook
 - name: gathering facts about deleted site
   delegate_to: "{{ cluster_web_server }}"
   bx_facts:
-    name=status
-    password=0
-    site={{ web_site_name }}
-    site_dir={{ web_site_dir }}
+    name: status
+    password: 0
+    site: "{{ web_site_name }}"
+    site_dir: "{{ web_site_dir }}"
   tags: configure_site
 
 - name: create variable with site options
@@ -24,16 +23,16 @@
 
 - name: set variables for deleted site
   set_fact:
-    web_site_dir:       "{{ bx_site_info.DocumentRoot }}"
-    web_site_db:        "{{ bx_site_info.DBName }}"
-    web_site_dbuser:    "{{ bx_site_info.DBLogin }}"
-    web_site_dbserv:    "{{ bx_site_info.DBHost }}"
-    web_site_type:      "{{ bx_site_info.SiteInstall }}"
-    web_site_root_dir:  "{{ bx_site_info.DocumentRoot }}"
-    web_site_shname:    "{{ bx_site_info.SiteShort }}"
-    web_site_csync2:    "{{ bx_site_info.SiteCsync2 }}"
-    web_site_cron:      "{{ bx_site_info.CronTask }}"
-    web_site_email:     "{{ bx_site_info.EmailAddress }}"
+    web_site_dir: "{{ bx_site_info.DocumentRoot }}"
+    web_site_db: "{{ bx_site_info.DBName }}"
+    web_site_dbuser: "{{ bx_site_info.DBLogin }}"
+    web_site_dbserv: "{{ bx_site_info.DBHost }}"
+    web_site_type: "{{ bx_site_info.SiteInstall }}"
+    web_site_root_dir: "{{ bx_site_info.DocumentRoot }}"
+    web_site_shname: "{{ bx_site_info.SiteShort }}"
+    web_site_csync2: "{{ bx_site_info.SiteCsync2 }}"
+    web_site_cron: "{{ bx_site_info.CronTask }}"
+    web_site_email: "{{ bx_site_info.EmailAddress }}"
     web_site_bx_temp_directory: "{{ bx_site_info.dbconn_BX_TEMPORARY_FILES_DIRECTORY }}"
     web_site_nginx_bx_temp_config: ""
     web_site_costom_directory: ""
@@ -41,13 +40,13 @@
 
 - name: set additional variables
   set_fact:
-    web_site_sess_dir:       "{{ bx_site_info.phpSessionDir }}"
-    web_site_upld_dir:       "{{ bx_site_info.phpUploadDir }}"
-    web_site_ngx_http_link:  "{{ bx_site_info.NginxHTTPEDir }}/{{ bx_site_info.NginxHTTPConfig }}"
+    web_site_sess_dir: "{{ bx_site_info.phpSessionDir }}"
+    web_site_upld_dir: "{{ bx_site_info.phpUploadDir }}"
+    web_site_ngx_http_link: "{{ bx_site_info.NginxHTTPEDir }}/{{ bx_site_info.NginxHTTPConfig }}"
     web_site_ngx_https_link: "{{ bx_site_info.NginxHTTPEDir }}/{{ bx_site_info.NginxHTTPSConfig }}"
-    web_site_ngx_http_conf:  "{{ bx_site_info.NginxHTTPDir }}/{{ bx_site_info.NginxHTTPConfig }}"
+    web_site_ngx_http_conf: "{{ bx_site_info.NginxHTTPDir }}/{{ bx_site_info.NginxHTTPConfig }}"
     web_site_ngx_https_conf: "{{ bx_site_info.NginxHTTPDir }}/{{ bx_site_info.NginxHTTPSConfig }}"
-    web_site_apache_conf:    "{{ bx_site_info.ApacheConf }}"
+    web_site_apache_conf: "{{ bx_site_info.ApacheConf }}"
     web_site_apache_scale_conf: "{{ bx_site_info.ApacheConfScale }}"
     web_site_nginx_bx_temp_config: "{{ bx_site_info.nginx_bx_temp_config }}"
     web_site_costom_directory: "{{ bx_site_info.nginx_custom_settings_directory }}"
@@ -63,32 +62,25 @@
   tags: configure_site
   when: "is_cluster == 'enable'"
 
-#####
-######## /create, upload variables that used in playbook
-
-######## delete site configuration data; we don't remove by file, because we need to support older versions
-####
+# delete site configuration data; we don't remove by file, because we need to support older versions
 - name: delete cron settings
   bx_site_opts:
-    name=cron
-    state=disable
-    site={{ web_site_name }}
-    dir={{ web_site_root_dir  }}
+    name: cron
+    state: disable
+    site: "{{ web_site_name }}"
+    dir: "{{ web_site_root_dir }}"
   when: "inventory_hostname == cluster_web_server and web_site_cron == 'enable'"
   ignore_errors: yes
 
 - name: delete email settings
   bx_site_opts:
-    name=mail
-    state=disable
-    site={{ web_site_name }}
-    dir={{ web_site_root_dir }}
+    name: mail
+    state: disable
+    site: "{{ web_site_name }}"
+    dir: "{{ web_site_root_dir }}"
   when: "inventory_hostname == cluster_web_server and web_site_email != ''"
   ignore_errors: yes
 
-####
-######## /delete site config data
-#
 # delete dehydrated settings
 - name: Delete dehydrated file
   file:
@@ -101,8 +93,7 @@
     regexp: "{{ web_site_name }}"
     state: absent
 
-####
-######## delete files data
+# delete files data
 - name: delete site document root
   file:
     path: "{{ web_site_root_dir }}"
@@ -144,15 +135,11 @@
     state: absent
   when: web_site_costom_directory != '' and web_site_type != 'ext_kernel' and 'bitrix-web' in group_names
 
-####
-######## /delete files data
-
-######## delete config for web services
-#####
+# delete config for web services
 - name: delete nginx config files
   file:
-    path={{ item }}
-    state=absent
+    path: "{{ item }}"
+    state: absent
   with_items:
     - "{{ web_site_ngx_http_link }}"
     - "{{ web_site_ngx_https_link }}"
@@ -162,14 +149,18 @@
   when: "web_site_type != 'ext_kernel' and 'bitrix-web' in group_names"
 
 - name: delete apache config files
-  file: path={{ item }} state=absent
+  file:
+    path: "{{ item }}"
+    state: absent
   with_items:
     - "{{ web_site_apache_conf }}"
   notify: restart httpd
   when: "web_site_type != 'ext_kernel' and 'bitrix-web' in group_names"
 
 - name: delete apache config files
-  file: path={{ item }} state=absent
+  file:
+    path: "{{ item }}"
+    state: absent
   with_items:
     - "{{ web_site_apache_scale_conf }}"
   notify: restart httpd-scale
@@ -207,15 +198,9 @@
   when: web_site_name == "default" and ansible_distribution_major_version == "7" and inventory_hostname == cluster_web_server
   notify: restart httpd-scale
 
-####
-######## /delete config for web services
-
-######## /delete database from mysql server
-####
+# delete database from mysql server
 - include_tasks: delete_db.yml
   when: "web_site_type == 'kernel' or web_site_type == 'ext_kernel'"
-####
-######## /delete database from mysql server
 
 - name: delete crontab settings
   file:
@@ -223,13 +208,9 @@
     state: absent
   when: "web_site_type == 'kernel' or web_site_type == 'ext_kernel'"
 
-######## delete csync configuration
-####
+# delete csync configuration
 - include_tasks: delete_csync2.yml
   when: "fstype is defined and cluster_web_configure == 'enable' and fstype == 'csync'"
 
 - include_tasks: configs_lsyncd_delete_site.yml
   when: "fstype is defined and cluster_web_configure == 'enable' and fstype == 'lsync'"
-
-####
-######## /delete csync configuration
