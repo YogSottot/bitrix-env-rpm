@@ -15,17 +15,27 @@
   tags: time_facts
 
 - name: timezone - debug info
-  debug: msg="timezone will be set to default value tz={{ bx_tz }}"
+  debug:
+    msg: "timezone will be set to default value tz={{ bx_tz }}"
   when: bx_tz_default == 'True'
   tags: time_facts
 
 - name: timezone - set /etc/sysconfig/clock
-  template: src=clock.j2 dest=/etc/sysconfig/clock owner=root group=root mode=0644
+  template:
+    src: clock.j2
+    dest: /etc/sysconfig/clock
+    owner: root
+    group: root
+    mode: 0644
   tags: timezone
   notify: restart mysqld
 
 - name: timezone - set /etc/localtime
-  file: src=/usr/share/zoneinfo/{{ bx_tz }} dest=/etc/localtime state=link force=yes
+  file:
+    src: /usr/share/zoneinfo/{{ bx_tz }}
+    dest: /etc/localtime
+    state: link
+    force: yes
   tags: timezone
   notify: restart mysqld
 
@@ -42,16 +52,21 @@
   when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
 
 - name: ntpd - ensure service started
-  service: name=ntpd state=started enabled=yes
+  service:
+    name: ntpd
+    state: started
+    enabled: yes
   tags: ntpd
   when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
 
 - name: ntpd - restarted
-  service: name=ntpd state=restarted
+  service:
+    name: ntpd
+    state: restarted
   tags: ntpd
   when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
 
-# CentOS Stream 9 - chronyd
+# Rocky Linux 9 / AlmaLinux 9 / Oracle Linux 9 / CentOS Stream 9 - chronyd
 - name: chrony - install packages
   dnf:
     pkg: "{{ packages }}"
@@ -60,7 +75,7 @@
     packages:
       - chrony
   tags: chronyd
-  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+  when: (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
 
 - name: chronyd - ensure service started
   service:
@@ -68,14 +83,14 @@
     state: started
     enabled: yes
   tags: chronyd
-  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+  when: (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
 
 - name: chronyd - restarted
   service:
     name: chronyd
     state: restarted
   tags: chronyd
-  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+  when: (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
 
 # php configuration
 - name: create update time string
@@ -85,29 +100,42 @@
   tags: php_configure
 
 - name: delete artifacts from /etc/php.d/bitrixenv.ini
-  lineinfile: dest=/etc/php.d/bitrixenv.ini state=absent regexp=' by ansible manager at '
+  lineinfile:
+    dest: /etc/php.d/bitrixenv.ini
+    state: absent
+    regexp: ' by ansible manager at '
   tags: php_configure
   notify: restart httpd
   when: "'bitrix-web' in group_names and bx_tz != bx_tz_php"
 
 - name: update /etc/php.d/bitrixenv.ini - ansible comment
-  lineinfile: dest=/etc/php.d/bitrixenv.ini state=present regexp='date.timezone' line=';set timezone={{ bx_tz }} by ansible manager at {{ phpupdate_date.stdout }}'
+  lineinfile:
+    dest: /etc/php.d/bitrixenv.ini
+    state: present
+    regexp: 'date.timezone'
+    line: ';set timezone={{ bx_tz }} by ansible manager at {{ phpupdate_date.stdout }}'
   tags: php_configure
   notify: restart httpd
   when: "'bitrix-web' in group_names and bx_tz != bx_tz_php"
 
 - name: update /etc/php.d/bitrixenv.ini - time string
-  lineinfile: dest=/etc/php.d/bitrixenv.ini state=present regexp='date.timezone' line='date.timezone = {{ bx_tz }}'
+  lineinfile:
+    dest: /etc/php.d/bitrixenv.ini
+    state: present
+    regexp: 'date.timezone'
+    line: 'date.timezone = {{ bx_tz }}'
   tags: php_configure
   notify: restart httpd
   when: "'bitrix-web' in group_names and bx_tz != bx_tz_php"
 
+# CentOS 7
 - name: restart httpd-scale
   shell: /opt/webdir/bin/restart_httpd-scale.sh
   args:
     creates: /opt/webdir/logs/restart_httpd-scale.request
   when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
 
+# CentOS 6
 - name: restart httpd
   service:
     name: httpd

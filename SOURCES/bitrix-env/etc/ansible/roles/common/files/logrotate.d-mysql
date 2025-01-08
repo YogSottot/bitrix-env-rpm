@@ -1,5 +1,6 @@
 /var/log/mysql/*.log
 {
+    su mysql mysql
     copytruncate
     ifempty
     daily
@@ -9,4 +10,3 @@
     delaycompress
     sharedscripts
 }
-

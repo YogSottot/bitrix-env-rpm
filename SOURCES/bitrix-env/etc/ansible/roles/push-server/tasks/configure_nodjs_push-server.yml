@@ -89,7 +89,7 @@
     creates: /usr/lib/systemd/system/push-server.service
   when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
 
-# CentOS Stream 9
+# Rocky Linux 9 / AlmaLinux 9 / Oracle Linux 9 / CentOS Stream 9
 - name: remove nodejs repofiles
   file:
     dest: "{{ item }}"
@@ -97,11 +97,11 @@
   with_items:
     - /etc/yum.repos.d/nodesource-nodejs.repo
     - /etc/yum.repos.d/nodesource-nsolid.repo
-  when: is_rpm is undefined and nodejs_major_version != "20" and ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+  when: is_rpm is undefined and nodejs_major_version != "20" and (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
 
 - name: configure nodejs repository
   shell: "curl --silent --location https://rpm.nodesource.com/setup_20.x | bash - >/dev/null 2>&1"
-  when: is_rpm is undefined and nodejs_major_version != "20" and ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+  when: is_rpm is undefined and nodejs_major_version != "20" and (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
 
 - name: delete old nodejs-packages
   shell: rpm -e --nodeps "{{ item }}"
@@ -110,15 +110,15 @@
     - "npm"
     - "bx-push-server"
   ignore_errors: true
-  when: is_rpm is undefined and nodejs_major_version != "20" and ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+  when: is_rpm is undefined and nodejs_major_version != "20" and (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
 
 - name: delete old push-server package
   shell: rpm -e --nodeps push-server
-  when: push_server_major_version == "1" and is_rpm is undefined and ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+  when: push_server_major_version == "1" and is_rpm is undefined and (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
 
 - name: clean dnf cache
   shell: dnf clean all
-  when: is_rpm is undefined and ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+  when: is_rpm is undefined and (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
 
 - name: install packages
   dnf:
@@ -132,24 +132,24 @@
       - "nodejs"
      #- "npm"
       - "bx-push-server"
-  when: is_rpm is undefined and ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+  when: is_rpm is undefined and (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
 
 - bx_vat:
-  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+  when: (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
 
 - set_fact:
     redis_version: "{{ redis_uni_version | int }}"
-  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+  when: (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
 
 - name: delete installed push-server modules
   file:
     dest: /opt/push-server/node_modules
     state: absent
-  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+  when: (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
 
 - name: install packages based on package.json.
   shell: cd /opt/push-server && npm install --production
-  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+  when: (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
 
 #npm:
 #path: /opt/push-server
@@ -162,13 +162,13 @@
     owner: bitrix
     group: bitrix
     recurse: yes
-  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+  when: (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
 
 - name: push-service service file
   shell: cp -fv /etc/push-server/push-server.service /usr/lib/systemd/system/push-server.service
   args:
     creates: /usr/lib/systemd/system/push-server.service
-  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+  when: (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
 
 # redis
 - name: redis user
@@ -212,7 +212,7 @@
   shell: systemctl daemon-reload
   when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
 
-# CentOS Stream 9
+# Rocky Linux 9 / AlmaLinux 9 / Oracle Linux 9 / CentOS Stream 9
 - name: configure redis 7.2
   template:
     src: redis.conf.j2
@@ -220,23 +220,23 @@
     mode: 0640
     owner: redis
     group: root
-  when: redis_version|int >= 72 and ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+  when: redis_version|int >= 72 and (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
 
 - name: redis service directory
   file:
     path: /etc/systemd/system/redis.service.d
     state: directory
-  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+  when: (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
 
 - name: redis optional config
   template:
     src: redis-custom.conf.j2
     dest: /etc/systemd/system/redis.service.d/custom.conf
-  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+  when: (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
 
 - name: update systemd config
   shell: systemctl daemon-reload
-  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+  when: (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
 
 - name: service redis
   service:
@@ -288,19 +288,19 @@
     enabled: yes
   when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
 
-# CentOS Stream 9
+# Rocky Linux 9 / AlmaLinux 9 / Oracle Linux 9 / CentOS Stream 9
 - name: service nodejs stop
   service:
     name: "push-server"
     state: stopped
-  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+  when: (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
 
 - name: service nodejs start
   service:
     name: "push-server"
     state: started
     enabled: yes
-  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+  when: (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
 
 # nginx
 - name: additional gathering facts
@@ -372,14 +372,14 @@
     backup: yes
   when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
 
-# CentOS Stream 9
+# Rocky Linux 9 / AlmaLinux 9 / Oracle Linux 9 / CentOS Stream 9
 - name: add apache24 settings
   delegate_to: "{{ cluster_web_server }}"
   lineinfile:
     dest: /etc/httpd/bx/conf/00-environment.conf
     line: "SetEnv BX_PUSH_SECURITY_KEY {{ push_security_key }}"
     backup: yes
-  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+  when: (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
 
 - name: service httpd restart
   delegate_to: "{{ cluster_web_server  }}"
@@ -426,15 +426,15 @@
     state: started
   when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
 
-# CentOS Stream 9
+# Rocky Linux 9 / AlmaLinux 9 / Oracle Linux 9 / CentOS Stream 9
 - name: service nodejs start
   service:
     name: "push-server"
     state: stopped
-  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+  when: (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
 
 - name: service nodejs start
   service:
     name: "push-server"
     state: started
-  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+  when: (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"

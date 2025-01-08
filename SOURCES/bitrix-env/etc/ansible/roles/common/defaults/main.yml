@@ -61,12 +61,12 @@ openvz_sports:
     - 995
     - 587
 
-# centos 6
+# CentOS 6
 public_chain: bx_public
 trusted_chain: bx_trusted
 service_chain: bx_users
 
-# centos 7 + centos stream 9
+# CentOS 7 / Rocky Linux 9 / AlmaLinux 9 / Oracle Linux 9 / CentOS Stream 9
 public_zone: public
 trusted_zone: bx_trusted
 want_iptables: false

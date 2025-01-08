@@ -1,5 +1,6 @@
 ---
 # create database and user for site
+
 - name: create new mysql user for kernel site - non-cluster case
   delegate_to: "{{ web_site_dbserv }}"
   mysql_user: "name={{ web_site_dbuser }}

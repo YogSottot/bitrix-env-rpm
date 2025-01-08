@@ -16,6 +16,7 @@ get_php_exts() {
     IS_PHAR=$(echo "$php_modules" | grep phar -cwi)
     IS_XDEBUG=$(echo "$php_modules" | grep xdebug -cwi)
     IS_IMAGICK=$(echo "$php_modules" | grep imagick -cwi)
+    IS_XHPROF=$(echo "$php_modules" | grep xhprof -cwi)
 }
 
 manage_extension() {
@@ -76,6 +77,9 @@ sub_menu() {
     menu_07_enable="7. $(get_text "$WEB0034" imagick)"
     menu_07_disable="7. $(get_text "$WEB0035" imagick)"
 
+    menu_08_enable="8. $(get_text "$WEB0034" xhprof)"
+    menu_08_disable="8. $(get_text "$WEB0035" xhprof)"
+
     MENU_SELECT=
     until [[ -n "$MENU_SELECT" ]]; do
         menu_logo="$WEB0036"
@@ -97,6 +101,7 @@ sub_menu() {
         menu_constructor $IS_PHAR "$menu_05_enable" "$menu_05_disable"
         menu_constructor $IS_XDEBUG "$menu_06_enable" "$menu_06_disable"
         menu_constructor $IS_IMAGICK "$menu_07_enable" "$menu_07_disable"
+        menu_constructor $IS_XHPROF "$menu_08_enable" "$menu_08_disable"
 
         # task info
         get_task_by_type '(mysql|site)' POOL_TASK_LOCK POOL_TASK_INFO
@@ -126,6 +131,7 @@ sub_menu() {
             5) manage_extension $IS_PHAR phar ;;
             6) manage_extension $IS_XDEBUG xdebug ;;
             7) manage_extension $IS_IMAGICK imagick ;;
+            8) manage_extension $IS_XHPROF xhprof ;;
         esac
         MENU_SELECT=
     done

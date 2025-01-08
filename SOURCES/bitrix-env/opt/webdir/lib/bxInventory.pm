@@ -1691,12 +1691,12 @@ sub update_php {
 #        $opts = { manage_web => "downgrade_php", to_php_version => $version };
 #    }
 
-    if ( $type =~ /^bx_php_upgrade_php(82|83)$/ ) {
+    if ( $type =~ /^bx_php_upgrade_php(82|83|84)$/ ) {
 	my $version = $1;
 	$etc_playbook = catfile( $ansible_options->{'base'}, 'web.yml' );
 	$opts = { manage_web => "upgrade_php", to_php_version => $version };
     }
-    elsif ( $type =~ /^bx_php_rollback_php(81|82)$/ ) {
+    elsif ( $type =~ /^bx_php_rollback_php(81|82|83)$/ ) {
 	my $version = $1;
 	$etc_playbook = catfile( $ansible_options->{'base'}, 'web.yml' );
 	$opts = { manage_web => "downgrade_php", to_php_version => $version };

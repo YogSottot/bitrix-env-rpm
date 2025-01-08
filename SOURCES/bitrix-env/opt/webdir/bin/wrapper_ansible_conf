@@ -164,7 +164,7 @@ elsif ( $o_action =~ /^(sshkey|key)$/ ) {
 # Inventory operations
 elsif ( $o_action =~
 #/^(bx_php_upgrade|bx_php_upgrade_php56|bx_php_rollback_php[78][01234]?|bx_php_upgrade_php[78][01234]?)$/
-/^(bx_php_rollback_php[8][123]?|bx_php_upgrade_php[8][123]?)$/
+/^(bx_php_rollback_php[8][123]?|bx_php_upgrade_php[8][1234]?)$/
   )
 {
     use bxInventory;

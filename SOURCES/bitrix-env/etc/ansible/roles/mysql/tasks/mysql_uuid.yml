@@ -7,7 +7,7 @@
 
 - name: restart service mysqld
   service:
-    name={{ mysql_service }}
-    state=restarted
+    name: "{{ mysql_service }}"
+    state: restarted
   tags: service
   when: mysql_uni_version|int >= 57

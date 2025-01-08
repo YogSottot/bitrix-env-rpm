@@ -13,7 +13,6 @@ use File::Basename qw( dirname basename );
 use JSON;
 use Data::Dumper;
 
-
 # search="server_name www.bitrix.info;" basedir=/etc/nginx/bx/site_avaliable regexp=\.conf$
 my $options_file  = $ARGV[0];
 
@@ -131,4 +130,3 @@ sub parse_ansible_argv {
   }
   return [ 0, $r ];
 }
-

@@ -20,23 +20,23 @@
   tags: hostname
   when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
 
-# CentOS Stream 9
-- name: set hostname on CentOS Stream 9
+# Rocky Linux 9 / AlmaLinux 9 / Oracle Linux 9 / CentOS Stream 9
+- name: set hostname
   shell: hostnamectl set-hostname {{ hostname }}
   tags: hostname
-  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+  when: (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
 
 # configure hosts file
 - name: remove temporary directory
   file:
-    path=/tmp/hosts
-    state=absent
+    path: /tmp/hosts
+    state: absent
   tags: hosts
 
 - name: create temporary directory
   file:
-    path=/tmp/hosts
-    state=directory
+    path: /tmp/hosts
+    state: directory
   tags: hosts
 
 - name: create a file which will holds current hosts records
@@ -81,17 +81,17 @@
 
 - name: assemble records for hosts file
   assemble:
-    src=/tmp/hosts/
-    dest=/etc/hosts
-    mode=0644
-    owner=root
-    group=root
+    src: /tmp/hosts/
+    dest: /etc/hosts
+    mode: 0644
+    owner: root
+    group: root
   tags: hosts
 
 # script which can ask master server for update ip address of client server in the ansible configuration
 - name: enable iflocal script on the server
   file:
-    src={{ pool_replace_ifscript }}
-    dest=/sbin/ifup-local
-    state=link
+    src: "{{ pool_replace_ifscript }}"
+    dest: /sbin/ifup-local
+    state: link
   tags: hosts

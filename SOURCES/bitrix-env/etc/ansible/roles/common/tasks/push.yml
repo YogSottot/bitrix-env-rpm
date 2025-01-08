@@ -25,12 +25,12 @@
   when: push.changed
   ignore_errors: true
 
-# CentOS Stream 9
+# Rocky Linux 9 / AlmaLinux 9 / Oracle Linux 9 / CentOS Stream 9
 - name: start service
   service:
     name: push-server
     state: restarted
-  when: push.changed and ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+  when: push.changed and (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
 
 # CentOS 7
 - name: start service
@@ -39,6 +39,7 @@
     state: restarted
   when: push.changed and ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
 
+# CentOS 6
 - name: start service
   service:
     name: push-server-multi

@@ -1,5 +1,6 @@
 ---
 # create cron task for site
+
 - name: create cron task for site
   template:
     src: cron-bx_site.j2

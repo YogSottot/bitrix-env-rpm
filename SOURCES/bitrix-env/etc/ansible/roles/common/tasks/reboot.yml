@@ -7,15 +7,15 @@
 - name: wait until server stopped
   delegate_to: localhost
   wait_for:
-    host={{ansible_ssh_host}}
-    port=22
-    state=stopped
+    host: "{{ ansible_ssh_host }}"
+    port: 22
+    state: stopped
   tags: reboot
 
 - name: wait until server started
   delegate_to: localhost
   wait_for:
-    host={{ansible_ssh_host}}
-    port=22
-    delay=30
+    host: "{{ ansible_ssh_host }}"
+    port: 22
+    delay: 30
   tags: reboot

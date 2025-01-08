@@ -2,21 +2,22 @@
 # create temporary directory
 # copy php script into the directory and run it
 # delete temporary directory
+
 - name: create main temporary directory
   file:
-    path: "{{ cache_directory  }}"
+    path: "{{ cache_directory }}"
     state: directory
     mode: 0750
-    owner: "{{ bx_ansible_owner  }}"
+    owner: "{{ bx_ansible_owner }}"
     group: "{{ bx_ansible_group }}"
   delegate_to: "{{ php_server }}"
 
 - name: create site directory
   file: 
-    path: "{{ cache_directory  }}/{{ item.SiteName  }}"
+    path: "{{ cache_directory }}/{{ item.SiteName }}"
     state: directory
     mode: 0750
-    owner: "{{ bx_ansible_owner  }}"
+    owner: "{{ bx_ansible_owner }}"
     group: "{{ bx_ansible_group }}"
   with_items: "{{ bx_sites_info }}"
   delegate_to: "{{ php_server }}"
@@ -24,10 +25,10 @@
 
 - name: create host directory
   file: 
-    path: "{{ cache_directory  }}/{{ item.SiteName  }}/{{ inventory_hostname }}"
+    path: "{{ cache_directory }}/{{ item.SiteName }}/{{ inventory_hostname }}"
     state: directory
     mode: 0750
-    owner: "{{ bx_ansible_owner  }}"
+    owner: "{{ bx_ansible_owner }}"
     group: "{{ bx_ansible_group }}"
   with_items: "{{ bx_sites_info }}"
   delegate_to: "{{ php_server }}"

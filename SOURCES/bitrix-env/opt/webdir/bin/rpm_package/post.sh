@@ -13,7 +13,37 @@ RPM_ACTION="${1:-undefined}"
 BITRIX_ENV_VER="${2}"
 BITRIX_ENV_TYPE=${3:-general}
 
-OS_VERSION=$(cat /etc/redhat-release | sed -e "s/CentOS Stream release//;s/CentOS release // " | cut -d'.' -f1 | sed -e "s/\s\+//g")
+ROCKY_RELEASE_FILE=/etc/rocky-release
+ALMA_RELEASE_FILE=/etc/almalinux-release
+ORACLE_RELEASE_FILE=/etc/oracle-release
+CENTOS_RELEASE_FILE=/etc/centos-release
+if [ -f "${ROCKY_RELEASE_FILE}" ];
+then
+    OS1=$(awk '{print $1}' ${ROCKY_RELEASE_FILE} | xargs echo -n)
+    OS2=$(awk '{print $2}' ${ROCKY_RELEASE_FILE} | xargs echo -n)
+    OS=${OS1}' '${OS2} # Rocky Linux
+    OS_VERSION=$(awk '{print $4}' ${ROCKY_RELEASE_FILE} | awk -F'.' '{print $1}') # 9
+fi
+if [ -f "${ALMA_RELEASE_FILE}" ];
+then
+    OS=$(awk '{print $1}' ${ALMA_RELEASE_FILE} | xargs echo -n) # AlmaLinux
+    OS_VERSION=$(awk '{print $3}' ${ALMA_RELEASE_FILE} | awk -F'.' '{print $1}') # 9
+fi
+if [ -f "${ORACLE_RELEASE_FILE}" ];
+then
+    OS1=$(awk '{print $1}' ${ORACLE_RELEASE_FILE} | xargs echo -n)
+    OS2=$(awk '{print $2}' ${ORACLE_RELEASE_FILE} | xargs echo -n)
+    OS=${OS1}' '${OS2} # Oracle Linux
+    OS_VERSION=$(awk '{print $5}' ${ORACLE_RELEASE_FILE} | awk -F'.' '{print $1}') # 9
+fi
+if [ -f "${CENTOS_RELEASE_FILE}" ];
+then
+    OS1=$(awk '{print $1}' ${CENTOS_RELEASE_FILE} | xargs echo -n)
+    OS2=$(awk '{print $2}' ${CENTOS_RELEASE_FILE} | xargs echo -n)
+    OS=${OS1}' '${OS2} # CentOS Stream
+    OS_VERSION=$(awk '{print $4}' ${CENTOS_RELEASE_FILE} | awk -F'.' '{print $1}') # 9
+fi
+
 UPDATE_TM=$(date +'%Y%m%d%H%M')
 PHP_VERSION=$(php -v 2> /dev/null | grep ^PHP | awk '{print $2}' | awk -F'.' '{print $1}')
 PHP_VERSION_MID=$(php -v 2> /dev/null | grep ^PHP | awk '{print $2}' | awk -F'.' '{print $2}')
@@ -2134,7 +2164,7 @@ upgrade_fixes() {
         # add BX_USE_MYSQLI on dbconn default site if no string in file
         mysqli_for_default_site
 
-	# clean cache
+        # clean cache
         clear_cache
     fi
 }
@@ -2302,11 +2332,11 @@ httpd_conf_if_no_default_site_exist() {
 #
     if [[ ! -d /home/bitrix/www ]];
     then
-	HTTPD_CONF_FILE=/etc/httpd/conf/httpd.conf
-	sed -i "s/.*DocumentRoot.*/DocumentRoot \'\/var\/www\/html\'/" ${HTTPD_CONF_FILE}
-	sed -i "s/.*Listen.*//" ${HTTPD_CONF_FILE}
-	echo "Listen 127.0.0.1:8888" >> ${HTTPD_CONF_FILE}
-	log_to_file "No default site found, prepare httpd configuration on ${HTTPD_CONF_FILE}"
+        HTTPD_CONF_FILE=/etc/httpd/conf/httpd.conf
+        sed -i "s/.*DocumentRoot.*/DocumentRoot \'\/var\/www\/html\'/" ${HTTPD_CONF_FILE}
+        sed -i "s/.*Listen.*//" ${HTTPD_CONF_FILE}
+        echo "Listen 127.0.0.1:8888" >> ${HTTPD_CONF_FILE}
+        log_to_file "No default site found, prepare httpd configuration on ${HTTPD_CONF_FILE}"
     fi
 #
 }
@@ -2315,16 +2345,28 @@ install_community_rabbitmq_ansible_collection_on_upgrade() {
 #
     if [[ ! -d /root/.ansible/collections/ansible_collections/community/rabbitmq ]];
     then
-	COMMUNITY_RABBITMQ_ANSIBLE_GALAXY_COLLECTION_URL=https://github.com/ansible-collections/community.rabbitmq/archive/refs/tags/
-	COMMUNITY_RABBITMQ_ANSIBLE_GALAXY_COLLECTION_VERSION=1.3.0
-	mkdir -p /root/.ansible/collections/ > /dev/null 2>&1
-	cd /root  > /dev/null 2>&1
-	wget ${COMMUNITY_RABBITMQ_ANSIBLE_GALAXY_COLLECTION_URL}${COMMUNITY_RABBITMQ_ANSIBLE_GALAXY_COLLECTION_VERSION}.tar.gz  > /dev/null 2>&1
-	tar xvf ${COMMUNITY_RABBITMQ_ANSIBLE_GALAXY_COLLECTION_VERSION}.tar.gz  > /dev/null 2>&1
-	ansible-galaxy collection install community.rabbitmq-${COMMUNITY_RABBITMQ_ANSIBLE_GALAXY_COLLECTION_VERSION} > /dev/null 2>&1
-	rm -f ${COMMUNITY_RABBITMQ_ANSIBLE_GALAXY_COLLECTION_VERSION}.tar.gz  > /dev/null 2>&1
-	rm -rf community.rabbitmq-${COMMUNITY_RABBITMQ_ANSIBLE_GALAXY_COLLECTION_VERSION} > /dev/null 2>&1
-	log_to_file "Install ansible collection community.rabbitmq"
+        COMMUNITY_RABBITMQ_ANSIBLE_GALAXY_COLLECTION_URL=https://github.com/ansible-collections/community.rabbitmq/archive/refs/tags/
+        COMMUNITY_RABBITMQ_ANSIBLE_GALAXY_COLLECTION_VERSION=1.3.0
+        mkdir -p /root/.ansible/collections/ > /dev/null 2>&1
+        cd /root  > /dev/null 2>&1
+        wget ${COMMUNITY_RABBITMQ_ANSIBLE_GALAXY_COLLECTION_URL}${COMMUNITY_RABBITMQ_ANSIBLE_GALAXY_COLLECTION_VERSION}.tar.gz  > /dev/null 2>&1
+        tar xvf ${COMMUNITY_RABBITMQ_ANSIBLE_GALAXY_COLLECTION_VERSION}.tar.gz  > /dev/null 2>&1
+        ansible-galaxy collection install community.rabbitmq-${COMMUNITY_RABBITMQ_ANSIBLE_GALAXY_COLLECTION_VERSION} > /dev/null 2>&1
+        rm -f ${COMMUNITY_RABBITMQ_ANSIBLE_GALAXY_COLLECTION_VERSION}.tar.gz  > /dev/null 2>&1
+        rm -rf community.rabbitmq-${COMMUNITY_RABBITMQ_ANSIBLE_GALAXY_COLLECTION_VERSION} > /dev/null 2>&1
+        log_to_file "Install ansible collection community.rabbitmq"
+    fi
+#
+}
+
+disable_php_xhprof_extension_on_upgrade() {
+#
+    PHP_XHPROF_INI_FILE=/etc/php.d/40-xhprof.ini
+    if [[ -f ${PHP_XHPROF_INI_FILE} ]];
+    then
+        mv ${PHP_XHPROF_INI_FILE} ${PHP_XHPROF_INI_FILE}.disabled
+        touch ${PHP_XHPROF_INI_FILE}
+        log_to_file "Disable php xhprof extension"
     fi
 #
 }
@@ -2617,11 +2659,14 @@ upgrade() {
         # disable percona telemetry agent by default
         disable_percona_telemetry
 
-	# modify httpd config if default site removed
-	httpd_conf_if_no_default_site_exist
+        # modify httpd config if default site removed
+        httpd_conf_if_no_default_site_exist
 
-	# if no community.rabbitmq ansible collection exist install it
-	install_community_rabbitmq_ansible_collection_on_upgrade
+        # if no community.rabbitmq ansible collection exist install it
+        install_community_rabbitmq_ansible_collection_on_upgrade
+
+        # on package upgrade disable php xhprof extension
+        disable_php_xhprof_extension_on_upgrade
     fi
 
     # configure crontab

@@ -3,6 +3,7 @@
 # DocumentRoot
 # phpUploadDir
 # phpSessionDir
+
 - name: create basic directories for sites
   file:
     path: "{{ item }}"

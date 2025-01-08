@@ -45,20 +45,40 @@ get_memory() {
 get_os_version() {
     # one-time call
     [[ -n $OS_VERSION ]] && return 0
-    RELEASE_FILE=/etc/redhat-release
-    if [[ ! -f ${RELEASE_FILE} ]]; then
-        if [[ -f /etc/centos-release ]]; then
-            RELEASE_FILE=/etc/centos-release
-        else
-            echo "{\"changed\":false,\"failed\":true,\"msg\":\"not found rpm based OS\"}"
-            exit 1
-        fi
+    ROCKY_RELEASE_FILE=/etc/rocky-release
+    ALMA_RELEASE_FILE=/etc/almalinux-release
+    ORACLE_RELEASE_FILE=/etc/oracle-release
+    CENTOS_RELEASE_FILE=/etc/centos-release
+    if [ -f "${ROCKY_RELEASE_FILE}" ];
+    then
+	OS1=$(awk '{print $1}' ${ROCKY_RELEASE_FILE} | xargs echo -n)
+	OS2=$(awk '{print $2}' ${ROCKY_RELEASE_FILE} | xargs echo -n)
+	OS=${OS1}' '${OS2} # Rocky Linux
+	OS_VERSION=$(awk '{print $4}' ${ROCKY_RELEASE_FILE} | awk -F'.' '{print $1}') # 9
     fi
-    # os version
-    OS_VERSION=$(cat ${RELEASE_FILE} | sed -e "s/CentOS Stream release//;s/CentOS release // " | cut -d'.' -f1 | sed -e "s/\s\+//g")
+    if [ -f "${ALMA_RELEASE_FILE}" ];
+    then
+	OS=$(awk '{print $1}' ${ALMA_RELEASE_FILE} | xargs echo -n) # AlmaLinux
+	OS_VERSION=$(awk '{print $3}' ${ALMA_RELEASE_FILE} | awk -F'.' '{print $1}') # 9
+    fi
+    if [ -f "${ORACLE_RELEASE_FILE}" ];
+    then
+	OS1=$(awk '{print $1}' ${ORACLE_RELEASE_FILE} | xargs echo -n)
+	OS2=$(awk '{print $2}' ${ORACLE_RELEASE_FILE} | xargs echo -n)
+	OS=${OS1}' '${OS2} # Oracle Linux
+	OS_VERSION=$(awk '{print $5}' ${ORACLE_RELEASE_FILE} | awk -F'.' '{print $1}') # 9
+    fi
+    if [ -f "${CENTOS_RELEASE_FILE}" ];
+    then
+	OS1=$(awk '{print $1}' ${CENTOS_RELEASE_FILE} | xargs echo -n)
+	OS2=$(awk '{print $2}' ${CENTOS_RELEASE_FILE} | xargs echo -n)
+	OS=${OS1}' '${OS2} # CentOS Stream
+	OS_VERSION=$(awk '{print $4}' ${CENTOS_RELEASE_FILE} | awk -F'.' '{print $1}') # 9
+    fi
 }
 
 get_bx_version() {
+    # os and version
     get_os_version
     PACKAGE_NAME=
     for pkg in bitrix-env bitrix-env-crm bitrix-env4; do
@@ -339,7 +359,7 @@ get_push_server_info() {
 # 0 - active
 # 1 - not running
 get_mysql_service_status() {
-    # get version for OS
+    # os and version
     get_os_version
     # get MySQL name
     get_mysql_package
@@ -399,6 +419,7 @@ test_mysql_root_password() {
 ## rpm packages info
 get_bx_packages() {
     rpm_bin=$(which rpm 2>/dev/null)
+    # os and version
     get_os_version
     [[ -z "$rpm_bin" ]] && return 1
     if [[ -n $rpm_bin ]]; then
@@ -426,30 +447,35 @@ get_bx_packages() {
     php_union_version=${php_version_up}${php_version_mid}
     php_supported_versions=(56 70 71 72 73)
     # CentOS 7
-    if [[ $OS_VERSION -eq 7 ]]; then
+    if [[ $OS_VERSION -eq 7 ]];
+    then
         php_supported_versions=(56 70 71 72 73 74 80 81 82 83)
     fi
-    # CentOS Stream 9
-    if [[ $OS_VERSION -eq 9 ]]; then
-	php_supported_versions=(81 82 83)
+    # Rocky Linux 9 / AlmaLinux 9 / Oracle Linux 9 / CentOS Stream 9
+    if [[ $OS_VERSION -eq 9 ]];
+    then
+	php_supported_versions=(81 82 83 84)
     fi
     php_upgraded_versions=()
     php_rollback_versions=()
     index_upgrade=0
     index_rollback=0
     for item in ${php_supported_versions[*]}; do
-        if [[ $php_union_version -lt $item ]]; then
+        if [[ $php_union_version -lt $item ]];
+        then
             php_upgraded_versions[$index_upgrade]=$item
             index_upgrade=$(( $index_upgrade + 1 ))
         fi
-        if [[ $php_union_version -gt $item ]]; then
+        if [[ $php_union_version -gt $item ]];
+        then
             php_rollback_versions[$index_rollback]=$item
             index_rollback=$(( $index_rollback + 1 ))
         fi
     done
     php_upgraded_version_str="["
     for item in ${php_upgraded_versions[*]}; do
-        if [[ $php_upgraded_version_str != "[" ]]; then
+        if [[ $php_upgraded_version_str != "[" ]];
+        then
             php_upgraded_version_str=${php_upgraded_version_str}","
         fi
         php_upgraded_version_str=${php_upgraded_version_str}$item
@@ -457,7 +483,8 @@ get_bx_packages() {
     php_upgraded_version_str=${php_upgraded_version_str}"]"
     php_rollback_versions_str="["
     for item in ${php_rollback_versions[*]}; do
-        if [[ $php_rollback_versions_str != "[" ]]; then
+        if [[ $php_rollback_versions_str != "[" ]];
+        then
             php_rollback_versions_str=${php_rollback_versions_str}","
         fi
         php_rollback_versions_str=${php_rollback_versions_str}$item

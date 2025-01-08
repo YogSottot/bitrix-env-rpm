@@ -1,14 +1,15 @@
 ---
 # group vars
+
 - set_fact:
     web_sync_tm: "{{ lookup('pipe','date +%s') }}"
 
 - name: update bitrix-web group
   delegate_to: 127.0.0.1
   bx_conf:
-    group=web
-    state=update
-    fstype={{ fstype }}
-    new_web_server={{ new_web_server }}
-    web_sync_tm={{ web_sync_tm }}
+    group: web
+    state: update
+    fstype: "{{ fstype }}"
+    new_web_server: "{{ new_web_server }}"
+    web_sync_tm: "{{ web_sync_tm }}"
   tags: ansible_hosts

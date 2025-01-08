@@ -1,7 +1,8 @@
 ---
-######## role for create or remove memcached service on the server
+# role for create or remove memcached service on the server
 # memcached_server=
 # memcached_mange=create|remove|update
+
 - include_tasks: /etc/ansible/inc_vars.yml
 
 - include_tasks: setup.yml

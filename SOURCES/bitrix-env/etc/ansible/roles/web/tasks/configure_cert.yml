@@ -4,17 +4,18 @@
 # certificate: - path to certificate
 # certificate_chain: - path to certificate chain
 # private_key: - path to private key
+
 - name: test certificate and private key
   bx_cert:
-    cert="{{ certificate }}"
-    priv="{{ private_key }}"
+    cert: "{{ certificate }}"
+    priv: "{{ private_key }}"
   when: certificate_chain is undefined
 
 - name: test certificate, private key and chain
   bx_cert:
-    cert="{{ certificate }}"
-    priv="{{ private_key }}"
-    chain="{{ certificate_chain }}"
+    cert: "{{ certificate }}"
+    priv: "{{ private_key }}"
+    chain: "{{ certificate_chain }}"
   when: certificate_chain is defined
 
 - name: create directories

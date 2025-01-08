@@ -4,9 +4,26 @@ export LANG=en_US.UTF-8
 export NOLOCALE=yes
 export PATH=/sbin:/bin:/usr/sbin:/usr/bin
 
-OS_VERSION=$(cat /etc/redhat-release | \
-    sed -e "s/CentOS Linux release//;s/CentOS release // " | cut -d'.' -f1 | \
-    sed -e "s/\s\+//g")
+ROCKY_RELEASE_FILE=/etc/rocky-release
+ALMA_RELEASE_FILE=/etc/almalinux-release
+ORACLE_RELEASE_FILE=/etc/oracle-release
+CENTOS_RELEASE_FILE=/etc/centos-release
+if [ -f "${ROCKY_RELEASE_FILE}" ];
+then
+    OS_VERSION=$(awk '{print $4}' ${ROCKY_RELEASE_FILE} | awk -F'.' '{print $1}')
+fi
+if [ -f "${ALMA_RELEASE_FILE}" ];
+then
+    OS_VERSION=$(awk '{print $3}' ${ALMA_RELEASE_FILE} | awk -F'.' '{print $1}')
+fi
+if [ -f "${ORACLE_RELEASE_FILE}" ];
+then
+    OS_VERSION=$(awk '{print $5}' ${ORACLE_RELEASE_FILE} | awk -F'.' '{print $1}')
+fi
+if [ -f "${CENTOS_RELEASE_FILE}" ];
+then
+    OS_VERSION=$(awk '{print $4}' ${CENTOS_RELEASE_FILE} | awk -F'.' '{print $1}')
+fi
 
 LOG=/home/bitrix/dehydrated_update.log
 CERT_DIR=/home/bitrix/dehydrated/certs

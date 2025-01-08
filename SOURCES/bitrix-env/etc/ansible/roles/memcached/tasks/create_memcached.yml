@@ -10,5 +10,5 @@
   delegate_to: localhost
   tags: ansible_hosts
   bx_conf:
-    hostname={{ inventory_hostname }}
-    group=memcached
+    hostname: "{{ inventory_hostname }}"
+    group: memcached

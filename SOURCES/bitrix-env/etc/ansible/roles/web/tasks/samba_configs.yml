@@ -4,6 +4,8 @@
     ntlm_pass: "{{ lookup('file', ntlm_pass_file) }}"
 
 # configure winbind (samba, kerberos and etc.)
+
+# CentOS 6
 - name: remove samba packages on CentOS 6
   yum:
     name: "{{ packages }}"
@@ -31,6 +33,7 @@
       - mod_auth_ntlm_winbind
   when: ansible_distribution == 'CentOS' and ansible_distribution_major_version == '6'
 
+# CentOS 7
 - name: install samba packages CentOS 7
   yum:
     name: "{{ packages }}"
@@ -45,7 +48,8 @@
       - mod_auth_ntlm_winbind
   when: ansible_distribution == 'CentOS' and ansible_distribution_major_version == '7'
 
-- name: install samba packages CentOS Stream 9
+# Rocky Linux 9 / AlmaLinux 9 / Oracle Linux 9 / CentOS Stream 9
+- name: install samba packages
   dnf:
     name: "{{ packages }}"
     state: latest
@@ -57,7 +61,7 @@
       - samba-client
       - samba-winbind-clients
       - bx-mod_auth_ntlm_winbind
-  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+  when: (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
 
 #  "domain_status": "configured",
 #  "kdc": "192.168.0.230",
@@ -184,5 +188,5 @@
 
 - name: delete ntlm temprorary file
   file:
-    path: "{{ join_file  }}"
+    path: "{{ join_file }}"
     state: absent

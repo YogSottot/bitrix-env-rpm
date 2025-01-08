@@ -2,6 +2,7 @@
 # testing input options - to avoid the situation with overwriting existing data
 # 1. apache and nginx config
 # 2. directories:  document root, sessions and uploads
+
 - name: check that site does not exist in configs
   delegate_to: "{{ cluster_web_server }}"
   bx_test_site_in_config:

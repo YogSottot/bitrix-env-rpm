@@ -1,63 +1,69 @@
 ---
-#- fail:
-# upgrade php package from 82 to 83
+# 1. copy /etc/php.d files
+# 2. remove current version php
+# 3. install old version php
+# 4. restart httpd
+
+- shell: rsync -a --delete /etc/php.d/ /opt/webdir/tmp/php.d/
+  args:
+    creates: /opt/webdir/tmp/php.d/bitrixenv.ini
 
 # CentOS 7
-- name: update remi-release
-  yum:
-    name: remi-release
-    state: latest
-  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
-
-- name: disable remi php82 repository
+- name: enable remi php82 repository
   community.general.ini_file:
     dest: /etc/yum.repos.d/remi-php82.repo
     section: remi-php82
-    option: enabled
-    value: 0
-  tags: remi
-  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
-
-- name: enable remi php83 repository
-  community.general.ini_file:
-    dest: /etc/yum.repos.d/remi-php83.repo
-    section: remi-php83
     option: enabled
     value: 1
   tags: remi
   when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
 
-- name: update system by remi repository
-  yum:
-    name: php*
-    state: latest
-    update_cache: yes
-    update_only: yes
-  tags: php83
+- name: disable remi php83 repository
+  community.general.ini_file:
+    dest: /etc/yum.repos.d/remi-php83.repo
+    section: remi-php83
+    option: enabled
+    value: 0
+  tags: remi
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
+
+- include_tasks: reinstall_php.yml
+  vars:
+    is_php71: false
+    is_php56: false
+    is_json_module: false
   when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
 
 - include_tasks: php_ext_dublicates.yml
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
+
+- name: convert extension names
+  shell: /opt/webdir/bin/convert_phpd_files.sh
   when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
 
 - name: restart httpd
   service:
     name: httpd
     state: restarted
-  tags: php83
   when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
 
 # Rocky Linux 9 / AlmaLinux 9 / Oracle Linux 9 / CentOS Stream 9
-- name: update remi-release
-  dnf:
-    name: remi-release
-    state: latest
+- name: delete php-pecl-pspell
+  shell: "rpm -e --nodeps php-pecl-pspell || true"
+  args:
+    removes: /usr/lib64/php/modules/pspell.so
   when: (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
 
-- name: disable remi php82 repository
-  dnf:
-    name: '@php:remi-8.2'
+- name: remove file 20-pspell.ini
+  file:
+    path: /etc/php.d/20-pspell.ini
     state: absent
-  tags: remi
+  when: (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
+
+- name: remove file 20-pspell.ini.rpmsave
+  file:
+    path: /etc/php.d/20-pspell.ini.rpmsave
+    state: absent
   when: (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
 
 - name: enable remi php83 repository
@@ -67,30 +73,41 @@
   tags: remi
   when: (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
 
-- name: update system by remi repository
+- name: disable remi php84 repository
   dnf:
-    name: php*
-    state: latest
-    update_cache: yes
-    update_only: yes
-  tags: php83
+    name: '@php:remi-8.4'
+    state: absent
+  tags: remi
   when: (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
 
-- name: remove php-fpm
+- include_tasks: reinstall_php.yml
+  vars:
+    is_php71: false
+    is_php56: false
+    is_json_module: false
+  when: (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
+
+- name: install php-pspell
   dnf:
-    name:
-    - php-fpm
-    - nginx-filesystem
-    state: absent
-  tags: php83
+    name: php-pspell
+    state: installed
   when: (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
 
 - include_tasks: php_ext_dublicates.yml
+  when: (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
+
+- name: convert extension names
+  shell: /opt/webdir/bin/convert_phpd_files.sh
+  when: (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
+
+- name: remove file 30-pspell.ini
+  file:
+    path: /etc/php.d/30-pspell.ini
+    state: absent
   when: (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
 
 - name: restart httpd
   service:
     name: httpd
     state: restarted
-  tags: php83
   when: (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"

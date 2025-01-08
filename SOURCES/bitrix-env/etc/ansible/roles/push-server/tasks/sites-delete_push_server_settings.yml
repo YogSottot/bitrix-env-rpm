@@ -7,7 +7,7 @@
   delegate_to: "{{ cluster_web_server }}"
   when: proccess_sites
   bx_blockinfile:
-    insertafter='BEGIN GENERATED PUSH SETTINGS'
-    insertbefore='END GENERATED PUSH SETTINGS'
-    state=delete
-    dest="{{ item.DocumentRoot }}/bitrix/.settings.php"
+    insertafter: 'BEGIN GENERATED PUSH SETTINGS'
+    insertbefore: 'END GENERATED PUSH SETTINGS'
+    state: delete
+    dest: "{{ item.DocumentRoot }}/bitrix/.settings.php"

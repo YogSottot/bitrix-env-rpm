@@ -10,7 +10,8 @@
 
 - name: gathering facts about site
   delegate_to: "{{ cluster_web_server }}"
-  bx_facts: name=cluster_test
+  bx_facts:
+    name: cluster_test
   tags: sites_facts
 
 - name: check scale module

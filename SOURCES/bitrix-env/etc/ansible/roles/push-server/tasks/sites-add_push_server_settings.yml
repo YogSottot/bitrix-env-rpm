@@ -15,10 +15,10 @@
   delegate_to: "{{ cluster_web_server }}"
   when: proccess_sites
   bx_blockinfile:
-    insertafter='BEGIN GENERATED PUSH SETTINGS'
-    insertbefore='END GENERATED PUSH SETTINGS'
-    state=delete
-    dest="{{ item.DocumentRoot }}/bitrix/.settings.php"
+    insertafter: 'BEGIN GENERATED PUSH SETTINGS'
+    insertbefore: 'END GENERATED PUSH SETTINGS'
+    state: delete
+    dest: "{{ item.DocumentRoot }}/bitrix/.settings.php"
 
 # add template data to the site config
 - name: create site configs
@@ -26,9 +26,9 @@
   delegate_to: "{{ cluster_web_server }}"
   when: proccess_sites
   bx_blockinfile:
-    from_file=/tmp/push-settings.php 
-    insertafter='return array' 
-    dest="{{ item.DocumentRoot }}/bitrix/.settings.php"
+    from_file: /tmp/push-settings.php
+    insertafter: 'return array'
+    dest: "{{ item.DocumentRoot }}/bitrix/.settings.php"
 
 - name: change access rights
   file:

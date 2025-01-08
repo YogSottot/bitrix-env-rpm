@@ -23,7 +23,8 @@
   tags: master_facts
 
 - name: compare version on master and client
-  debug: msg="Different version on master and client for bitrix-env; client_version={{ bx_system_client }}, master_version={{ bx_system_master }}, base_version={{ bx_base_system_client }}"
+  debug:
+    msg: "Different version on master and client for bitrix-env; client_version={{ bx_system_client }}, master_version={{ bx_system_master }}, base_version={{ bx_base_system_client }}"
   when: bx_system_client != bx_system_master
   tags: debug
 
@@ -53,22 +54,22 @@
   tags: yum_update
   when: inventory_hostname == common_server or common_server == 'NOT_DEFINED' and ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
 
-# CentOS Stream 9
+# Rocky Linux 9 / AlmaLinux 9 / Oracle Linux 9 / CentOS Stream 9
 - name: clean dnf info
   shell: dnf clean all
   tags: dnf_update
-  when: inventory_hostname == common_server or common_server == 'NOT_DEFINED' and ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+  when: inventory_hostname == common_server or common_server == 'NOT_DEFINED' and (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
 
 - name: remove old version bitrix-env4
   dnf:
     pkg: bitrix-env4
     state: absent
   tags: dnf_remove
-  when: inventory_hostname == common_server or common_server == 'NOT_DEFINED' and ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+  when: inventory_hostname == common_server or common_server == 'NOT_DEFINED' and (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
 
 - name: update bitrix-env
   dnf:
     pkg: "{{ bx_package_name }}"
     state: latest
   tags: dnf_update
-  when: inventory_hostname == common_server or common_server == 'NOT_DEFINED' and ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+  when: inventory_hostname == common_server or common_server == 'NOT_DEFINED' and (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"

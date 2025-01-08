@@ -3,6 +3,7 @@
 # site_name - name of site (only site kernel or link can be used)
 # option: proxy_ignore_client_abort
 # value: off|on
+
 - name: gathering facts about processed site
   delegate_to: "{{ cluster_web_server }}"
   bx_facts:
@@ -73,7 +74,7 @@
     insertafter: "^\s*root\s+"
   when: "inventory_hostname == cluster_web_server"
   tags: configure_site
-  with_items: "{{ bx_sites_info  }}"
+  with_items: "{{ bx_sites_info }}"
 
 - name: restart nginx
   tags: configure_site

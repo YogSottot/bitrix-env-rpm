@@ -43,41 +43,41 @@
 
 - name: restart httpd
   service:
-    name=httpd
-    state=restarted
+    name: httpd
+    state: restarted
   when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
 
-# CentOS Stream 9
+# Rocky Linux 9 / AlmaLinux 9 / Oracle Linux 9 / CentOS Stream 9
 - name: enable remi php81 repository
   dnf:
     name: '@php:remi-8.1'
     state: present
   tags: remi
-  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+  when: (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
 
 - name: disable remi php82 repository
   dnf:
     name: '@php:remi-8.2'
     state: absent
   tags: remi
-  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+  when: (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
 
 - include_tasks: reinstall_php.yml
   vars:
     is_php71: false
     is_php56: false
     is_json_module: false
-  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+  when: (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
 
 - include_tasks: php_ext_dublicates.yml
-  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+  when: (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
 
 - name: convert extension names
   shell: /opt/webdir/bin/convert_phpd_files.sh
-  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+  when: (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
 
 - name: restart httpd
   service:
-    name=httpd
-    state=restarted
-  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+    name: httpd
+    state: restarted
+  when: (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"

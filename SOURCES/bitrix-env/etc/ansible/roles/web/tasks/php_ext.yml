@@ -1,5 +1,6 @@
 ---
 # curl, phar and etc
+
 - set_fact:
     package: "php"
     extension_string: "extension"
@@ -57,7 +58,7 @@
 
 - name: delete .disabled ini-file
   file:
-    dest: "{{ ini  }}.disabled"
+    dest: "{{ ini }}.disabled"
     state: absent
   when: type == 'enable' 
 

@@ -20,7 +20,7 @@
 
 - name: start mysql service
   service:
-    name={{ mysql_service }}
-    state=started
-    enabled=yes
+    name: "{{ mysql_service }}"
+    state: started
+    enabled: yes
   tags: mysql

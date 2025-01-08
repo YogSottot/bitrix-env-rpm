@@ -4,7 +4,7 @@
   
 - name: wait open port
   wait_for:
-    port={{ mysql_port }}
-    delay=10
-    timeout=100
-    state=started
+    port: "{{ mysql_port }}"
+    delay: 10
+    timeout: 100
+    state: started

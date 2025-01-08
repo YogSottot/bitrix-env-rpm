@@ -14,8 +14,9 @@ sub_menu_update_php() {
 
     local host_logo="$HM0088"
     local menu_exit="$HM0042"
-    local up_php83="1. $HM00888"
-    local up_php82="2. $HM00887"
+    local up_php84="1. $HM00889"
+    local up_php83="2. $HM00888"
+    local up_php82="3. $HM00887"
 #    local up_php81="3. $HM00886"
 #    local up_php80="4. $HM00885"
 #    local up_php74="5. $HM00884"
@@ -28,6 +29,7 @@ sub_menu_update_php() {
     local up_menu=""
     [[ $min_php_version -ge 56 && $min_php_version -lt 82  && $OS_VERSION -gt 6 ]] && up_menu=" "$up_php82"\n\t\t"$up_menu
     [[ $min_php_version -ge 56 && $min_php_version -lt 83  && $OS_VERSION -gt 6 ]] && up_menu=" "$up_php83"\n\t\t"$up_menu
+    [[ $min_php_version -ge 56 && $min_php_version -lt 84  && $OS_VERSION -gt 6 ]] && up_menu=" "$up_php84"\n\t\t"$up_menu
 #    [[ $min_php_version -ge 56 && $min_php_version -lt 81  && $OS_VERSION -gt 6 ]] && up_menu=$up_menu"\n\t$up_php81"
 #    [[ $min_php_version -ge 56 && $min_php_version -lt 80  && $OS_VERSION -gt 6 ]] && up_menu=$up_menu"\n\t$up_php80"
 #    [[ $min_php_version -ge 56 && $min_php_version -lt 74  && $OS_VERSION -gt 6 ]] && up_menu=$up_menu"\n\t$up_php74"
@@ -72,10 +74,24 @@ sub_menu_update_php() {
 #        fi
 
         case "$UP_MENU" in
-            "0") return 1 ;;
+            "0")
+                return 1
+                ;;
             "1")
                 echo "$UP_MENU"
-                if [[ $min_php_version -ge 83 || $OS_VERSION -eq 6 ]]; then
+                if [[ $min_php_version -ge 84 || $OS_VERSION -eq 6 ]];
+                then
+                    error_pick
+                    UP_MENU=
+                    continue
+                fi
+                upgrade_cmd="$ansible_wrapper -a bx_php_upgrade_php84 --host $phost_name "
+                upgrade_version="8.4"
+                ;;
+            "2")
+                echo "$UP_MENU"
+                if [[ $min_php_version -ge 83 || $OS_VERSION -eq 6 ]];
+                then
                     error_pick
                     UP_MENU=
                     continue
@@ -83,14 +99,19 @@ sub_menu_update_php() {
                 upgrade_cmd="$ansible_wrapper -a bx_php_upgrade_php83 --host $phost_name "
                 upgrade_version="8.3"
                 ;;
-            "2")
-                if [[ $min_php_version -ge 82 || $OS_VERSION -eq 6 ]]; then
+            "3")
+                if [[ $min_php_version -ge 82 || $OS_VERSION -eq 6 ]];
+                then
                     error_pick
                     UP_MENU=
                     continue
                 fi
                 upgrade_cmd="$ansible_wrapper -a bx_php_upgrade_php82 --host $phost_name "
                 upgrade_version="8.2"
+                ;;
+            *)
+                error_pick
+                UP_MENU=
                 ;;
 #           "3")
 #                if [[ $min_php_version -ge 81 || $OS_VERSION -eq 6 ]]; then
@@ -165,14 +186,11 @@ sub_menu_update_php() {
 #                     continue
 #                fi
 #               ;;
-            *)
-                error_pick
-                UP_MENU=
-                ;;
         esac
     done
 
-    if [[ $DEBUG -gt 0 ]]; then
+    if [[ $DEBUG -gt 0 ]];
+    then
         echo "upgrade_cmd=[$upgrade_cmd]"
     fi
     [[ -z $upgrade_cmd ]] && return 0
@@ -201,6 +219,7 @@ sub_menu_downgrade_php() {
 #    local down_php80="7. $HM00896"
     local down_php81="1. $HM00897"
     local down_php82="2. $HM00898"
+    local down_php83="3. $HM00899"
 
     local down_menu=""
 #    [[ $min_php_version -gt 56 && $BITRIX_ENV_TYPE != "crm" ]] && down_menu=$down_menu"\n\t$down_php56"
@@ -210,6 +229,7 @@ sub_menu_downgrade_php() {
 #    [[ $min_php_version -gt 73 ]] && down_menu=$down_menu"\n\t$down_php73"
 #    [[ $min_php_version -gt 74 ]] && down_menu=$down_menu"\n\t$down_php74"
 #    [[ $min_php_version -gt 80 ]] && down_menu=$down_menu"\n\t$down_php80"
+    [[ $min_php_version -gt 83 ]] && down_menu=" "$down_php83"\n\t\t"$down_menu
     [[ $min_php_version -gt 82 ]] && down_menu=" "$down_php82"\n\t\t"$down_menu
     [[ $min_php_version -gt 81 ]] && down_menu=" "$down_php81"\n\t\t"$down_menu
 
@@ -231,7 +251,43 @@ sub_menu_downgrade_php() {
         print_message "$HM0204" '' '' DOWN_MENU
 
         case "$DOWN_MENU" in
-            "0") return 1 ;;
+            "0")
+                return 1
+                ;;
+            "1")
+                if [[ $min_php_version -le 81 ]];
+                then
+                    error_pick
+                    DOWN_MENU=
+                    continue
+                fi
+                down_cmd="$ansible_wrapper -a bx_php_rollback_php81 --host ${phost_name}"
+                down_version="8.1"
+                ;;
+            "2")
+                if [[ $min_php_version -le 82 ]];
+                then
+                    error_pick
+                    DOWN_MENU=
+                    continue
+                fi
+                down_cmd="$ansible_wrapper -a bx_php_rollback_php82 --host ${phost_name}"
+                down_version="8.2"
+                ;;
+            "3")
+                if [[ $min_php_version -le 83 ]];
+                then
+                    error_pick
+                    DOWN_MENU=
+                    continue
+                fi
+                down_cmd="$ansible_wrapper -a bx_php_rollback_php83 --host ${phost_name}"
+                down_version="8.3"
+                ;;
+            *)
+                error_pick
+                DOWN_MENU=
+                ;;
 #            "1")
 #                if [[ $min_php_version -le 56 || $BITRIX_ENV_TYPE == "crm" ]]; then
 #                    error_pick
@@ -295,32 +351,11 @@ sub_menu_downgrade_php() {
 #                down_cmd="$ansible_wrapper -a bx_php_rollback_php80 --host ${phost_name}"
 #                down_version="8.0"
 #               ;;
-            "1")
-                if [[ $min_php_version -le 81 ]]; then
-                    error_pick
-                    DOWN_MENU=
-                    continue
-                fi
-                down_cmd="$ansible_wrapper -a bx_php_rollback_php81 --host ${phost_name}"
-                down_version="8.1"
-                ;;
-            "2")
-                if [[ $min_php_version -le 82 ]]; then
-                    error_pick
-                    DOWN_MENU=
-                    continue
-                fi
-                down_cmd="$ansible_wrapper -a bx_php_rollback_php82 --host ${phost_name}"
-                down_version="8.2"
-                ;;
-            *)
-                error_pick
-                DOWN_MENU=
-                ;;
         esac
     done
 
-    if [[ $DEBUG -gt 0 ]]; then
+    if [[ $DEBUG -gt 0 ]];
+    then
         echo "down_cmd=[$down_cmd]"
     fi
 
@@ -369,7 +404,13 @@ sub_upgrade_mysql() {
         print_message "$HM0204" '' '' UP_MENU
 
         case "$UP_MENU" in
-            "0") return 1 ;;
+            "0")
+                return 1
+                ;;
+            *)
+                error_pick
+                UP_MENU=
+                ;;
 #            "1")
 #                if [[ $min_mysql_version -lt 80 && $min_mysql_version -ge 57 && $OS_VERSION -gt 6 ]]; then
 #                    upgrade_cmd="$ansible_wrapper -a bx_upgrade_mysql80 --host $phost_name"
@@ -389,22 +430,21 @@ sub_upgrade_mysql() {
 #                   continue
 #               fi
 #               ;;
-            *)
-                error_pick
-                UP_MENU=
-                ;;
         esac
     done
 
-    if [[ $DEBUG -gt 0 ]]; then
+    if [[ $DEBUG -gt 0 ]];
+    then
         echo "upgrade_cmd=[$upgrade_cmd]"
     fi
 
-    if [[ $upgrade_version == "5.7" ]]; then
+    if [[ $upgrade_version == "5.7" ]];
+    then
         print_color_text "$HM0080" red
         echo "$HM0081"
         echo
-    elif [[ $upgrade_version == "5.5" ]]; then
+    elif [[ $upgrade_version == "5.5" ]];
+    then
         print_color_text "$HM0075" red
         echo "$HM0083"
         echo
@@ -420,17 +460,21 @@ sub_upgrade_mysql() {
 select_update_type() {
     local select_hname="${1}"
 
-    if [[ $select_hname != "all" ]]; then
+    if [[ $select_hname != "all" ]];
+    then
         cur_id=$(get_server_id "$select_hname")
         cur_id_rtn=$?
 
-        if [[ $cur_id_rtn -eq 1 ]]; then
+        if [[ $cur_id_rtn -eq 1 ]];
+        then
             print_message "$HM0200" "$(get_text "$HM0013" "$host_ident")" "" any_key
             return 1
-        elif [[ $cur_id_rtn -eq 2 ]]; then
+        elif [[ $cur_id_rtn -eq 2 ]];
+        then
             print_message "$HM0200" "$(get_text "$HM0012" "$host_ident")"
             return 1
-        elif [[ $cur_id_rtn -eq 3 ]]; then
+        elif [[ $cur_id_rtn -eq 3 ]];
+        then
             print_message "$HM0200" "$HM0044"
             return 1
         fi
@@ -459,9 +503,10 @@ select_update_type() {
         echo
 
         print_mysql_php_version "${select_hname}"
-        if [[ $DEBUG -gt 0 ]]; then
+        if [[ $DEBUG -gt 0 ]];
+        then
             echo "MYSQl VERSION: $MYSQL_VERSION"
-            echo "  PHP VERSION: $PHP_VERSION"
+            echo "PHP VERSION: $PHP_VERSION"
         fi
 
 #        menu_list=""
@@ -519,9 +564,10 @@ sub_menu() {
         print_mysql_php_version
         MASTER_MYSQL_VERSION="$MYSQL_VERSION"
         MASTER_PHP_VERSION="$PHP_VERSION"
-        if [[ $DEBUG -gt 0 ]]; then
+        if [[ $DEBUG -gt 0 ]];
+        then
             echo "MASTER MYSQL VERSION: $MASTER_MYSQL_VERSION"
-            echo "MASTER PHP VERSION:   $MASTER_PHP_VERSION"
+            echo "MASTER PHP VERSION: $MASTER_PHP_VERSION"
         fi
 
         get_task_by_type '(common|web_cluster|mysql|monitor)' POOL_SUBMENU_TASK_LOCK POOL_SUBMENU_TASK_INFO
@@ -529,12 +575,14 @@ sub_menu() {
 
         menu_list="${menu_update}\n\t\t ${menu_exit}"
 
-        if [[ $POOL_SUBMENU_TASK_LOCK -eq 1 ]]; then
+        if [[ $POOL_SUBMENU_TASK_LOCK -eq 1 ]];
+        then
             menu_list="$menu_exit"
         fi
 
         print_menu
-        if [[ $POOL_SUBMENU_TASK_LOCK -eq 1 ]]; then
+        if [[ $POOL_SUBMENU_TASK_LOCK -eq 1 ]];
+        then
             print_message "$HM0202" '' '' MENU_SELECT 0
         else
             print_message "$menu_select_message" "$HM10002" '' MENU_SELECT 0

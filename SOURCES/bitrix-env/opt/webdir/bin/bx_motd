@@ -15,7 +15,27 @@ SYSTEM_MEMORY=$(grep MemTotal /proc/meminfo | awk {'printf "%s kB", $2'})
 SYSTEM_CPU=$(grep 'model name' /proc/cpuinfo | sed -e 's/model name\s*:\s*//' | head -1)
 SYSTEM_CPU_COUNT=$(grep 'model name' -c /proc/cpuinfo )
 SYSTEM_BX_VERSION=$(egrep -o "BITRIX_VA_VER=\S+" /root/.bash_profile | awk -F"=" '{print $2}' | sed -e 's/"//g' )
-SYSTEM_OS=$(cat /etc/redhat-release)
+
+ROCKY_RELEASE_FILE=/etc/rocky-release
+ALMA_RELEASE_FILE=/etc/almalinux-release
+ORACLE_RELEASE_FILE=/etc/oracle-release
+CENTOS_RELEASE_FILE=/etc/centos-release
+if [ -f "${ROCKY_RELEASE_FILE}" ];
+then
+    SYSTEM_OS=$(cat ${ROCKY_RELEASE_FILE})
+fi
+if [ -f "${ALMA_RELEASE_FILE}" ];
+then
+    SYSTEM_OS=$(cat ${ALMA_RELEASE_FILE})
+fi
+if [ -f "${ORACLE_RELEASE_FILE}" ];
+then
+    SYSTEM_OS=$(cat ${ORACLE_RELEASE_FILE})
+fi
+if [ -f "${CENTOS_RELEASE_FILE}" ];
+then
+    SYSTEM_OS=$(cat ${CENTOS_RELEASE_FILE})
+fi
 
 ROOTPASSWORD=/root/ROOT_PASSWORD
 

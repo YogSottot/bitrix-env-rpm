@@ -1,5 +1,6 @@
 ---
 # hosts
+
 - name: remove server to web group
   delegate_to: 127.0.0.1
   bx_conf:

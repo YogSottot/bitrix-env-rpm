@@ -2,11 +2,13 @@
 # rotate slow and error log for mysql service
 {{ mysql_logs }}/*.log
 {
-        copytruncate
-        notifempty
-        daily
-        rotate 2
-        missingok
-        compress
-        delaycompress
+    su mysql mysql
+    copytruncate
+    ifempty
+    daily
+    rotate 10
+    missingok
+    compress
+    delaycompress
+    sharedscripts
 }

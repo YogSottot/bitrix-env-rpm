@@ -54,7 +54,7 @@
 
 - name: add new settings to apache config
   blockinfile:
-    dest: "{{ item.ApacheConfNTLM  }}"
+    dest: "{{ item.ApacheConfNTLM }}"
     insertafter: "SSLEngine"
     marker: "# CERTIFICATE ANSIBLE MANAGED BLOCK"
     content: |

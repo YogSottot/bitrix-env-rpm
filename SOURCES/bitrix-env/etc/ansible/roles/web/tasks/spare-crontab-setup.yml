@@ -1,5 +1,6 @@
 ---
 # http://jabber.bx/view.php?id=89048
+
 - name: remove crontab event
   lineinfile:
     dest: /etc/crontab

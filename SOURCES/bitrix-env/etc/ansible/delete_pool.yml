@@ -6,8 +6,8 @@
   tasks:
   - name: delete pool configuration files
     file:
-      path={{ item }}
-      state=absent
+      path: "{{ item }}"
+      state: absent
     with_items:
       - /etc/ansible/hosts
       - /etc/ansible/ansible-roles
@@ -17,13 +17,13 @@
 
   - name: delete pool ssh public keys
     lineinfile:
-      dest=/root/.ssh/authorized_keys
-      regexp="ANSIBLE_KEY"
-      state=absent
+      dest: /root/.ssh/authorized_keys
+      regexp: "ANSIBLE_KEY"
+      state: absent
 
   - name: delete pool ssh private keys
     run_once: true
     delegate_to: localhost
     file:
-      path=/etc/ansible/.ssh
-      state=absent
+      path: /etc/ansible/.ssh
+      state: absent

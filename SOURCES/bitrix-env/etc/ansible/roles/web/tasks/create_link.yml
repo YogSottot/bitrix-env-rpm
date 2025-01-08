@@ -11,6 +11,7 @@
 #  
 #  ansible_playbook_file - all options can pass by yml file
 #
+
 # load variables from groups config file
 - name: gathering facts about kernel
   delegate_to: "{{ cluster_web_server }}"

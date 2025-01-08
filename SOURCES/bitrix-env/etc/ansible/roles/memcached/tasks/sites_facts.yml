@@ -1,6 +1,7 @@
 ---
 # get info about site installed on localhost
 # save info to: bx_sites_info
+
 - set_fact:
     run_register: "enabled"
   tags: gathering_facts

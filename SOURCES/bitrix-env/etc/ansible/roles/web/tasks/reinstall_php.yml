@@ -30,14 +30,14 @@
   when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
 
 - name: remove additional packages
-  shell: rpm -qi {{ item  }} && rpm -e --nodeps {{ item  }} || true
+  shell: rpm -qi {{ item }} && rpm -e --nodeps {{ item }} || true
   with_items:
     - php-pecl-mcrypt
     - php-pecl-xdebug3
   when: is_php71 and ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
 
 - name: remove additional packages
-  shell: rpm -qi {{ item  }} && rpm -e --nodeps {{ item  }} || true
+  shell: rpm -qi {{ item }} && rpm -e --nodeps {{ item }} || true
   with_items:
     - php-pecl-apcu-bc
     - php-pdo-dblib
@@ -108,29 +108,29 @@
     state: absent
   when: not is_php56 and ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
 
-# CentOS Stream 9
+# Rocky Linux 9 / AlmaLinux 9 / Oracle Linux 9 / CentOS Stream 9
 - set_fact:
     exclude_packages: "NOTHING"
-  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+  when: (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
 
 - name: save list php-packages
   shell: "rpm -qa --queryformat '%{name}\n' | grep '^php' | grep -v '{{ exclude_packages }}'"
   args:
     executable: /bin/bash
   register: php_packages
-  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+  when: (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
 
 - name: remove package without deps
   shell: rpm -qi {{ item }} && rpm -e --nodeps {{ item }} || true
   with_items:
     - "{{ php_packages.stdout_lines }}"
-  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+  when: (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
 
 - name: reinstall php
   dnf:
     name: "{{ php_packages.stdout_lines }}"
     state: installed
-  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+  when: (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
 
 - name: remove php-fpm
   dnf:
@@ -138,24 +138,24 @@
     - php-fpm
     - nginx-filesystem
     state: absent
-  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+  when: (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
 
 - name: reinstall json module
   dnf:
     name: php-json
     state: installed
-  when: is_json_module and ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+  when: is_json_module and (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
 
 - name: restore php.d settings
   shell: rsync -a --delete /opt/webdir/tmp/php.d/ /etc/php.d/
-  when: not is_php56 and ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+  when: not is_php56 and (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
 
 - name: enable json module
   lineinfile:
     path: /etc/php.d/20-json.ini
     line: extension=json.so
     create: yes
-  when: is_json_module and ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+  when: is_json_module and (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
 
 - name: get rpmsave file list
   find:
@@ -163,17 +163,17 @@
     patterns: "*.rpmsave,*.rpmnew"
     file_type: file
   register: rpmsave
-  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+  when: (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
 
 - name: delete rpmsave files
   file:
     path: "{{ item.path }}"
     state: absent
   with_items: "{{ rpmsave.files }}"
-  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+  when: (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
 
 - name: delete php.d
   file:
     path: /opt/webdir/tmp/php.d
     state: absent
-  when: not is_php56 and ansible_distribution == "CentOS" and ansible_distribution_major_version == "9"
+  when: not is_php56 and (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"

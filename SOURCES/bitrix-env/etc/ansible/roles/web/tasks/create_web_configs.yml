@@ -1,5 +1,4 @@
 ---
-####
 - name: create configs variables
   set_fact:
     nginx_config_name_http: "bx_ext_{{ web_site_name }}.conf"
@@ -34,7 +33,7 @@
 - name: http apache config
   template: 
     src: httpd/bx_apache_site.conf.j2
-    dest: /etc/httpd/bx/conf/{{ apache_config_name }}
+    dest: "/etc/httpd/bx/conf/{{ apache_config_name }}"
     owner: bitrix
     group: bitrix
   tags: web_config
@@ -43,7 +42,7 @@
 - name: http apache-scale config
   template: 
     src: httpd/bx_apache_site_scale.conf.j2
-    dest: /etc/httpd/bx-scale/conf/{{ apache_config_name_scale }}
+    dest: "/etc/httpd/bx-scale/conf/{{ apache_config_name_scale }}"
     owner: bitrix
     group: bitrix
   tags: web_config

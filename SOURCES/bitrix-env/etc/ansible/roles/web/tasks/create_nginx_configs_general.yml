@@ -1,5 +1,6 @@
 ---
 # nginx configs
+
 - name: http nginx config
   template: 
     src: nginx/http_newsite_template.conf.j2

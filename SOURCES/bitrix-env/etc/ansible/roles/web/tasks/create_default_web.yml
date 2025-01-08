@@ -1,5 +1,6 @@
 ---
 # create default site directory and files
+
 - name: Create default directories
   file:
     path: "{{ item }}"

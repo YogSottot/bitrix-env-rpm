@@ -2,6 +2,7 @@
 # fill up bx_sites_info variable for cluster cases (create common csync files)
 # ONLY usage in create/delete site tasks
 # load variables from groups config file
+
 - name: set cluster mark to disabled state
   set_fact:
     is_cluster: "disable"

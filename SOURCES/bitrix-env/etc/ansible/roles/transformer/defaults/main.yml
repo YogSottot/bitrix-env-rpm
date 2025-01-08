@@ -5,7 +5,7 @@
 #libreoffice_file: "{{ libreoffice_name }}.tar.gz"
 #libreoffice_url: "https://repo.bitrix.info/sources/{{ libreoffice_file }}"
 
-# CentOS Stream 9
+# Rocky Linux 9 / AlmaLinux 9 / Oracle Linux 9 / CentOS Stream 9
 libreoffice_version: 24.8.2
 libreoffice_name: "LibreOffice_{{ libreoffice_version }}_Linux_x86-64_rpm"
 libreoffice_file: "{{ libreoffice_name }}.tar.gz"

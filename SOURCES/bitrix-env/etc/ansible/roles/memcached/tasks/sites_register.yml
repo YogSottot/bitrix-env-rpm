@@ -3,6 +3,7 @@
 # fill out:
 # run_register    - defined execute or not memcached register script for sites
 # bx_sites_info   - list sites
+
 - include_tasks: sites_facts.yml
 
 - name: create temporary directory
@@ -10,11 +11,11 @@
   with_items: "{{ bx_sites_info }}"
   tags: web_configs
   file:
-    path="{{ bx_ansible_temp_dir_fn }}"
-    state=directory
-    mode=0750
-    owner={{ bx_ansible_owner }}
-    group={{ bx_ansible_group }}
+    path: "{{ bx_ansible_temp_dir_fn }}"
+    state: directory
+    mode: 0750
+    owner: "{{ bx_ansible_owner }}"
+    group: "{{ bx_ansible_group }}"
   when: "run_register == 'enabled'"
 
 - name: create temporary directories for sites
@@ -22,11 +23,11 @@
   with_items: "{{ bx_sites_info }}"
   tags: web_configs
   file:
-    path="{{ bx_ansible_temp_dir_fn }}/{{ item.SiteName }}"
-    state=directory
-    mode=0750
-    owner={{ bx_ansible_owner }}
-    group={{ bx_ansible_group }}
+    path: "{{ bx_ansible_temp_dir_fn }}/{{ item.SiteName }}"
+    state: directory
+    mode: 0750
+    owner: "{{ bx_ansible_owner }}"
+    group: "{{ bx_ansible_group }}"
   when: "run_register == 'enabled'"
 
 - name: copy register script to temporary directory
@@ -34,11 +35,11 @@
   with_items: "{{ bx_sites_info }}"
   tags: web_configs
   template:
-    src=memcached_cluster_node.php.j2
-    dest="{{ bx_ansible_temp_dir_fn }}/{{ item.SiteName }}/memcached_cluster_node.php"
-    owner={{ bx_ansible_owner }}
-    group={{ bx_ansible_group }}
-    mode=0640
+    src: memcached_cluster_node.php.j2
+    dest: "{{ bx_ansible_temp_dir_fn }}/{{ item.SiteName }}/memcached_cluster_node.php"
+    owner: "{{ bx_ansible_owner }}"
+    group: "{{ bx_ansible_group }}"
+    mode: 0640
   when: "run_register == 'enabled'"
 
 - name: execute register script
@@ -54,6 +55,6 @@
   delegate_to: "{{ cluster_web_server }}"
   with_items: "{{ bx_sites_info }}"
   file:
-    path="{{ bx_ansible_temp_dir_fn }}"
-    state=absent
+    path: "{{ bx_ansible_temp_dir_fn }}"
+    state: absent
   when: "ansible_playbook_debug != 'DEBUG' and run_register == 'enabled'"

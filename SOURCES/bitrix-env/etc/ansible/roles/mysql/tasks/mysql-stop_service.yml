@@ -7,13 +7,13 @@
 
 - name: stop mysql service
   service:
-    name={{ mysql_service }}
-    state=stopped
+    name: "{{ mysql_service }}"
+    state: stopped
   tags: mysql
 
 - name: wait closed port
   wait_for:
-    port={{ mysql_port }}
-    delay=10
-    timeout=100
-    state=stopped
+    port: "{{ mysql_port }}"
+    delay: 10
+    timeout: 100
+    state: stopped

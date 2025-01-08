@@ -19,20 +19,21 @@
 - name: update bitrix-mysql group
   delegate_to: 127.0.0.1
   bx_conf:
-    group=mysql state=update
-    cluster_login={{ cluster_login }}
-    cluster_password_file={{ cluster_password_file }}
-    replica_login={{ replica_login }}
-    replica_password_file={{ replica_password_file }}
+    group: mysql
+    state: update
+    cluster_login: "{{ cluster_login }}"
+    cluster_password_file: "{{ cluster_password_file }}"
+    replica_login: "{{ replica_login }}"
+    replica_password_file: "{{ replica_password_file }}"
   tags: ansible_hosts
   run_once: true
 
 - name: update bitrix-web group
   delegate_to: 127.0.0.1
   bx_conf:
-    group=web
-    state=update
-    web_mysql_login={{ cluster_login }}
-    web_mysql_password_file={{ cluster_password_file }}
+    group: web
+    state: update
+    web_mysql_login: "{{ cluster_login }}"
+    web_mysql_password_file: "{{ cluster_password_file }}"
   tags: ansible_hosts
   run_once: true

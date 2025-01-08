@@ -6,16 +6,16 @@
 
 - name: gathering facts about installed sites
   bx_facts:
-    name=list
-    password=0
-    install='(kernel|ext_kernel)'
+    name: list
+    password: 0
+    install: '(kernel|ext_kernel)'
   delegate_to: "{{ cluster_web_server }}"
   tags: gathering_facts
   ignore_errors: yes
   register: sites_info
 
 - set_fact:
-    proccess_sites: "{{ sites_info['changed']  }}"
+    proccess_sites: "{{ sites_info['changed'] }}"
 
 - name: create variable bx_sites_info
   set_fact:

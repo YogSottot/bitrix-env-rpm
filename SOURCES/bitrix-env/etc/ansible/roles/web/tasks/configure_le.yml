@@ -3,6 +3,7 @@
 # dns_names: - array for domain names
 # email: email address
 # site_name: - bitrix site names
+
 - include_tasks: sites-gathering_facts_site_names.yml
 
 - debug:

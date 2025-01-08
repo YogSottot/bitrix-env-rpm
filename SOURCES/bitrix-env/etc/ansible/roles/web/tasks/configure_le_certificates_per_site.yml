@@ -8,9 +8,9 @@
 
 - name: delete previously settings
   bx_blockinfile:
-    insertafter="CERTIFICATE ANSIBLE MANAGED BLOCK"
-    state="delete"
-    dest="{{ item.NginxHTTPSFullPath }}"
+    insertafter: "CERTIFICATE ANSIBLE MANAGED BLOCK"
+    state: "delete"
+    dest: "{{ item.NginxHTTPSFullPath }}"
   with_items: "{{ bx_sites_info }}"
 
 - name: add new settings to nginx config 

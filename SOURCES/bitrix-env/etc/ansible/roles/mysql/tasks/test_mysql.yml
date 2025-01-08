@@ -5,9 +5,9 @@
 
 - name: gathering facts about installed sites
   bx_facts:
-    name=list
-    password=0
-    status=finished
+    name: list
+    password: 0
+    status: finished
   delegate_to: "{{ cluster_web_server }}"
   tags: gathering_facts
   ignore_errors: yes
@@ -16,7 +16,8 @@
 - set_fact:
     proccess_sites: "{{ sites_info['changed']  }}"
 
-- debug: msg="{{ proccess_sites }}"
+- debug:
+    msg: "{{ proccess_sites }}"
 
 - name: create variable bx_sites_info
   set_fact:

@@ -1,7 +1,7 @@
 ---
 - name: delete include for http-config
   lineinfile:
-    dest: "{{ item.NginxHTTPDir  }}/{{ item.NginxHTTPConfig }}"
+    dest: "{{ item.NginxHTTPDir }}/{{ item.NginxHTTPConfig }}"
     regexp: "letsencrypt-challenge-tokens.conf;$"
     state: absent
   with_items: "{{ bx_sites_info }}"
@@ -17,7 +17,7 @@
 
 - name: delete include for https-config
   lineinfile:
-    dest: "{{ item.NginxHTTPDir  }}/{{ item.NginxHTTPSConfig }}"
+    dest: "{{ item.NginxHTTPDir }}/{{ item.NginxHTTPSConfig }}"
     regexp: "letsencrypt-challenge-tokens.conf;$"
     state: absent
   with_items: "{{ bx_sites_info }}"

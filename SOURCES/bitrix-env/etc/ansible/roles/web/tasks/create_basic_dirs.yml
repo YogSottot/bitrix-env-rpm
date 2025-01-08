@@ -4,6 +4,7 @@
 # 2. php_upload dir:   /tmp/php_upload/ext_www/<site_name>
 # 3. document root:    /home/bitrix/ext_www/<site_name> (default, may replaced by input opt)
 # 4. upload basic files to document root
+
 - name: create common site directories
   file:
     path: "{{ item }}"
@@ -50,8 +51,8 @@
     line: "d {{ item }} 0770 {{ site_bitrix }} {{ site_bitrix }} -"
     create: yes
   with_items:
-    - "{{ site_extentend_php_sess  }}"
-    - "{{ site_extentend_upload  }}"
+    - "{{ site_extentend_php_sess }}"
+    - "{{ site_extentend_upload }}"
   notify: systemd-tmpfiles-create
   when: "'bitrix-web' in group_names and ansible_distribution == 'CentOS' and ansible_distribution_major_version == '7'"
 

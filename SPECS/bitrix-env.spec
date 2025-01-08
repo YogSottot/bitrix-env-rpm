@@ -10,7 +10,7 @@
 %define _binaries_in_noarch_packages_terminate_build 0
 # use mariadb for CentOS 7
 %define use_mariadb (0%{?rhel} && 0%{?rhel} >= 7)
-# use systemd for CentOS 7, CentOS Stream 8, CentOS Stream 9
+# use systemd for CentOS 7, CentOS Stream 8, Rocky Linux 9, AlmaLinux 9, Oracle Linux 9, CentOS Stream 9
 %define use_systemd (0%{?rhel} && 0%{?rhel} >= 7) || (0%{?rhel} && 0%{?rhel} >= 8) || (0%{?rhel} && 0%{?rhel} >= 9)
 
 # local macros
@@ -21,7 +21,7 @@
 %define bitrix_source		bitrix-env
 %define bitrix_type		general
 %define bitrix_conflicts	bitrix-env-crm
-%define bitrix_rel		3
+%define bitrix_rel		4
 
 Name:		bitrix-env
 Version:	9.0
@@ -143,7 +143,7 @@ Requires:	bx-nginx >= 1.26.0
 Requires:	php, php-common, php-cli, php-gd, php-mbstring, php-mcrypt, php-mysqlnd
 Requires:	php-ldap, php-pspell, php-pecl-xdebug
 Requires:	php-pecl-geoip, php-pecl-zip, php-xml
-Requires:	php-pear, php-pecl-memcache, php-pecl-rrd
+Requires:	php-pear, php-pecl-memcache, php-pecl-rrd, php-pecl-xhprof
 # other
 Requires:	httpd-tools
 Requires:	cronie, cronie-anacron, crontabs, dnf-plugins-core, python3-dnf-plugins-core, initscripts

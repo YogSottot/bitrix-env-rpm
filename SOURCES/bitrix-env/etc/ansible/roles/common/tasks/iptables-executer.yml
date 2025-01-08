@@ -25,7 +25,7 @@
   when: iptables_status == 'stateful'
 
 - name: configure iptables
-  shell: "bash {{ tmp_file.stdout  }}"
+  shell: "bash {{ tmp_file.stdout }}"
   tags: iptables
 
 - name: delete temporary file

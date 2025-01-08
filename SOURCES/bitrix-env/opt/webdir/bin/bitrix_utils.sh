@@ -80,8 +80,41 @@ print_log() {
 }
 
 get_os_type() {
-    OS_TYPE=$(cat /etc/redhat-release | grep CentOS -c)
-    OS_VERSION=$(cat /etc/redhat-release | sed -e "s/CentOS Stream release//;s/CentOS release // " | cut -d'.' -f1 | sed -e "s/\s\+//g")
+    # os and version
+    ROCKY_RELEASE_FILE=/etc/rocky-release
+    ALMA_RELEASE_FILE=/etc/almalinux-release
+    ORACLE_RELEASE_FILE=/etc/oracle-release
+    CENTOS_RELEASE_FILE=/etc/centos-release
+    if [ -f "${ROCKY_RELEASE_FILE}" ];
+    then
+	OS1=$(awk '{print $1}' ${ROCKY_RELEASE_FILE} | xargs echo -n)
+	OS2=$(awk '{print $2}' ${ROCKY_RELEASE_FILE} | xargs echo -n)
+	OS=${OS1}' '${OS2} # Rocky Linux
+	OS_VERSION=$(awk '{print $4}' ${ROCKY_RELEASE_FILE} | awk -F'.' '{print $1}') # 9
+	OS_TYPE=$(cat ${ROCKY_RELEASE_FILE} | grep Rocky -c) # 1
+    fi
+    if [ -f "${ALMA_RELEASE_FILE}" ];
+    then
+	OS=$(awk '{print $1}' ${ALMA_RELEASE_FILE} | xargs echo -n) # AlmaLinux
+	OS_VERSION=$(awk '{print $3}' ${ALMA_RELEASE_FILE} | awk -F'.' '{print $1}') # 9
+	OS_TYPE=$(cat ${ALMA_RELEASE_FILE} | grep AlmaLinux -c) # 1
+    fi
+    if [ -f "${ORACLE_RELEASE_FILE}" ];
+    then
+	OS1=$(awk '{print $1}' ${ORACLE_RELEASE_FILE} | xargs echo -n)
+	OS2=$(awk '{print $2}' ${ORACLE_RELEASE_FILE} | xargs echo -n)
+	OS=${OS1}' '${OS2} # Oracle Linux
+	OS_VERSION=$(awk '{print $5}' ${ORACLE_RELEASE_FILE} | awk -F'.' '{print $1}') # 9
+	OS_TYPE=$(cat ${ORACLE_RELEASE_FILE} | grep Oracle -c) # 1
+    fi
+    if [ -f "${CENTOS_RELEASE_FILE}" ];
+    then
+	OS1=$(awk '{print $1}' ${CENTOS_RELEASE_FILE} | xargs echo -n)
+	OS2=$(awk '{print $2}' ${CENTOS_RELEASE_FILE} | xargs echo -n)
+	OS=${OS1}' '${OS2} # CentOS Stream
+	OS_VERSION=$(awk '{print $4}' ${CENTOS_RELEASE_FILE} | awk -F'.' '{print $1}') # 9
+	OS_TYPE=$(cat ${CENTOS_RELEASE_FILE} | grep CentOS -c) # 1
+    fi
     # is OpenVZ installation
     IS_OPENVZ=$( [[ -f /proc/user_beancounters  ]] && echo 1 || echo 0  )
     # Hardware type
