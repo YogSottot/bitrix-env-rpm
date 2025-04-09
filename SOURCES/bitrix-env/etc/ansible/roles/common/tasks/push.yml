@@ -17,7 +17,7 @@
   register: push_nginx
 
 - name: reset configuration
-  shell: /etc/init.d/push-server-multi reset
+  shell: /usr/bin/push-server-multi reset
   when: push.changed
 
 - name: stop service

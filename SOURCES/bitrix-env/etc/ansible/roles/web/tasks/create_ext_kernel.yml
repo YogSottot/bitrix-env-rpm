@@ -30,6 +30,16 @@
   loop:
     - "/home/bitrix/.bx_temp"
     - "/home/bitrix/.bx_temp/{{ web_site_db }}"
+  when: "'bitrix-web' in group_names"
+
+- name: create folder for temporary files
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: 0770
+  loop:
     - "/etc/nginx/bx/site_settings"
     - "/etc/nginx/bx/site_settings/{{ web_site_name }}"
   when: "'bitrix-web' in group_names"

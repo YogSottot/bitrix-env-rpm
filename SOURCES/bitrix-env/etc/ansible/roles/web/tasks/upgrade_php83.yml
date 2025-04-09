@@ -47,6 +47,10 @@
   when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
 
 # Rocky Linux 9 / AlmaLinux 9 / Oracle Linux 9 / CentOS Stream 9
+- name: backup php.ini file
+  shell: /opt/webdir/bin/backup_php_ini_file.sh
+  when: (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
+
 - name: update remi-release
   dnf:
     name: remi-release
@@ -86,6 +90,10 @@
   when: (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
 
 - include_tasks: php_ext_dublicates.yml
+  when: (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
+
+- name: convert php.ini file
+  shell: /opt/webdir/bin/convert_php_ini_file.sh
   when: (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
 
 - name: restart httpd

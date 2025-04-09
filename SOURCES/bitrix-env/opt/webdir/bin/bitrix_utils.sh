@@ -1037,6 +1037,7 @@ log_to_file() {
 # CentOS7 + CentOS Stream 9:
 # mysql-community-server => mysql-community
 # Percona-Server-server  => percona
+# percona-server-server  => percona
 # MariaDB-server         => MariaDB
 # mariadb-server         => mariadb
 # Centos6:
@@ -1055,8 +1056,8 @@ get_mysql_package() {
     elif [[ $(echo "$PACKAGES_LIST" | grep -c '^Percona-Server-server') -gt 0 ]]; then
         MYSQL_PACKAGE=Percona-Server-server
         MYSQL_SERVICE=mysqld
-    # Percona 8.0
-    elif [[ $(echo "$PACKAGES_LIST" | grep -c '^percona-server-server') -gt 0  ]]; then
+    # Percona Server 8.0 && Percona Server 8.4
+    elif [[ $(echo "$PACKAGES_LIST" | grep -c 'percona-server-server') -gt 0  ]]; then
         MYSQL_PACKAGE=percona-server-server
         MYSQL_SERVICE=mysqld
     elif [[ $(echo "$PACKAGES_LIST" | grep -c '^MariaDB-server') -gt 0 ]]; then
@@ -1512,7 +1513,7 @@ generate_push() {
         sed -i "/SECURITY_KEY/d" /etc/sysconfig/push-server-multi && log_to_file "$BU0048"
 
         # generate configs && generate SECURITY_KEY in /etc/sysconfig/push-server-multi
-        /etc/init.d/push-server-multi reset > /dev/null 2>&1
+        /usr/bin/push-server-multi reset > /dev/null 2>&1
         log_to_file "$BU0049"
 
         # get variables from config file

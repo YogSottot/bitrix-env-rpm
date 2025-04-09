@@ -11,4 +11,3 @@
     src: root-my.cnf.j2
     dest: "{{ ansible_env.HOME }}/.my.cnf"
     mode: 0600
-

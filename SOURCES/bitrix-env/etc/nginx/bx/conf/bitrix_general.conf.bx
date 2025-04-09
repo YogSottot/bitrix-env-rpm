@@ -21,6 +21,11 @@ location ~* ^/upload/.+\.svg$ {
     add_header Content-Security-Policy "default-src 'none'; style-src 'unsafe-inline'; sandbox";
 }
 
+# Download file from /upload/*, do not execute
+location ~* ^/upload/.*([^/]+)\.(html|htm|php|php3|php4|php5|php6|phtml|pl|asp|aspx|cgi|dll|exe|shtm|shtml|fcg|fcgi|fpl|asmx|pht)$ {
+    add_header Content-Disposition "attachment";
+}
+
 # Intenal locations
 location ^~ /upload/support/not_image {
     internal;
@@ -254,6 +259,21 @@ location ^~ /upload/bx_cloud_upload/ {
         proxy_set_header "content-type" "";
         proxy_set_header "content-length" "";
         proxy_pass $1://$2.clodo.ru/$3;
+    }
+    # Timeweb.cloud S3 compatible storage
+    location ~ ^/upload/bx_cloud_upload/(http[s]?)\.s3\.timeweb\.cloud/([^\s].+)$ {
+	internal;
+	resolver 8.8.8.8 ipv6=off;
+	proxy_method GET;
+	proxy_set_header X-Real-IP $remote_addr;
+	proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+	proxy_set_header X-Forwarded-Server $host;
+	more_clear_input_headers 'Authorization';
+	#proxy_max_temp_file_size 0;
+	proxy_set_header "cookie" "";
+	proxy_set_header "content-type" "";
+	proxy_set_header "content-length" "";
+	proxy_pass $1://s3.timeweb.cloud/$2;
     }
     location ~* .*$ {
 	deny all;

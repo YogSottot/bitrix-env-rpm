@@ -1,43 +1,92 @@
 ---
+# CentOS 7
 - name: wait for absent lockfile
   wait_for:
     state: absent
     path: /var/cache/etckeeper/packagelist.pre-install
     delay: 10
     timeout: 300
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
 
 - name: create lockfile
   file:
     path: /var/cache/etckeeper/packagelist.pre-install
     state: touch
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
 
 - name: create time mark
   shell: date +"%Y-%m-%dT%H-%M-%S"
   register: commitdate
   tags: etckeeper
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
 
 - name: create touch file
-  file: 
+  file:
     path: "/etc/etckeeper_commit_{{ commitdate.stdout }}"
     state: touch
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
 
 - name: check if directores in /etc contains uncommitted changes
   shell: /usr/bin/etckeeper unclean && echo "True" || echo "False"
   register: hgstatus
   ignore_errors: true
   tags: etckeeper
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
 
 - name: commit changes by etckeeper
   shell: /usr/bin/etckeeper commit "commit from ansible {{ task_type|default('mysql') }} task at {{ commitdate.stdout }}"
   tags: etckeeper
   #when: "'True' in hgstatus.stdout"
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
 
 - name: delete touch file
-  file: 
+  file:
     path: "/etc/etckeeper_commit_{{ commitdate.stdout }}"
     state: absent
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
 
 - name: delete lockfile
   file:
     path: /var/cache/etckeeper/packagelist.pre-install
     state: absent
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
+
+# Rocky Linux 9 / AlmaLinux 9 / Oracle Linux 9 / CentOS Stream 9
+- name: clear packagelist lockfile # on install will be created need delete before run something
+  file:
+    path: /var/cache/etckeeper/packagelist.pre-install
+    state: absent
+  when: (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
+
+- name: wait for absent lockfile
+  wait_for:
+    state: absent
+    path: /var/cache/etckeeper/packagelist.pre-install
+    delay: 10
+    timeout: 300
+  when: (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
+
+- name: create lockfile
+  file:
+    path: /var/cache/etckeeper/packagelist.pre-install
+    state: touch
+  when: (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
+
+- name: count commit date
+  shell: date +"%Y-%m-%d %H:%M:%S"
+  register: commitdate
+  tags: etckeeper
+  #when: "'True' in hgstatus.stdout"
+  when: (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
+
+- name: commit changes by etckeeper
+  shell: /usr/bin/etckeeper commit "commit from ansible task at {{ commitdate.stdout }}"
+  tags: etckeeper
+  #when: "'True' in hgstatus.stdout"
+  when: (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
+
+- name: delete lockfile
+  file:
+    path: /var/cache/etckeeper/packagelist.pre-install
+    state: absent
+  when: (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"

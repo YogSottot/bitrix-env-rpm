@@ -6,7 +6,7 @@
     path: "/etc/nginx/certs/{{ item }}"
     state: directory
     owner: root
-    group: bitrix
+    group: root
     force: yes
     recurse: yes
     mode: 0750
@@ -18,7 +18,7 @@
     dest: "/etc/nginx/certs/{{ item }}/{{ certificate | basename }}"
     mode: 0640
     owner: root
-    group: bitrix
+    group: root
   with_items: "{{ site_names }}"
   when: certificate_chain is undefined
 
@@ -30,7 +30,7 @@
     dest: "/etc/nginx/certs/{{ item }}/{{ certificate | basename }}"
     mode: 0640
     owner: root
-    group: bitrix
+    group: root
   with_items: "{{ site_names }}"
   when: certificate_chain is defined
 
@@ -40,7 +40,7 @@
     dest: "/etc/nginx/certs/{{ item }}/{{ private_key | basename }}"
     mode: 0640
     owner: root
-    group: bitrix
+    group: root
   with_items: "{{ site_names }}"
 
 - name: copy certificate_chain
@@ -49,7 +49,7 @@
     dest: "/etc/nginx/certs/{{ item }}/{{ certificate_chain | basename }}"
     mode: 0640
     owner: root
-    group: bitrix
+    group: root
   with_items: "{{ site_names }}"
   when: certificate_chain is defined
 

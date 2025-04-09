@@ -87,7 +87,7 @@ HM0031="Cannot get the 'main' module version for these sites: "
 HM0032="Server __OPT1__ already exists in configuration!"
 # Пожалуйста, введите имя сервера в пуле
 HM0033="Please enter the host name in the pool"
-# Введите пароль  пользовател=ИМЯ (для подключения к серверу): 
+# Введите пароль  пользовател=ИМЯ (для подключения к серверу):
 HM0034="Enter password for user __OPT1__: "
 # Начинается настройка сервера=ИМЯ
 HM0035="Starting __OPT1__ server configuration"
@@ -101,7 +101,7 @@ HM0037="Error while copying ssh key: __OPT1__.
 Please view log in __OPT2__"
 # SSH-ключ=ПУТЬ_К_КЛЮЧУ скопирован на сервер=сервер
 HM0038="SSH key __OPT1__ has been copied to the server __OPT2__"
-# Проблема обновления конфигурации пула: 
+# Проблема обновления конфигурации пула:
 HM0039="Pool configuration error: "
 # Сервер=ИМЯ_СЕРВЕРА(АДРЕС_СЕРВЕРА) добавлен в пул
 HM0040="The server __OPT1__(__OPT2__) has been added to the pool."
@@ -132,7 +132,7 @@ HM0052="Remove host from the pool"
 HM0053="Please confirm you want to reboot the server __OPT1__ (y|N): "
 # Перезагрузить сервер
 HM0054="Reboot server"
-# Пожалуйста, выбирите тип обновления (bitrix|all): 
+# Пожалуйста, выбирите тип обновления (bitrix|all):
 HM0055="Please choose update type (bitrix|all): "
 # all - обновляет все пакеты; bitrix - только bitrix-env пакет
 HM0056="all - will update all packages; bitrix - will update ONLY bitrix-env."
@@ -158,7 +158,7 @@ HM0065="Please confirm you want to update the timezone (y|N): "
 HM0066="Configure the pool timezone"
 # Необходимо удалить неподключенные сервера из пула
 HM0067="You have to delete unconnected servers from the pool."
-# Найдено несколько MYSQL|WEB-серверов в пуле. 
+# Найдено несколько MYSQL|WEB-серверов в пуле.
 # Информация о данной конфигурации будет потеряна при удаление пула.
 HM0068="Found multiple __OPT1__ servers in the pool.
 Deleting the pool will also delete this configuration information."
@@ -233,7 +233,7 @@ HM0083=" -- create database backups for all sites
 # ОБновление MySQL и php не доступно.
 HM0084="PHP or MySQL update is not available."
 # Меню:
-# Обновление php и MySQL 
+# Обновление php и MySQL
 HM0085="Update PHP and MySQLd"
 # Обновление php до версии 5.4 и MySQL до версии 5.5
 HM0086="Update PHP to version 5.4 and MySQL to version 5.5"
@@ -291,12 +291,13 @@ HM0100=" -- downgrade rpm packages: PHP to version __OPT1__"
 HM0101="PHP Version is __OPT1__"
 HM0102="MySQL Version is __OPT1__"
 
-# 
+#
 HM010201="Upgrade MySQL version"
 HM010202="Upgrade MySQL to version 5.7"
 HM010203="Upgrade MySQL to version 5.5"
 HM010204="update MySQL to version __OPT1__"
 HM010205="Upgrade MySQL to version 8.0"
+HM010206="Upgrade MySQL to version 8.4"
 
 # Изменение
 HM0103="Enable bitrix-env beta versions"
@@ -315,7 +316,7 @@ HM0012="Cannot find server __OPT1__ in the pool."
 
 # Предыдущее меню или выход
 HM0042="0. Previous screen or exit"
-# Введите адрес сервера (IP адрес или DNS имя) или 0 для выхода: 
+# Введите адрес сервера (IP адрес или DNS имя) или 0 для выхода:
 HM0043="Enter server address (IP address or domain name) or 0 for exit:"
 # Имя сервера не может быть пустым
 HM0044="Hostname cannot be empty."

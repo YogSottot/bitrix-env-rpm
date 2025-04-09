@@ -1,8 +1,12 @@
-#
+# {{ ansible_managed }}
 # Basic mysql configuration. Use bvat for advanced settings.
 # Parameters set by bvat are stored in /etc/mysql/conf.d/bvat.cnf.
 # If you want to change any parameter, you'll have to redefine it in /etc/mysql/conf.d/z_bx_custom.cnf
 #
+{%- set mid_version = mysql_mid_version|default('8') %}
+{%- set disable_log = mysql_disable_log|default('1') %}
+{%- set mysql_version = mysql_uni_version|default('84') %}
+{%- set setup_type_template = setup_type|default('slave') %}
 
 [client]
 port = 3306
@@ -16,12 +20,23 @@ log-error = /var/log/mysql/error.log
 
 [mysqld]
 server-id = 1
+{% if mysql_version == '84' %}
 #authentication_policy=mysql_native_password
 authentication_policy = "*,,"
-disable_log_bin
 
 # Disable Percona Telemetry
 percona_telemetry_disable = 1
+
+{% if setup_type_template == "slave" %}
+disable_log_bin
+{% else %}
+#binlog_expire_logs_seconds = 864000
+{% endif %}
+{% else %}
+#innodb_log_file_size = 64M
+#default-authentication-plugin=mysql_native_password
+#binlog_expire_logs_seconds = 864000
+{% endif %}
 
 # Basic mysql server configuration
 user = mysql
@@ -30,8 +45,8 @@ basedir = /usr
 datadir = /var/lib/mysql
 socket = /var/lib/mysqld/mysqld.sock
 pid-file = /var/run/mysqld/mysqld.pid
-tmpdir = /tmp
 secure-log-path=/var/lib/mysql-files
+
 skip-external-locking
 default-storage-engine = innodb
 transaction-isolation = READ-COMMITTED
@@ -44,12 +59,17 @@ sql_mode = ""
 # Cache parameters
 table_open_cache = 4096
 thread_cache_size = 32
+{% if mid_version == '5' %}
+key_buffer = 16M
+{% else %}
 key_buffer_size = 16M
+{% endif %}
+thread_stack = 512K
 join_buffer_size = 2M
 sort_buffer_size = 2M
-thread_stack = 512K
 
 # Parameters for temporary tables
+tmpdir = /tmp
 max_heap_table_size = 32M
 tmp_table_size = 32M
 
@@ -68,6 +88,7 @@ collation-server = utf8mb4_0900_ai_ci
 init-connect = "SET NAMES utf8mb4 COLLATE utf8mb4_0900_ai_ci"
 #skip-character-set-client-handshake
 skip-name-resolve
+
 tls_version = TLSv1.2,TLSv1.3
 
 [system_default_sect]

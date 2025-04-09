@@ -172,12 +172,12 @@ elsif ( $o_action =~
     $output = $inventory->update_php($o_action, $o_hostname);
 }
 #elsif ( $o_action =~ /^(bx_upgrade_mysql57|bx_upgrade_mysql80)$/ ) {
-#    use bxInventory;
-#    my $inventory = bxInventory->new( debug => $o_verbose );
-#    $output = $inventory->update_mysql($o_action, $o_hostname);
-#
-#    # Host operations
-#}
+elsif ( $o_action =~ /^(bx_upgrade_mysql84)$/ ) {
+    use bxInventory;
+    my $inventory = bxInventory->new( debug => $o_verbose );
+    $output = $inventory->update_mysql($o_action, $o_hostname);
+}
+# Host operations
 elsif ( $o_action eq 'add' ) {
 
     # the parameter corresponds to the identifier in the inventory

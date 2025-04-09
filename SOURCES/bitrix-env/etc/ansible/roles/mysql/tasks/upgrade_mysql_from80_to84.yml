@@ -1,0 +1,88 @@
+---
+# mysql_package: "percona-server-server",
+# mysql_uni_version: 80
+- name: update system
+  dnf:
+    name: "*"
+    state: latest
+
+- name: touch my.cnf before commit
+  shell: "echo '#save mysql config before upgrade' >> /etc/my.cnf"
+
+- include_tasks: common-etckeeper.yml
+
+- include_tasks: sites-gathering_facts-not_mandatory.yml
+
+- include_tasks: backup_dbs.yml
+  when: "proccess_sites and inventory_hostname == master_server"
+
+- include_tasks: shutdown_mysqld.yml
+
+- name: delete old packages
+  shell: "rpm -qa | grep percona-server | xargs rpm -e --nodeps"
+  args:
+    removes: /bin/mysql
+  ignore_errors: true
+
+- name: disable percona 80 repository
+  shell: percona-release disable ps-80 release
+
+- name: enable percona 84 repository
+  shell: percona-release enable ps-84-lts release
+
+- name: install percona-server
+  dnf:
+    name: percona-server-server
+    state: latest
+
+- name: gathering facts
+  bx_vat:
+
+- name: performance options
+  bx_perf:
+    state: performance
+
+- name: create additional service config
+  file:
+    path: /etc/systemd/system/mysqld.service.d
+    state: directory
+
+- name: copy service config
+  copy:
+    src: mysql-limits.conf
+    dest: /etc/systemd/system/mysqld.service.d/limit.conf
+
+- name: reload systmd configuration
+  shell: systemctl daemon-reload
+
+- name: remove my.cnf.rpmsave file
+  file:
+    path: /etc/my.cnf.rpmsave
+    state: absent
+
+- name: restore my.cnf
+  template:
+    src: my84.cnf.j2
+    dest: /etc/my.cnf
+    mode: 0644
+    owner: root
+    group: mysql
+
+- name: restore bvat.cnf
+  template:
+    src: bvat/bx_perf-bvat84.cnf.j2
+    dest: /etc/mysql/conf.d/bvat.cnf
+    mode: 0644
+    owner: root
+    group: mysql
+
+- name: start mysql service
+  service:
+    name: mysql
+    state: started
+    enabled: yes
+
+- name: update system
+  dnf:
+    name: "*"
+    state: latest

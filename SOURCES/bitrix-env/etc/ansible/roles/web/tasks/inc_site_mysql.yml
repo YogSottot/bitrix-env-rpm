@@ -3,14 +3,16 @@
 
 - name: create new mysql user for kernel site - non-cluster case
   delegate_to: "{{ web_site_dbserv }}"
-  mysql_user: "name={{ web_site_dbuser }}
-    password={{ web_site_dbpass }}
-    host={{ item }}
-    priv={{ web_site_db }}.*:ALL
-    state=present
-    login_unix_socket={{ mysql_socket }}
-    append_privs=yes
-    check_implicit_admin=yes"
+  mysql_user:
+    name: "{{ web_site_dbuser }}"
+    plugin: caching_sha2_password
+    plugin_auth_string: "{{ web_site_dbpass }}"
+    host: "{{ item }}"
+    priv: "{{ web_site_db }}.*:ALL"
+    state: present
+    login_unix_socket: "{{ mysql_socket }}"
+    append_privs: yes
+    check_implicit_admin: yes
   with_items:
     - localhost
     - '%'

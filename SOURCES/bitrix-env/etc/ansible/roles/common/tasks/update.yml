@@ -175,7 +175,7 @@
 - name: set access rights for nginx configs
   file:
     path: "{{ item }}"
-    owner: bitrix
+    owner: root
     group: root
     mode: 0640
   with_items:

@@ -9,13 +9,16 @@ export PATH=/sbin:/bin:/usr/sbin:/usr/bin
 
 PERF=/etc/ansible/bvat_conf/perf.csv
 PERF80=/etc/ansible/bvat_conf/perf_my80.csv
+PERF84=/etc/ansible/bvat_conf/perf_my84.csv
 
 VARS="query_cache_size;query_cache_limit;table_open_cache;thread_cache_size;max_heap_table_size;tmp_table_size;key_buffer_size;join_buffer_size;sort_buffer_size;bulk_insert_buffer_size;myisam_sort_buffer_size;innodb_buffer_pool_size"
 VARS80="table_open_cache;thread_cache_size;max_heap_table_size;tmp_table_size;key_buffer_size;join_buffer_size;sort_buffer_size;bulk_insert_buffer_size;myisam_sort_buffer_size;innodb_buffer_pool_size"
+VARS84="table_open_cache;thread_cache_size;max_heap_table_size;tmp_table_size;key_buffer_size;join_buffer_size;sort_buffer_size;bulk_insert_buffer_size;myisam_sort_buffer_size;innodb_buffer_pool_size"
 
 MYSQL_CONFIG=/etc/mysql/conf.d/bvat.cnf
 MYSQL_CONFIG_TEMPLATE=/etc/ansible/templates/bx_perf-bvat.cnf.j2
 MYSQL_CONFIG_TEMPLATE80=/etc/ansible/templates/bx_perf-bvat_my80.cnf.j2
+MYSQL_CONFIG_TEMPLATE84=/etc/ansible/templates/bx_perf-bvat_my84.cnf.j2
 
 error() {
     msg="$1"
@@ -93,8 +96,8 @@ get_mysql_package() {
     elif [[ $(echo "$PACKAGES_LIST" | grep -c '^Percona-Server-server') -gt 0 ]]; then
         MYSQL_PACKAGE=Percona-Server-server
         MYSQL_SERVICE=mysqld
-    # Percona 8.0
-    elif [[ $(echo "$PACKAGES_LIST" | grep -c '^percona-server-server') -gt 0  ]]; then
+    # Percona Server 8.0 && Percona Server 8.4
+    elif [[ $(echo "$PACKAGES_LIST" | grep -c 'percona-server-server') -gt 0  ]]; then
         MYSQL_PACKAGE=percona-server-server
         MYSQL_SERVICE=mysqld
     elif [[ $(echo "$PACKAGES_LIST" | grep -c '^MariaDB-server') -gt 0 ]]; then
@@ -291,7 +294,8 @@ update_configs_apache() {
 }
 
 opt=$1
-if [[ ( -n $opt ) && ( -f $opt ) ]]; then
+if [[ ( -n $opt ) && ( -f $opt ) ]];
+then
     source $opt
 else
     state="$opt"
@@ -301,10 +305,19 @@ fi
 
 # get mysql info
 get_mysql_package
-# MySQL 8.0
-if [[ $MYSQL_UNI_VERSION == "80" ]]; then
+
+# Percona Server 8.0
+if [[ $MYSQL_UNI_VERSION == "80" ]];
+then
     VARS="$VARS80"
     MYSQL_CONFIG_TEMPLATE="$MYSQL_CONFIG_TEMPLATE80"
+fi
+
+# Percona Server 8.4
+if [[ $MYSQL_UNI_VERSION == "84" ]];
+then
+    VARS="$VARS84"
+    MYSQL_CONFIG_TEMPLATE="$MYSQL_CONFIG_TEMPLATE84"
 fi
 
 # get installed memory size
@@ -314,9 +327,11 @@ get_available_memory
 get_memory_limits
 
 # generate config
-if [[ ( -n $state ) && ( $state == "mysql" ) ]]; then
+if [[ ( -n $state ) && ( $state == "mysql" ) ]];
+then
     update_configs_mysql
-elif [[ ( -n $state ) && ( $state == "apache" ) ]]; then
+elif [[ ( -n $state ) && ( $state == "apache" ) ]];
+then
     update_configs_apache
 else
     get_mysql_options

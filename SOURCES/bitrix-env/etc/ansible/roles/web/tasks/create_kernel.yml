@@ -19,6 +19,16 @@
   loop:
     - "/home/bitrix/.bx_temp"
     - "/home/bitrix/.bx_temp/{{ web_site_db }}"
+  when: "'bitrix-web' in group_names"
+
+- name: create folder for temporary files
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: 0770
+  loop:
     - "/etc/nginx/bx/site_settings"
     - "/etc/nginx/bx/site_settings/{{ web_site_name }}"
   when: "'bitrix-web' in group_names"
@@ -84,8 +94,8 @@
   template:
     src: nginx/bx_temp_kernel.conf.j2
     dest: "/etc/nginx/bx/site_settings/{{ web_site_name }}/bx_temp.conf"
-    owner: bitrix
-    group: bitrix
+    owner: root
+    group: root
   notify: restart nginx
   when: "inventory_hostname == cluster_web_server"
 

@@ -2,18 +2,33 @@
 # delete database for site
 - name: delete mysql database for site
   delegate_to: "{{ web_site_dbserv }}"
-  mysql_db: "name={{ web_site_db }}
-    state=absent
-    login_unix_socket={{ mysql_socket }}
-    login_user={{ mysql_login }}
-    login_password='{{ mysql_password }}'"
+  mysql_db:
+    name: "{{ web_site_db }}"
+    state: absent
+    login_unix_socket: "{{ mysql_socket }}"
+    login_user: "{{ mysql_login }}"
+    login_password: "{{ mysql_password }}"
+  tags: site_db
+  when: "is_cluster == 'disable' and inventory_hostname == cluster_web_server"
+
+- name: delete mysql user for site
+  delegate_to: "{{ web_site_dbserv }}"
+  mysql_user:
+    name: "{{ web_site_dbuser }}"
+    host: "{{ item }}"
+    state: absent
+    login_unix_socket: "{{ mysql_socket }}"
+  with_items:
+    - localhost
+    - '%'
   tags: site_db
   when: "is_cluster == 'disable' and inventory_hostname == cluster_web_server"
 
 - name: delete mysql database for site - cluster install
   delegate_to: "{{ web_site_dbserv }}"
-  mysql_db: "name={{ web_site_db }}
-    state=absent
-    login_unix_socket={{ mysql_socket }}"
+  mysql_db:
+    name: "{{ web_site_db }}"
+    state: absent
+    login_unix_socket: "{{ mysql_socket }}"
   tags: create_site_db
   when: "is_cluster == 'enable' and inventory_hostname == cluster_web_server"

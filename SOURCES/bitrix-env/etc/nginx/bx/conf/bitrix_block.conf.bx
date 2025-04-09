@@ -2,13 +2,28 @@
 # block this locations for any installation
 #
 
-# ht(passwd|access)
+# .htpasswd, .htaccess
 location ~* /\.ht {
     deny all;
 }
 
-# repositories
+# repositories: .svn, .hg, .git
 location ~* /\.(svn|hg|git) {
+    deny all;
+}
+
+# tmp files without filename: .orig, .bak, .save, .old, .swp
+location ~* /(\.(orig|bak|save|old|swp)) {
+    deny all;
+}
+
+# tmp files with filename: index.orig, index.bak, index.save, index.old, index.swp, index~
+location ~* /*(\.(orig|bak|save|old|swp)|~)$ {
+    deny all;
+}
+
+# macos and windows special files: .DS_Store, Thumbs.db
+location ~* /(\.DS_Store|Thumbs.db) {
     deny all;
 }
 
@@ -16,9 +31,11 @@ location ~* /\.(svn|hg|git) {
 location ~* ^/bitrix/(modules|local_cache|stack_cache|managed_cache|php_interface) {
     deny all;
 }
+
 location ~* ^/bitrix/\.settings\.php {
     deny all;
 }
+
 location ~* ^/bitrix/\.settings_extra\.php {
     deny all;
 }
@@ -32,9 +49,11 @@ location ~* ^/upload/1c_[^/]+/ {
 location ~* /\.\./ {
     deny all;
 }
+
 location ~* ^/bitrix/html_pages/\.config\.php {
     deny all;
 }
+
 location ~* ^/bitrix/html_pages/\.enabled {
     deny all;
 }

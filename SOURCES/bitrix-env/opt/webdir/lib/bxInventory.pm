@@ -1750,6 +1750,9 @@ sub update_mysql {
         $opts = { mysql_manage => "upgrade_mysql80" };
 
     }
+    elsif ( $type eq "bx_upgrade_mysql84" ) {
+        $opts = { mysql_manage => "upgrade_mysql84" };
+    }
     if ( defined $inventory_host ) {
         $opts->{updated_hostname} = $inventory_host;
     }

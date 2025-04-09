@@ -15,11 +15,19 @@
   tags: mysql
   when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
 
+# Rocky Linux 9 / AlmaLinux 9 / Oracle Linux 9 / CentOS Stream 9
+- name: shutdown mysql
+  service:
+    name: mysql
+    state: stopped
+  tags: mysql
+  when: (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
+
 - name: wait mysql shutdown
   wait_for:
-    path=/var/lib/mysqld/mysqld.sock
-    state=absent
-    delay=10
+    path: /var/lib/mysqld/mysqld.sock
+    state: absent
+    delay: 10
   tags: mysql
   register: command_result
   ignore_errors: True
@@ -29,15 +37,15 @@
   stat:
     path: /etc/init.d/mysql
   register: stat_initd
-  when: command_result.failed
+  when: command_result.failed and ansible_distribution == "CentOS" and (ansible_distribution_major_version == "6" or ansible_distribution_major_version == "7")
 
 - name: Failed when initd file is not exists
   fail:
     msg: "There is no /etc/init.d/mysql script but playbook cannot stop MySQL service via systemd unit"
-  when: command_result.failed and not stat_initd.stat.exists
+  when: command_result.failed and not stat_initd.stat.exists and ansible_distribution == "CentOS" and (ansible_distribution_major_version == "6" or ansible_distribution_major_version == "7")
 
 - name: try stop it another way if the previous command did not succeed
   shell: /etc/init.d/mysql stop
   args:
     removes: /var/lib/mysqld/mysqld.sock
-  when: command_result.failed and stat_initd.stat.exists
+  when: command_result.failed and stat_initd.stat.exists and ansible_distribution == "CentOS" and (ansible_distribution_major_version == "6" or ansible_distribution_major_version == "7")

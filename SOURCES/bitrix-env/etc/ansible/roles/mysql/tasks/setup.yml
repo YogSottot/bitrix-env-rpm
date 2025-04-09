@@ -19,6 +19,12 @@
     bvat_cnf: "bvat/bx_perf-bvat80.cnf.j2"
   when: mysql_uni_version == '80'
 
+- name: redefine mysql 84 variables
+  set_fact:
+    mysql_cnf: "my84.cnf.j2"
+    bvat_cnf: "bvat/bx_perf-bvat84.cnf.j2"
+  when: mysql_uni_version == '84'
+
 - name: get performance options
   bx_perf:
     state: performance
@@ -85,7 +91,8 @@
 - name: grant access to cluster user
   mysql_user:
     name: "{{ cluster_login }}"
-    password: "{{ cluster_password }}"
+    plugin: caching_sha2_password
+    plugin_auth_string: "{{ cluster_password }}"
     host: "{{ item }}"
     priv: '*.*:SUPER,SELECT,LOCK TABLES,CREATE TEMPORARY TABLES,INSERT,UPDATE,DELETE,CREATE,DROP,ALTER,INDEX,REPLICATION CLIENT,RELOAD'
     state: present
@@ -101,7 +108,8 @@
 - name: grant access to replica user
   mysql_user:
     name: "{{ replica_login }}"
-    password: "{{ replica_password }}"
+    plugin: caching_sha2_password
+    plugin_auth_string: "{{ replica_password }}"
     host: "{{ item }}"
     priv: '*.*:SUPER,REPLICATION SLAVE,REPLICATION CLIENT'
     state: present

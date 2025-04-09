@@ -81,7 +81,7 @@
       tags: php56
 
     - name: bitrix settings
-      shell: /etc/init.d/bvat start
+      shell: /usr/bin/bvat start
 
     - name: restart httpd service
       service: name=httpd state=restarted

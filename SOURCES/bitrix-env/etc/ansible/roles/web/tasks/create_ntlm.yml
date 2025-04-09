@@ -56,8 +56,8 @@
   template:
     src: httpd/mod_ntlm.conf.j2
     dest: "/etc/httpd/bx/conf/mod_ntlm.conf"
-    owner: bitrix
-    group: bitrix
+    owner: root
+    group: root
     mode: 0644
   notify: restart httpd
 
@@ -65,8 +65,8 @@
   template:
     src: httpd/ntlm_site.conf.j2
     dest: "/etc/httpd/bx/conf/ntlm_{{ item.ServerName }}.conf"
-    owner: bitrix
-    group: bitrix
+    owner: root
+    group: root
     mode: 0644
   with_items: "{{ bx_sites_info }}"
   notify: restart httpd

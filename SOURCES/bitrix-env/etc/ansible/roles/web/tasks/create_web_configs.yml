@@ -25,8 +25,8 @@
   template: 
     src: httpd/bx_apache_site_name_port.conf.j2
     dest: /etc/httpd/bx/conf/bx_apache_site_name_port.conf
-    owner: bitrix
-    group: bitrix
+    owner: root
+    group: root
   tags: web_config
   notify: restart httpd
 
@@ -34,8 +34,8 @@
   template: 
     src: httpd/bx_apache_site.conf.j2
     dest: "/etc/httpd/bx/conf/{{ apache_config_name }}"
-    owner: bitrix
-    group: bitrix
+    owner: root
+    group: root
   tags: web_config
   notify: restart httpd
 
@@ -43,8 +43,8 @@
   template: 
     src: httpd/bx_apache_site_scale.conf.j2
     dest: "/etc/httpd/bx-scale/conf/{{ apache_config_name_scale }}"
-    owner: bitrix
-    group: bitrix
+    owner: root
+    group: root
   tags: web_config
   notify: restart httpd-scale
   when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7" and inventory_hostname == cluster_web_server

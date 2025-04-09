@@ -8,6 +8,7 @@ PROGPATH=$(dirname $0)
 [[ -z $DEBUG ]] && DEBUG=0
 
 get_os_type
+
 sub_menu_update_php() {
     local min_php_version="${1:-255}"
     local phost_name="${2}"
@@ -379,11 +380,13 @@ sub_upgrade_mysql() {
 #    local up_mysql57="1. $HM010202"
 #    local up_mysql55="1. $HM010203"
 #    local up_mysql58="1. $HM010205"
+    local up_mysql59="1. $HM010206"
 
     local up_menu="\n\t\t$menu_exit"
 #    [[ $min_mysql_version -eq 57 && $OS_VERSION -gt 6 ]] && up_menu="\n\t$menu_exit\n\t$up_mysql58"
 #    [[ $min_mysql_version -lt 57 ]] && up_menu="\n\t$menu_exit\n\t$up_mysql57"
 #    [[ $min_mysql_version -lt 55 ]] && up_menu="\n\t$menu_exit\n\t$up_mysql55"
+    [[ $min_mysql_version -eq 80 ]] && up_menu="\n\t\t $menu_exit\n\t\t $up_mysql59"
 
     menu_list="$up_menu"
 
@@ -406,6 +409,17 @@ sub_upgrade_mysql() {
         case "$UP_MENU" in
             "0")
                 return 1
+                ;;
+            "1")
+                if [[ $min_mysql_version -lt 84 && $min_mysql_version -ge 80 ]]; then
+                    upgrade_cmd="$ansible_wrapper -a bx_upgrade_mysql84 --host $phost_name"
+                    upgrade_version="8.4"
+                    upgrade_desc="update MySQL to $upgrade_version"
+                else
+                    error_pick
+                    UP_MENU=
+                    continue
+                fi
                 ;;
             *)
                 error_pick
@@ -453,7 +467,7 @@ sub_upgrade_mysql() {
     print_message "$(get_text "$HM0079" "update")" "" "" confirm 'n'
     [[ $(echo "$confirm" | grep -iwc 'y') -eq 0 ]] && return 1
 
-#    exec_pool_task "$upgrade_cmd" "$upgrade_desc"
+    exec_pool_task "$upgrade_cmd" "$upgrade_desc"
 }
 
 # select update type for the host
@@ -491,7 +505,7 @@ select_update_type() {
     # current one
     local menu_php_upgrade="1. $HM0088"     # Upgrade PHP
     local menu_php_downgrade="2. $HM0089"   # Downgrade PHP
-#    local menu_mysql_upgrade="3. $HM010201" # update mysql server
+    local menu_mysql_upgrade="3. $HM010201" # update mysql server
 
     # status
     local menu_status="1. $HM0091"          # Show current status
@@ -528,6 +542,12 @@ select_update_type() {
 #            fi
 #        fi
 
+        if [[ $select_hname != "all" ]]; then
+            if [[ $MYSQL_VERSION -lt 84 ]]; then
+                menu_list="$menu_list\n\t\t $menu_mysql_upgrade"
+            fi
+        fi
+
         print_menu
 
         print_message "$HM0204" '' '' H_SELECT
@@ -537,7 +557,7 @@ select_update_type() {
             "0") return 0 ;;
             "1") sub_menu_update_php "$PHP_VERSION" "$select_hname" ;;
             "2") sub_menu_downgrade_php "$PHP_VERSION" "$select_hname" ;;
-#           "3") sub_upgrade_mysql "$MYSQL_VERSION" "$select_hname" ;;
+            "3") sub_upgrade_mysql "$MYSQL_VERSION" "$select_hname" ;;
             *) error_pick ;;
         esac
         H_SELECT=

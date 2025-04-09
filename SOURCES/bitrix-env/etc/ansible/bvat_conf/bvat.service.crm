@@ -9,7 +9,7 @@ Before=getty@tty1.service getty@tty2.service getty@rrt3.service getty@tty4.servi
 
 [Service]
 Type=oneshot
-ExecStart=/etc/init.d/bvat start
+ExecStart=/usr/bin/bvat start
 TimeoutSec=0
 RemainAfterExit=yes
 

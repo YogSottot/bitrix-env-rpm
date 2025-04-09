@@ -16,8 +16,8 @@
   file:
     path: "/etc/nginx/bx/site_settings/{{ item.SiteName }}"
     state: directory
-    owner: bitrix
-    group: bitrix
+    owner: root
+    group: root
   loop: "{{ bx_sites_info }}"
   when: item.SiteInstall != 'ext_kernel' and item.nginx_custom_settings == 'off'
 
@@ -45,8 +45,8 @@
   template:
     src: nginx/bx_temp_update.conf.j2
     dest: "/etc/nginx/bx/site_settings/{{ item.SiteName }}/bx_temp.conf"
-    owner: bitrix
-    group: bitrix
+    owner: root
+    group: root
   loop: "{{ bx_sites_info }}"
   when: option == 'dbconn_temp_files' and item.SiteInstall != 'ext_kernel' and item.nginx_bx_temp_files == 'off'
 

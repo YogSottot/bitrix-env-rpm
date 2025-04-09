@@ -5,8 +5,8 @@
   template: 
     src: nginx/http_newsite_template.conf.j2
     dest: "/etc/nginx/bx/site_avaliable/{{ nginx_config_name_http }}"
-    owner: bitrix
-    group: bitrix
+    owner: root
+    group: root
   tags: web_config
   notify: restart nginx
 
@@ -14,8 +14,8 @@
   template: 
     src: nginx/https_newsite_template.conf.j2
     dest: "/etc/nginx/bx/site_avaliable/{{ nginx_config_name_https }}"
-    owner: bitrix
-    group: bitrix
+    owner: root
+    group: root
   tags: web_config
   when: "inventory_hostname == cluster_web_server"
   notify: restart nginx

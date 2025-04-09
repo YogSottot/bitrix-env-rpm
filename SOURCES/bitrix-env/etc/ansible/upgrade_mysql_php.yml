@@ -236,7 +236,7 @@
       tags: mysql55
 
     - name: bitrix settings
-      shell: /etc/init.d/bvat start
+      shell: /usr/bin/bvat start
 
     - name: restarted mysql service
       service:

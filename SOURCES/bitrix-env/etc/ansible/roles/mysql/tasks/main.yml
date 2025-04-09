@@ -56,3 +56,6 @@
 
 - include_tasks: upgrade_mysql_from57_to80.yml
   when: mysql_manage == 'upgrade_mysql80' and inventory_hostname == updated_hostname
+
+- include_tasks: upgrade_mysql_from80_to84.yml
+  when: mysql_manage == 'upgrade_mysql84' and inventory_hostname == updated_hostname

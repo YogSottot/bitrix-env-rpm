@@ -21,7 +21,7 @@
 %define bitrix_source		bitrix-env
 %define bitrix_type		general
 %define bitrix_conflicts	bitrix-env-crm
-%define bitrix_rel		4
+%define bitrix_rel		6
 
 Name:		bitrix-env
 Version:	9.0
@@ -35,7 +35,7 @@ Packager:	Bitrix Inc., <support@bitrixsoft.com>
 
 Source0:	%{bitrix_source}.tar.gz
 # access to this varible throw RPM_BUILD_ROOT
-BuildRoot:  %(mktemp -ud %{_tmppath}/%{bitrix_source}-%{version}-%{release}-XXXXXX)
+BuildRoot:	%(mktemp -ud %{_tmppath}/%{bitrix_source}-%{version}-%{release}-XXXXXX)
 BuildArch:	x86_64
 
 # beta usage, conflicts with old package
@@ -146,7 +146,7 @@ Requires:	php-pecl-geoip, php-pecl-zip, php-xml
 Requires:	php-pear, php-pecl-memcache, php-pecl-rrd, php-pecl-xhprof
 # other
 Requires:	httpd-tools
-Requires:	cronie, cronie-anacron, crontabs, dnf-plugins-core, python3-dnf-plugins-core, initscripts
+Requires:	cronie, cronie-anacron, crontabs, dnf-plugins-core, python3-dnf-plugins-core, initscripts, jq
 %endif
 
 %description
@@ -174,6 +174,7 @@ cp -fr etc $RPM_BUILD_ROOT/
 cp -fr var $RPM_BUILD_ROOT/
 cp -fr root $RPM_BUILD_ROOT/
 cp -fr opt $RPM_BUILD_ROOT/
+cp -fr usr $RPM_BUILD_ROOT/
 
 %post
 # test install or upgrade
@@ -206,7 +207,7 @@ if [ $1 -eq 0 ]; then
 	sed  -i".$UPDATE_TM" '/root\/bitrix\-env\/check\_bitrixenv\_chown/d' /etc/crontab ;
 
 	chkconfig --del bvat >/dev/null 2>&1 ;
-	rm -rf /etc/init.d/bvat >/dev/null 2>&1 ;
+	rm -rf /usr/bin/bvat >/dev/null 2>&1 ;
 
 	sed -i".$UPDATE_TM" '/;bitrix-env/d' /etc/php.ini >/dev/null 2>&1 ;
 	sed -i".$UPDATE_TM" '/#bitrix-env/d' /etc/profile >/dev/null 2>&1 ;
@@ -244,13 +245,13 @@ rm -rf %{buildroot}
 /etc/httpd/conf/httpd.conf.bx_centos9
 /etc/httpd/conf.modules.d/00-mpm.conf.bx
 /etc/httpd/conf.modules.d/00-mpm.conf.bx_centos9
-/etc/init.d/bvat.bx
 /etc/init.d/stunnel.bx
 /etc/logrotate.d/msmtp.bx
 /etc/my.cnf.bx
 /etc/my.cnf.bx_mysql56
 /etc/my.cnf.bx_mysql57
 /etc/my.cnf.bx_mysql80
+/etc/my.cnf.bx_mysql84
 /etc/mysql/conf.d/z_bx_custom.cnf.bx
 /etc/nginx/*
 /etc/stunnel/stunnel.conf.bx
@@ -259,6 +260,7 @@ rm -rf %{buildroot}
 /var/www/bitrixenv_error/*
 /opt/*
 /etc/ansible/*
+/usr/bin/bvat.bx
 
 %defattr(0664,root,root)
 #%config(noreplace) /etc/nginx/bx/server_monitor.conf
