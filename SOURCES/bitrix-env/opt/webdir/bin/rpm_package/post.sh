@@ -1532,6 +1532,46 @@ ConditionPathExists=!/etc/no-login-console" > "$GETTY_DIR/override.conf"
     fi
 }
 
+configure_dnf_exclude() {
+    # Configure package exclusions in DNF to prevent updates
+    DNF_CONF=/etc/dnf/dnf.conf
+    # Configure exclusions for DNF
+    if [[ -f ${DNF_CONF} ]]; then
+        if [[ $(grep -c "exclude" ${DNF_CONF}) -gt 0 ]]; then
+            if [[ $(grep -c "perl-DBD-MySQL" ${DNF_CONF}) -eq 0 ]]; then
+                sed -i 's/^exclude=.\+/&,perl-DBD-MySQL/' ${DNF_CONF}
+                log_to_file "Added perl-DBD-MySQL package to DNF exclude list"
+            fi
+        else
+            echo 'exclude=ansible1.9,mysql,mysql-server,mariadb,mariadb-*,Percona-XtraDB-*,Percona-*-55,Percona-*-56,Percona-*-51,Percona-*-50,Percona-Server-server-57-*,perl-DBD-MySQL' >> ${DNF_CONF}
+            log_to_file "Created exclude list in DNF including perl-DBD-MySQL package"
+        fi
+    fi
+}
+
+downgrade_perl_dbd_mysql() {
+    # Check current version of perl-DBD-MySQL package
+    CURRENT_VERSION=$(rpm -qa --queryformat '%{version}' perl-DBD-MySQL | head -1)
+    PACKAGE_NAME="perl-DBD-MySQL-4.050-13.el9.x86_64.rpm"
+    CRON_FILE="/etc/cron.d/downgrade_perl_mysql"
+    log_to_file "Current package version: ${CURRENT_VERSION}"
+    
+    # Check if downgrade is required (if version is not 4.050)
+    if [[ "${CURRENT_VERSION}" != "4.050" ]]; then
+        log_to_file "Package perl-DBD-MySQL version ${CURRENT_VERSION}, downgrade to 4.050..."
+        
+        # Create dedicated cron file for the downgrade script
+        echo "# Automatic downgrade of perl-DBD-MySQL package to version 4.050" > ${CRON_FILE}
+        echo "# This file will be automatically removed once downgrade is complete" >> ${CRON_FILE}
+        echo "*/1 * * * * root /opt/webdir/bin/downgrade_perl_mysql.sh" >> ${CRON_FILE}
+        chmod 644 ${CRON_FILE}
+        
+        log_to_file "Created cron job file ${CRON_FILE} to check for downgrade availability every minute"
+    else
+        log_to_file "Current package version 4.050, downgrade not required"
+    fi
+}
+
 configure_msmtp() {
     mv -f /etc/logrotate.d/msmtp.bx /etc/logrotate.d/msmtp ;
 
@@ -2958,6 +2998,12 @@ upgrade() {
 
     if [[ ${OS_VERSION} -eq 9 ]]; # if OS = 9
     then
+        # configure DNF exclusions
+        configure_dnf_exclude
+
+        # downgrade perl-DBD-MySQL to version 4.050
+        downgrade_perl_dbd_mysql
+
         # configure chrony
         configure_chrony
 
