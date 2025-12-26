@@ -1,0 +1,12 @@
+- hosts: bitrix-hosts
+  any_errors_fatal: true
+  vars:
+    mysql_manage: update
+  roles:
+    - pgsql 
+
+- hosts: bitrix-hosts
+  vars:
+    cache_directory: /opt/webdir/tmp
+  roles:
+    - cleaner 

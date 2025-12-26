@@ -4,7 +4,10 @@
 
 # create database and user for site
 - include_tasks: inc_site_mysql.yml
-  when: "inventory_hostname == cluster_web_server"
+  when: "inventory_hostname == cluster_web_server and web_site_dbtype == 'mysql'"
+
+- include_tasks: inc_site_pgsql.yml
+  when: "web_site_dbtype == 'pgsql'"
 
 # create site directories on all web servers in the pool
 - include_tasks: create_basic_dirs.yml
@@ -33,7 +36,8 @@
     - "/etc/nginx/bx/site_settings/{{ web_site_name }}"
   when: "'bitrix-web' in group_names"
 
-- name: create php_interface config files
+- name: create php_interface config files Mysql
+  when: "web_site_dbtype == 'mysql' and inventory_hostname == cluster_web_server"
   template: 
     src: "{{ item }}.j2"
     dest: "{{ web_site_root_dir }}/bitrix/php_interface/{{ item }}"
@@ -44,7 +48,18 @@
     - dbconn.php #    - after_connect.php
     - after_connect_d7.php
   tags: create_site_files
-  when: inventory_hostname == cluster_web_server
+
+- name: create php_interface config files Pgsql
+  when: "web_site_dbtype == 'pgsql' and inventory_hostname == cluster_web_server"
+  template: 
+    src: "{{ item }}.j2"
+    dest: "{{ web_site_root_dir }}/bitrix/php_interface/{{ item }}"
+    owner: "{{ site_bitrix }}"
+    group: "{{ site_bitrix }}"
+    mode: 0660
+  with_items:
+    - dbconn.php #    - after_connect.php
+  tags: create_site_files
 
 - name: create settings file for site
   template: 

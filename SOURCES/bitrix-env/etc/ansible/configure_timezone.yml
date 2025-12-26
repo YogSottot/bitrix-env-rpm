@@ -183,3 +183,16 @@
         - rsyslog
         - crond
       tags: service
+
+    - name: update timezone settings in postgresql.conf
+      replace:
+        path: "/var/lib/pgsql/data/postgresql.conf"
+        regexp: "^(\\s*)(timezone|log_timezone)\\s*=\\s*['\"]?[^'\"#]*['\"]?"
+        replace: "\\1\\2 = '{{ bx_tz }}'"
+
+
+    - name: restart postgresql
+      service:
+        name: postgresql
+        state: restarted
+      tags: postgresql

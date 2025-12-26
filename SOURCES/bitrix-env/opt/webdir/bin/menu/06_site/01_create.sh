@@ -100,6 +100,7 @@ get_kernel_options() {
 # kernel site
 create_site_kernel() {
     local site_name=$1
+    local db_type=$2
 
     create_site_mark=N
     create_site_exe=
@@ -116,6 +117,8 @@ create_site_kernel() {
 
         create_site_exe=$bx_sites_script" -a create -s $site_name"
         create_site_exe=$create_site_exe" -t kernel --charset $site_charset"
+        create_site_exe=$create_site_exe" --dbtype $db_type"
+        
         if [[ "$SITE_CRON" == "y" ]]; then
             create_site_exe=$create_site_exe" --cron"
         fi
@@ -138,6 +141,7 @@ create_site_kernel() {
 # ext kernel site
 external_kernel() {
     local site_name=$1
+    local db_type=$2
 
     create_site_mark=N
     create_site_exe=
@@ -154,6 +158,7 @@ external_kernel() {
 
         create_site_exe=$bx_sites_script" -a create -s $site_name"
         create_site_exe=$create_site_exe" -t ext_kernel --charset $site_charset"
+        create_site_exe=$create_site_exe" --dbtype $db_type"
         if [[ "$SITE_CRON" == "y" ]]; then
             create_site_exe=$create_site_exe" --cron"
         fi
@@ -258,12 +263,31 @@ create_site() {
     print_message "$CS0012" "" "" site_type "$site_type"
 
     # process input
-    # coonvert to lower case string
+    # convert to lower case string
     site_type=$(echo "$site_type" | awk '{print tolower($0)}')
+    
+    ### 3. Select database type only for kernel or ext_kernel
+    db_type="mysql"
+    if [[ "$site_type" == "kernel" || "$site_type" == "ext_kernel" ]]; then
+        print_color_text "$CS0025" blue -e
+        echo -e "$CS0026"
+        echo -e "$CS0027"
+        print_color_text "$CS0028" blue
+        print_message "$CS0029" "" "" db_type "$db_type"
+        db_type=$(echo "$db_type" | awk '{print tolower($0)}')
+        case "$db_type" in
+            mysql) db_type="mysql" ;;
+            pgsql) db_type="pgsql" ;;
+            *) print_message "$CS0101" "$(get_text "$CS0211" "$db_type")" "" any_key
+               return 1
+               ;;
+        esac
+    fi
+
     case "$site_type" in
         link) create_site_link "$site_name" ;;
-        kernel) create_site_kernel "$site_name" ;;
-        ext_kernel) external_kernel "$site_name" ;;
+        kernel) create_site_kernel "$site_name" "$db_type" ;;
+        ext_kernel) external_kernel "$site_name" "$db_type" ;;
         *) print_message "$CS0101" "$(get_text "$CS0211" "$site_type")" "" any_key ;;
     esac
 }

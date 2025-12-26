@@ -5,6 +5,12 @@ mysql_replication_role: master
 # host-id
 mysql_serverid: 1
 
+# PostgreSQL replication role
+pgsql_replication_role: master
+
+# PostgreSQL server id
+pgsql_serverid: 1
+
 # host-id in the pool
 host_id: {{ host_id }}
 host_pass: {{ host_pass }}

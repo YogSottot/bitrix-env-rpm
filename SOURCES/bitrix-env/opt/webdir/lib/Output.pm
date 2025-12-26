@@ -429,7 +429,7 @@ sub print {
                     }
 
                     print
-"$data_type:general:$site_name:$db_name:$type:$status:$server_name:$server_root:$site_charset:$module_scale:$module_cluster:$c_status:$c_nginx_status:$c_storage:$module_main_version:$module_transformer;$module_transformercontroller\n";
+"$data_type:general:$site_name:$db_name:$type:$status:$server_name:$server_root:$site_charset:$module_scale:$module_cluster:$c_status:$c_nginx_status:$c_storage:$module_main_version:$module_transformer;$module_transformercontroller:$db_type\n";
                     print 
 "$data_type:db:$site_name:$db_name:$db_type:$db_host:$db_user:$db_pass:$db_pass_file:$db_mycnf\n";
                     print
@@ -569,6 +569,11 @@ sub print {
                       ( $facts->{'php_version'} )
                       ? $facts->{'php_version'}
                       : 'not_installed';
+                    
+                    my $postgresql_version =
+                      ( $facts->{'postgresql_version'} )
+                      ? $facts->{'postgresql_version'}
+                      : 'not_installed';
 
                     my $os_version =
                       ( $facts->{'os_version'} )
@@ -596,13 +601,13 @@ sub print {
                         }
                     }
                     $bx_addr =~ s/,$//;
-                    printf "%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s\n",
+                    printf "%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s\n",
                     (
                       $data_type, $srv_name, $bx_version, $bx_pwd,
                       $bx_addr, $bx_uid, $mysql_version, $php_version,
                       $mysql_package, $mysql_root_password, 
                       $mysql_root_config, $mysql_service_status,
-                      $os_version,$sphinx_version,
+                      $os_version,$sphinx_version, $postgresql_version,
 
                     );
                 }

@@ -21,7 +21,7 @@
 %define bitrix_source		bitrix-env
 %define bitrix_type		general
 %define bitrix_conflicts	bitrix-env-crm
-%define bitrix_rel		7
+%define bitrix_rel		8
 
 Name:		bitrix-env
 Version:	9.0
@@ -137,8 +137,11 @@ Requires:	cronie, cronie-anacron, crontabs, yum-plugin-merge-conf, initscripts
 #Requires:	mysql, mysql-server
 # percona 8.0
 Requires:	percona-server-server
+# postgresql
+Requires:	postgresql, postgresql-server, postgresql-contrib
+Requires:	php-pgsql, python3.11-psycopg2, perl-DBD-Pg
 # nginx
-Requires:	bx-nginx >= 1.26.0
+Requires:	bx-nginx >= 1.28.0
 # php
 Requires:	php, php-common, php-cli, php-gd, php-mbstring, php-mcrypt, php-mysqlnd
 Requires:	php-ldap, php-pspell, php-pecl-xdebug

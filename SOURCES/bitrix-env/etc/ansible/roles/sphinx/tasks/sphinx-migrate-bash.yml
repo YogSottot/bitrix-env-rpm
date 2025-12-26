@@ -1,0 +1,26 @@
+---
+
+- name: gathering system facts
+  bx_vat:
+
+- name: backup current sphinx.conf
+  copy:
+    src: "{{ sphinx_base_dir }}/sphinx.conf"
+    dest: "{{ sphinx_base_dir }}/sphinx.conf.php.bak"
+    remote_src: yes
+    mode: 0644
+    owner: root
+    group: root
+
+- name: create new sphinx config
+  template:
+    src: sphinx.conf.j2
+    dest: "{{ sphinx_base_dir }}/sphinx.conf"
+    mode: 0644
+    owner: root
+    group: root
+
+- name: restart searchd service
+  service:
+    name: searchd
+    state: restarted

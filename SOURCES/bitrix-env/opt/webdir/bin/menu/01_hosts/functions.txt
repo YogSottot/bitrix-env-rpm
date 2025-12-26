@@ -6,7 +6,7 @@ HM1004="Update packages on host"
 HM1005="Change 'bitrix' user password on host"
 HM1006="Configure pool timezone"
 HM1007="Remove pool configuration"
-HM1008="Update PHP and MySQL"
+HM1008="Update PHP, MySQL, PostgreSQL"
 
 # Добавление сервера в пул серверов
 HM0001="1. $HM1001"
@@ -234,7 +234,7 @@ HM0083=" -- create database backups for all sites
 HM0084="PHP or MySQL update is not available."
 # Меню:
 # Обновление php и MySQL
-HM0085="Update PHP and MySQLd"
+HM0085="Update PHP, MySQL, PostgreSQL"
 # Обновление php до версии 5.4 и MySQL до версии 5.5
 HM0086="Update PHP to version 5.4 and MySQL to version 5.5"
 # Обновление php до версии 5.6
@@ -298,6 +298,16 @@ HM010203="Upgrade MySQL to version 5.5"
 HM010204="update MySQL to version __OPT1__"
 HM010205="Upgrade MySQL to version 8.0"
 HM010206="Upgrade MySQL to version 8.4"
+
+#Postgres upgrage
+HM010210="7. Update PostgreSQL"
+HM010211="Upgrade PostgreSQL version"
+HM010212="Enter the server name to upgrade PostgreSQL"
+HM010213="1. Upgrade PostgreSQL to version 15"
+HM010214="1. Upgrade PostgreSQL to version 16"
+HM010215="PostgreSQL will be upgraded to version"
+HM010216="The functionality to update all servers is disabled. Please select a specific server."
+HM010217="There are no updates available at the moment!"
 
 # Изменение
 HM0103="Enable bitrix-env beta versions"

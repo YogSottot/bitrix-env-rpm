@@ -29,6 +29,7 @@ my $o_dbname            = undef;        # site_db|dbname - usage while search si
 my $o_kernel_site       = undef;        # main site for created linked site
 my $o_kernel_root       = undef;        # kernel directory
 my $o_charset           = undef;        # site charset
+my $o_dbtype            = undef;      # type of database (mysql|pgsql)
 
 my $o_user              = undef;        # site_dbuser
 my $o_pass              = undef;        # site_dbpass
@@ -141,6 +142,7 @@ my $result_option = GetOptions(
     'certificate_chain:s' => \$o_certificate_chain,
     'nodejspush'          => \$o_push,
     'domains:s'           => \$o_domains,
+    'dbtype:s'            => \$o_dbtype,
 ) or unknown_arg();
 
 # help message
@@ -231,6 +233,7 @@ elsif ( $o_action =~ /^create$/ ) {
         CronTask => $o_enable_cron,
         DBPasswordFile => $o_password_file,
         NodeJSPush => $o_push,
+        DBType => $o_dbtype,
     };
     $sites = $bxSites->CreateSite($site_options);
 }
@@ -241,6 +244,7 @@ elsif ( $o_action =~ /^delete$/ ) {
         ServerName => $o_site,
         SiteInstall => $o_type,
         DocumentRoot => $o_root,
+        DBType => $o_dbtype,
     };
     $sites = $bxSites->DeleteSite($site_options);
 }
@@ -522,6 +526,7 @@ Options:
   --ntlm_password - password for domain user
   --kernel_root   - path to directory with kernel site
   --kernel_site   - kernel site name (optional)
+  --dbtype        - Database type (mysql|pgsql)
  Ex.
   * get information about site(s) that live on the system
  $prog -o json

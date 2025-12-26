@@ -62,7 +62,7 @@ sub set_bitrix_conf {
         aHostsTemplate => catfile( $bitrix_base, 'templates', 'ansible' ),
         aHostsGroups   => [
             'hosts',     'mgmt',  'web',  'sphinx',
-            'memcached', 'mysql', 'push', 'transformer'
+            'memcached', 'mysql', 'push', 'transformer', 'pgsql'
         ],
         aHostsDefault => 'hosts',
         aHostsPrefix  => 'bitrix',
@@ -193,7 +193,7 @@ sub get_ansible_inventory {
 
             }
             elsif ( $section_name =~
-                /^(mysql|memcached|sphinx|push|web|mgmt|transformer)$/ )
+                /^(mysql|memcached|sphinx|push|web|mgmt|transformer|pgsql)$/ )
             {
                 my $group = $1;
                 $ansible_inventory{$server}->{groups}->{$group} = 1;
@@ -227,6 +227,22 @@ sub get_ansible_inventory {
                 id => (
                     $ansible_inventory{$server}->{host_vars}->{mysql_serverid}
                   ) ? $ansible_inventory{$server}->{host_vars}->{mysql_serverid}
+                : 1,
+            };
+        }
+
+        if ( exists $ansible_inventory{$server}->{groups}->{pgsql} ) {
+            $ansible_inventory{$server}->{roles}->{pgsql} = {
+                type => (
+                    $ansible_inventory{$server}->{host_vars}
+                      ->{pgsql_replication_role}
+                  )
+                ? $ansible_inventory{$server}->{host_vars}
+                  ->{pgsql_replication_role}
+                : "slave",
+                id => (
+                    $ansible_inventory{$server}->{host_vars}->{pgsql_serverid}
+                  ) ? $ansible_inventory{$server}->{host_vars}->{pgsql_serverid}
                 : 1,
             };
         }

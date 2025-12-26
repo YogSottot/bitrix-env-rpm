@@ -68,7 +68,7 @@ copy_sshkey() {
     return 0
 }
 
-# change user password via ssh 
+# change user password via ssh
 # ANSIBLE_CHPWD_ERR
 # ANSIBLE_CHPWD_MSG
 # NEW_PASSWORD
@@ -84,7 +84,7 @@ change_password_viassh() {
     local changepass_cmd="$ansible_wrapper -a pw -i $ssh_server"
     changepass_cmd=$changepass_cmd" -p $(printf "%q" "$current_password")"
     changepass_cmd=$changepass_cmd" -P $(printf "%q" "$new_password")"
-    
+
     if [[ $DEBUG -gt 0 ]]; then
         echo "changepass_cmd=$changepass_cmd"
     fi
@@ -144,7 +144,7 @@ forget_server() {
     cur_id=$(get_server_id "$host_ident")
     cur_id_rtn=$?
     #if [[ $cur_id_rtn -eq 1  ]]; then
-    #    print_message "Press ENTER to exit" \ 
+    #    print_message "Press ENTER to exit" \
     #        "Server $host_ident was found but cannot be used due to configuration error" "" any_key
     #    return 1
     #
@@ -211,7 +211,7 @@ remove_pool() {
 
 test_main_module_for_php7() {
     cache_pool_sites
-    MAIN_LOWER_VERSION="16.0.10"     # for all modules 16.5.0 
+    MAIN_LOWER_VERSION="16.0.10"     # for all modules 16.5.0
     MAIN_U=$(echo $MAIN_LOWER_VERSION | awk -F'.' '{print $1}')
     MAIN_M=$(echo $MAIN_LOWER_VERSION | awk -F'.' '{print $2}')
     MAIN_L=$(echo $MAIN_LOWER_VERSION | awk -F'.' '{print $3}')
@@ -336,7 +336,7 @@ php_conditions() {
 
     # php 5.x versions
     elif [[ $php_upper -eq 5 ]]; then
-        
+
         # Unsupported PHP version (<5.3)
         if [[ $php_middle -lt 3 ]]; then
             PHP_MESSAGE="$(get_text "$HM0018" "$php_upper.$php_middle")"
@@ -350,7 +350,7 @@ php_conditions() {
         # 5.4; PHP package can be updated to version 5.6
         elif [[ $php_middle -eq 4 ]]; then
             PHP_MESSAGE=$(get_text "$HM0019" "5.6")
-        
+
         # 5.5 && 5.6; PHP package can be updated to version
         elif [[ $php_middle -gt 4 ]]; then
             PHP_MESSAGE=$(get_text "$HM0019" "7.0")
@@ -468,7 +468,7 @@ get_php_min_ver_in_pool() {
     [[ -z $POOL_SERVER_LIST ]] && cache_pool_info
     [[ -z $BITRIX_ENV_TYPE ]] && get_os_type
 
-    PHP_MIN_VERSION=256              #  error 
+    PHP_MIN_VERSION=256              #  error
 
     IS_PHP_ERROR=0
     PHP_MESSAGES=
@@ -477,7 +477,7 @@ get_php_min_ver_in_pool() {
     IFS=$'\n'
     for srv_info in $POOL_SERVER_LIST; do
         srv_name=$(echo "$srv_info" | awk -F':' '{print $1}')
-        
+
         # 255, 51, 55, 56, 57
         test_php_version "$srv_name" "$srv_info"
         php_version=$?
@@ -508,7 +508,7 @@ get_mysql_min_ver_in_pool() {
     [[ -z $POOL_SERVER_LIST ]] && cache_pool_info
     [[ -z $BITRIX_ENV_TYPE ]] && get_os_type
 
-    MYSQL_MIN_VERSION=256              #  error 
+    MYSQL_MIN_VERSION=256              #  error
 
     IS_MYSQL_ERROR=0
     MYSQL_MESSAGES=
@@ -539,11 +539,11 @@ get_mysql_min_ver_in_pool() {
             MYSQL_MESSAGES="$MYSQL_MESSAGES
  $srv_name => MYSQL ERROR: $MYSQL_MESSAGE"
         fi
-     
+
     done
     IFS=$IFS_BAK
     IFS_BAK=
- 
+
     # error on on servers is error for all
     [[ $IS_MYSQL_ERROR -gt 0 ]] && return 255
 
@@ -551,7 +551,7 @@ get_mysql_min_ver_in_pool() {
     return $MYSQL_MIN_VERSION
 }
 
-# return 
+# return
 # minimum ${mysqlVersion}${phpVersion}
 #   255 => upgrade is not possible
 # CLUSTER_MESSAGE - reason why not
@@ -563,7 +563,7 @@ test_upgrade_on_cluster() {
     [[ -z $POOL_SERVER_LIST ]] && cache_pool_info
     [[ -z $BITRIX_ENV_TYPE ]] && get_os_type
     CLUSTER_MESSAGE=
-    CLUSTER_RTN=0          #  default mimimum supported version 
+    CLUSTER_RTN=0          #  default mimimum supported version
     CLUSTER_HOSTS=
 
     # There are servers that are not connected to the master
@@ -613,18 +613,19 @@ $TEST_PHP7_SKIP"
     return $CLUSTER_RTN
 }
 
-print_mysql_php_version() {
+print_sql_php_version() {
     local filter_hname="${1}"
 
     [[ -z "$POOL_SERVER_LIST" ]] && cache_pool_info
 
-    print_header "Versions of installed software: MySQL and PHP."
+    print_header "Versions of installed software: MySQL, PostgreSQL, PHP."
     echo "$MENU_SPACER"
-    printf "%-25s| %-20s | %4s | %7s | %7s | %7s | %s \n" "ServerName" "NetAddress" "Conn" "Ver" "MySQL" "PHP" "Roles"
+    printf "%-25s| %-20s | %4s | %7s | %7s | %10s | %7s | %s \n" "ServerName" "NetAddress" "Conn" "Ver" "MySQL" "PostgreSQL" "PHP" "Roles"
     echo "$MENU_SPACER"
 
     PHP_VERSION=
     MYSQL_VERSION=
+    POSTGRESQL_VERSION=
 
     IFS_BAK=$IFS
     IFS=$'\n'
@@ -635,13 +636,18 @@ print_mysql_php_version() {
         hconn=$(echo "$hinfo" | awk -F: '{print $7}')
         hvmver=$(echo "$hinfo" | awk -F':' '{print $8}')
         hmysql=$(echo "$hinfo" | awk -F: '{print $13}')
+        hpgsql=$(echo "$hinfo" | awk -F: '{print $16}')
         hphp=$(echo "$hinfo" | awk -F: '{print $14}')
 
         if [[ -z "${filter_hname}" || ${filter_hname} == "all" ]]; then
-            printf "%-25s| %-20s | %4s | %7s | %7s | %7s | %s \n" "$hname" "$hip" "$hconn" "$hvmver" "$hmysql" "$hphp" "$hroles"
+            printf "%-25s| %-20s | %4s | %7s | %7s | %10s | %7s | %s \n" "$hname" "$hip" "$hconn" "$hvmver" "$hmysql" "$hpgsql" "$hphp" "$hroles"
             # get mysql version from master server
             if [[ $(echo "$hroles" | grep "mysql_master" -c) -gt 0 ]]; then
                 MYSQL_VERSION=$(echo "$hmysql" | awk -F. '{printf "%s%s",$1,$2}' )
+            fi
+            # get postgresql version from main web server
+            if [[ $(echo "$hroles" | grep "pgsql" -c) -gt 0 ]]; then
+                POSTGRESQL_VERSION=$(echo "$hpgsql" | awk -F. '{print $1}')
             fi
             # get php version from main web server
             if [[ $(echo "$hroles" | grep "mgmt" -c) -gt 0 ]]; then
@@ -649,8 +655,9 @@ print_mysql_php_version() {
             fi
         else
             if [[ ${filter_hname} == "${hname}" ]]; then
-                printf "%-25s| %-20s | %4s | %7s | %7s | %7s | %s \n" "$hname" "$hip" "$hconn" "$hvmver" "$hmysql" "$hphp" "$hroles"
+                printf "%-25s| %-20s | %4s | %7s | %7s | %10s | %7s | %s \n" "$hname" "$hip" "$hconn" "$hvmver" "$hmysql" "$hpgsql" "$hphp" "$hroles"
                 MYSQL_VERSION=$(echo "$hmysql" | awk -F. '{printf "%s%s",$1,$2}' )
+                POSTGRESQL_VERSION=$(echo "$hpgsql" | awk -F. '{print $1}')
                 PHP_VERSION=$(echo "$hphp" | awk -F. '{printf "%s%s",$1,$2}')
             fi
         fi

@@ -1,0 +1,17 @@
+---
+# delete postgresql database and user
+- name: delete postgresql database
+  delegate_to: "{{ web_site_dbserv }}"
+  postgresql_db:
+    name: "{{ web_site_db }}"
+    login_user: "{{ pgsql_user }}"
+    state: absent
+  when: "inventory_hostname == cluster_web_server"
+
+- name: delete postgresql user
+  delegate_to: "{{ web_site_dbserv }}"
+  postgresql_user:
+    name: "{{ web_site_dbuser }}"
+    login_user: "{{ pgsql_user }}"
+    state: absent
+  when: "inventory_hostname == cluster_web_server" 

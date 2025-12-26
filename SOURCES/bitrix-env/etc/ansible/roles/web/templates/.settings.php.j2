@@ -5,10 +5,12 @@
 {% set utf_mode = 'false' -%}
 {%- endif %}
 {% set web_site_dbpass_regexp = web_site_dbpass | regex_replace('([\'\\\\])','\\\\\\1') -%}
-{% set DBModule = 'MysqlConnection' -%}
-{% if php_mysql_ext == 'mysqli' | default('mysql') -%}
-{% set DBModule = 'MysqliConnection' -%}
-{%- endif %}
+{% if web_site_dbtype == 'pgsql' %}
+{% set DBModule = 'PgsqlConnection' %}
+{% elif web_site_dbtype == 'mysql' %}
+{% set DBModule = 'MysqliConnection' %}
+{% endif %}
+
 {% set bitrix_type = bx_package_name | default('bitrix-env') %}
 {% set bitrix_push_status = push_status | default('disabled') %}
 {% set bitrix_site_push_status = NodeJSPush | default('disabled') %}

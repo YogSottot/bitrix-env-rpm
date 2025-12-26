@@ -142,13 +142,13 @@ sub statusProcess {
         }
 
         # roles
-        if (/^TASK:\s+\[(\S+)\s+\|\s+([^\]]+)\]/) {
+        if (/^TASK\s+\[(\S+)\s+:\s+([^\]]+)\]/) {
             $taskData->{$task_id}->{'last_action'} = "$1\|$2";
         }
 
         # non-roles playbook
         # TASK: [add configuration options in mysql service for upgrade time]
-        if (/^TASK:\s+\[([^\]\|]+)\]/) {
+        if (/^TASK\s+\[([^\]\|:]+)\]/) {
 
             #print "found: $1\n";
             $taskData->{$task_id}->{'last_action'} = "play|$1";

@@ -4,7 +4,10 @@
 
 # create database and user for site
 - include_tasks: inc_site_mysql.yml
-  when: "inventory_hostname == cluster_web_server"
+  when: "inventory_hostname == cluster_web_server and web_site_dbtype == 'mysql'"
+
+- include_tasks: inc_site_pgsql.yml
+  when: "web_site_dbtype == 'pgsql'"
 
 # create site directories on all web servers in the pool
 #

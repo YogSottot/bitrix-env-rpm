@@ -51,7 +51,7 @@ sub_menu_update_php() {
         echo -e "\t\t" $host_logo
         echo
 
-        print_mysql_php_version "$phost_name"
+        print_sql_php_version "$phost_name"
         echo "$(get_text "$HM0101" "${min_php_version:0:1}.${min_php_version:1:2}")"
 
         print_menu
@@ -245,7 +245,7 @@ sub_menu_downgrade_php() {
         echo -e "\t\t" $host_logo
         echo
 
-        print_mysql_php_version "$phost_name"
+        print_sql_php_version "$phost_name"
         echo "$(get_text "$HM0101" "${min_php_version:0:1}.${min_php_version:1:2}")"
         print_menu
 
@@ -399,7 +399,7 @@ sub_upgrade_mysql() {
         echo -e "\t\t" $host_logo
         echo
 
-        print_mysql_php_version "${phost_name}"
+        print_sql_php_version "${phost_name}"
         echo "$(get_text "$HM0102" "${min_mysql_version:0:1}.${min_mysql_version:1:2}")"
 
         print_menu
@@ -468,6 +468,109 @@ sub_upgrade_mysql() {
     [[ $(echo "$confirm" | grep -iwc 'y') -eq 0 ]] && return 1
 
     exec_pool_task "$upgrade_cmd" "$upgrade_desc"
+    exit
+}
+
+# upgrade postgresql to 15.x
+upgrade_to_postgresql15() {
+    local select_hname="${1}"
+
+    local upgrade_cmd="$ansible_wrapper -a bx_upgrade_pgsql_15 --host $select_hname"
+    local upgrade_version="15"
+
+    if [[ $DEBUG -gt 0 ]]; then
+        echo "upgrade_cmd=[$upgrade_cmd]"
+    fi
+    [[ -z $upgrade_cmd ]] && return 0
+
+    print_color_text "$HM010215 $upgrade_version" red -e
+
+    print_message "$(get_text "$HM0079" "update")" "" "" confirm 'n'
+    [[ $(echo "$confirm" | grep -iwc 'y') -eq 0  ]] && return 1
+
+    exec_pool_task "$upgrade_cmd" "Upgrade PostgreSQL to $upgrade_version"
+}
+
+# upgrade postgresql to 16.x
+upgrade_to_postgresql16() {
+    local select_hname="${1}"
+
+    local upgrade_cmd="$ansible_wrapper -a bx_upgrade_pgsql_16 --host $select_hname"
+    local upgrade_version="16"
+
+    if [[ $DEBUG -gt 0 ]]; then
+        echo "upgrade_cmd=[$upgrade_cmd]"
+    fi
+    [[ -z $upgrade_cmd ]] && return 0
+
+    print_color_text "$HM010215 $upgrade_version" red -e
+
+    print_message "$(get_text "$HM0079" "update")" "" "" confirm 'n'
+    [[ $(echo "$confirm" | grep -iwc 'y') -eq 0  ]] && return 1
+
+    exec_pool_task "$upgrade_cmd" "Upgrade PostgreSQL to $upgrade_version"
+}
+
+sub_upgrade_postgresql() {
+    local min_postgresql_version=${1:-255}
+    local select_hname=${2}
+
+    local host_logo="$HM010211"
+    local menu_pgsql_upgrade=""
+
+    if [[ "$min_postgresql_version" == "13" ]]; then
+        menu_pgsql_upgrade="$HM010213"
+    elif [[ "$min_postgresql_version" == "15" ]]; then
+        menu_pgsql_upgrade="$HM010214"
+    fi
+
+    if [[ $select_hname == "all" ]]; then
+        print_message "$HM0200" "$HM010216" "" any_key
+        return 1
+    fi
+
+    cur_id=$(get_server_id "$select_hname")
+    cur_id_rtn=$?
+    if [[ $cur_id_rtn -eq 1 ]]; then
+        print_message "$HM0200" "$(get_text "$HM0013" "$select_hname")" "" any_key
+        return 1
+    elif [[ $cur_id_rtn -eq 2 ]]; then
+        print_message "$HM0200" "$(get_text "$HM0012" "$select_hname")"
+        return 1
+    fi
+
+    H_SELECT=
+
+    until [[ -n "$H_SELECT" ]]; do
+        [[ $DEBUG -eq 0 ]] && clear
+        echo -e "\t\t" $logo
+        echo -e "\t\t" $host_logo
+        echo
+
+        print_sql_php_version "$select_hname"
+
+        if [[ -n "$menu_pgsql_upgrade" ]]; then
+            menu_list="$menu_pgsql_upgrade\n\t\t $menu_exit"
+            print_menu
+            print_message "$HM0204" '' '' H_SELECT
+
+            case "$H_SELECT" in
+                "0") return 0 ;;
+                "1")
+                    if [[ "$min_postgresql_version" == "13" ]]; then
+                        upgrade_to_postgresql15 "$select_hname"
+                    elif [[ "$min_postgresql_version" == "15" ]]; then
+                        upgrade_to_postgresql16 "$select_hname"
+                    fi
+                    ;;
+                *) error_pick; H_SELECT= ;;
+            esac
+        else
+            print_message "$HM0200" "\n$HM010217" "" any_key
+            return 0
+        fi
+    done
+    return 0
 }
 
 # select update type for the host
@@ -506,6 +609,7 @@ select_update_type() {
     local menu_php_upgrade="1. $HM0088"     # Upgrade PHP
     local menu_php_downgrade="2. $HM0089"   # Downgrade PHP
     local menu_mysql_upgrade="3. $HM010201" # update mysql server
+    local menu_postgresql_upgrade="4. $HM010211" # update postgresql server
 
     # status
     local menu_status="1. $HM0091"          # Show current status
@@ -516,10 +620,11 @@ select_update_type() {
         echo -e "\t\t" $host_logo
         echo
 
-        print_mysql_php_version "${select_hname}"
+        print_sql_php_version "${select_hname}"
         if [[ $DEBUG -gt 0 ]];
         then
-            echo "MYSQl VERSION: $MYSQL_VERSION"
+            echo "MYSQL VERSION: $MYSQL_VERSION"
+            echo "POSTGRESQL VERSION: $POSTGRESQL_VERSION"
             echo "PHP VERSION: $PHP_VERSION"
         fi
 
@@ -548,6 +653,12 @@ select_update_type() {
             fi
         fi
 
+        if [[ $select_hname != "all" ]]; then
+            if [[ $POSTGRESQL_VERSION -lt 16 ]]; then
+                menu_list="$menu_list\n\t\t $menu_postgresql_upgrade"
+            fi
+        fi
+
         print_menu
 
         print_message "$HM0204" '' '' H_SELECT
@@ -558,6 +669,7 @@ select_update_type() {
             "1") sub_menu_update_php "$PHP_VERSION" "$select_hname" ;;
             "2") sub_menu_downgrade_php "$PHP_VERSION" "$select_hname" ;;
             "3") sub_upgrade_mysql "$MYSQL_VERSION" "$select_hname" ;;
+            "4") sub_upgrade_postgresql "$POSTGRESQL_VERSION" "$select_hname" ;;
             *) error_pick ;;
         esac
         H_SELECT=
@@ -581,17 +693,19 @@ sub_menu() {
         echo -e "\t\t" $host_logo
         echo
 
-        print_mysql_php_version
+        print_sql_php_version
         MASTER_MYSQL_VERSION="$MYSQL_VERSION"
+        MASTER_POSTGRESQL_VERSION="$POSTGRESQL_VERSION"
         MASTER_PHP_VERSION="$PHP_VERSION"
         if [[ $DEBUG -gt 0 ]];
         then
             echo "MASTER MYSQL VERSION: $MASTER_MYSQL_VERSION"
+            echo "MASTER POSTGRESQL VERSION: $MASTER_POSTGRESQL_VERSION"
             echo "MASTER PHP VERSION: $MASTER_PHP_VERSION"
         fi
 
-        get_task_by_type '(common|web_cluster|mysql|monitor)' POOL_SUBMENU_TASK_LOCK POOL_SUBMENU_TASK_INFO
-        print_task_by_type '(common|web_cluster|mysql|monitor)' "$POOL_SUBMENU_TASK_LOCK" "$POOL_SUBMENU_TASK_INFO"
+        get_task_by_type '(common|web_cluster|upgrade_mysql_php|monitor)' POOL_SUBMENU_TASK_LOCK POOL_SUBMENU_TASK_INFO
+        print_task_by_type '(common|web_cluster|upgrade_mysql_php|monitor)' "$POOL_SUBMENU_TASK_LOCK" "$POOL_SUBMENU_TASK_INFO"
 
         menu_list="${menu_update}\n\t\t ${menu_exit}"
 

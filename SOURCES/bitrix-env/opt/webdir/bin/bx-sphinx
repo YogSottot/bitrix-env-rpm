@@ -3,6 +3,7 @@
 # start ansible playbook for:
 # 1. create sphinx server
 # 2. remove sphinx server
+# 3. migrate sphinx config from PHP to bash
 # 4. view status of sphinx servers
 # this script is wrapper for ansible playbook ( we need json output for web-interface)
 #
@@ -26,6 +27,7 @@ my $o_action  = "list";    # type of action that script must do.
                                     # list   - serverList
                                     # create - create sphinx instance
                                     # remove - remove sphinx instance
+                                    # migrate - migrate sphinx config from PHP to bash
 my $o_config = '/etc/ansible/group_vars/bitrix-sphinx.yml';
 my $o_sphinx_server = undef;        # ip address or hostname for sphinx server
 my $o_format  = 'plain';            # format of stdout message
@@ -83,6 +85,8 @@ if ($o_action =~ /^status$/i) {
   }
 } elsif ($o_action =~ /^(remove|delete)$/) {
   $confSphinx = $confPool->removeSphinx($o_sphinx_server,$o_dbname);
+} elsif ($o_action =~ /^migrate$/) {
+  $confSphinx = $confPool->migrateSphinx();
 } else {
   $confSphinx = Output->new(
     error => 1,
@@ -94,7 +98,7 @@ $confSphinx->print($o_format);
 # print usage
 sub print_usage {
   my $prog = shift;
-  print "Usage: $prog [-vh] [-a status|list|create|remove|update] [-s server_ip] \n";
+  print "Usage: $prog [-vh] [-a status|list|create|remove|migrate] [-s server_ip] \n";
 }
 
 # help message
@@ -106,7 +110,7 @@ sub print_help {
 Options:
   -h|--help    - show this message
   -v|--verbose - enable verbose mode.
-  -a|--action  - sphinx action: list|status|create|remove
+  -a|--action  - sphinx action: list|status|create|remove|migrate
   -s|--server  - mysql server
   -d|--dbname  - database for site that will be use sphinx
   -r|--reindex - will reindex on site will be run
@@ -119,6 +123,8 @@ Options:
  $prog -a create -s vm2 --dbname sitemanager --reindex
   * remove sphinx instance from the server
  $prog -a remove -s vm2
+  * migrate sphinx config from PHP to bash
+ $prog -a migrate
 
 EOT
 ;

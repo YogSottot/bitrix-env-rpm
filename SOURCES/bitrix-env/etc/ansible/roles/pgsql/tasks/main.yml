@@ -1,0 +1,10 @@
+- include_tasks: /etc/ansible/inc_vars.yml
+
+- name: additional gathering facts
+  bx_vat:
+
+- include_tasks: upgrade_pgsql_from_13_to_15.yml
+  when: postgresql_manage == 'bx_upgrade_pgsql_15'
+
+- include_tasks: upgrade_pgsql_from_15_to_16.yml
+  when: postgresql_manage == 'bx_upgrade_pgsql_16'

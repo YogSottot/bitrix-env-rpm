@@ -1,15 +1,12 @@
----
-# get info about site installed on localhost
-# save info to: bx_sites_info
 - set_fact:
     proccess_sites: true
 
-- name: gathering facts about installed sites
+- name: gathering facts about installed sites with PostgreSQL
   bx_facts:
     name: list
     password: 0
     install: '(kernel|ext_kernel)'
-    dbtype: 'mysql'
+    dbtype: 'pgsql'
   delegate_to: "{{ cluster_web_server }}"
   tags: gathering_facts
   ignore_errors: yes

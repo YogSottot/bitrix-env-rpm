@@ -244,6 +244,89 @@ sub bx_test_mysql_opts {
     $bx_options->{'DBConn'} = 'Y';
 }
 
+sub bx_test_pgsql_opts {
+    my ( $self, $bx_options ) = @_;
+
+    my $message_p = ( caller(0) )[3];
+    my $message_t = __PACKAGE__;
+
+    my $logOutput = Output->new(
+        error   => 0,
+        logfile => $self->logfile,
+        debug   => $self->debug
+    );
+
+    # get options
+    foreach my $opt ( 'DBName', 'DBHost', 'DBLogin', 'DBPassword' ) {
+        if ( not defined $bx_options->{$opt} ) {
+            my $mess = "$message_p: Missing required option: $opt";
+            $bx_options->{'error'} = 3;
+            $bx_options->{'message'} = $mess;
+            $logOutput->log_data($mess);
+            return $bx_options->{'error'};
+        }
+    }
+
+    # string for connect to pgsql
+    my $dbi_str = "DBI:Pg:dbname=" . $bx_options->{'DBName'} 
+                . ";host=" . $bx_options->{'DBHost'} 
+                . ";port=5432";
+
+    # connect to pgsql
+    my $dbh = DBI->connect(
+        $dbi_str,
+        $bx_options->{'DBLogin'},
+        $bx_options->{'DBPassword'},
+        { PrintError => 0, RaiseError => 0 }
+    );
+
+    if ( !$dbh ) {
+        my $mess = "$message_p: Could not connect to PostgreSQL: $DBI::errstr";
+        $bx_options->{'error'} = 3;
+        $bx_options->{'message'} = $mess;
+        $logOutput->log_data($mess);
+        $bx_options->{'DBConn'} = 'N';
+        return $bx_options->{'error'};
+    }
+
+    # get database encoding
+    my $sql = "SELECT pg_encoding_to_char(encoding) FROM pg_database WHERE datname = ?";
+    my $sth = $dbh->prepare($sql);
+    
+    if ( $sth->execute($bx_options->{'DBName'}) ) {
+        if ( my $row = $sth->fetchrow_arrayref() ) {
+            $bx_options->{'SiteCharset'} = lc($row->[0]);
+        } else {
+            my $mess = "$message_p: Database not found: " . $bx_options->{'DBName'};
+            $bx_options->{'error'} = 3;
+            $bx_options->{'message'} = $mess;
+            $logOutput->log_data($mess);
+            $bx_options->{'DBConn'} = 'N';
+            $sth->finish;
+            $dbh->disconnect;
+            return $bx_options->{'error'};
+        }
+    } else {
+        my $mess = "$message_p: Cannot get database encoding";
+        $bx_options->{'error'} = 3;
+        $bx_options->{'message'} = $mess;
+        $logOutput->log_data($mess);
+        $bx_options->{'DBConn'} = 'N';
+        $sth->finish;
+        $dbh->disconnect;
+        return $bx_options->{'error'};
+    }
+
+    $sth->finish;
+    $dbh->disconnect;
+
+    $logOutput->log_data(
+        "$message_p: Successfully connected to PostgreSQL: $dbi_str"
+    );
+    $bx_options->{'DBConn'} = 'Y';
+    return 0;
+}
+
 sub bx_rand {
 
     my @set = ('0' ..'9', 'A' .. 'F');
@@ -295,6 +378,9 @@ sub bx_settings {
     $bx_options->{DBHost} = $cmd_json->{connections}->{value}->{default}->{host};
     if ($cmd_json->{connections}->{value}->{default}->{className} =~ /Mysql/){
         $bx_options->{DBType} = "mysql";
+    }
+    elsif ($cmd_json->{connections}->{value}->{default}->{className} =~ /Pgsql/){
+        $bx_options->{DBType} = "pgsql";
     }
 }
 
@@ -445,7 +531,12 @@ sub bx_install_options {
         }else{
             $self->bx_settings($settings_config, $bx_options);
         }
-        $self->bx_test_mysql_opts($bx_options);
+        if ($bx_options->{DBType} eq "mysql") {
+            $self->bx_test_mysql_opts($bx_options);
+        }
+        elsif ($bx_options->{DBType} eq "pgsql") {
+            $self->bx_test_pgsql_opts($bx_options);
+        }
     }
 
     return $bx_options;
@@ -453,7 +544,7 @@ sub bx_install_options {
 
 # test installed or not modules cluster and scale, if not installed we can't use site in the cluster
 sub bx_modules_options {
-    my ( $self, $db_host, $db_name, $db_user, $db_pass ) = @_;
+    my ( $self, $db_host, $db_name, $db_user, $db_pass, $db_type ) = @_;
 
     my $message_p = ( caller(0) )[3];
     my $message_t = __PACKAGE__;
@@ -498,21 +589,34 @@ sub bx_modules_options {
     }
 
     # upload directory
-    my $upload_dir_select = qq(select VALUE from b_option
-    where MODULE_ID="main" and NAME="upload_dir");
-
-    # test if b_options exists on site
+    my $dbi_str;
+    my $select_modules;
+    my $upload_dir_select;
     my @test_modules =
       ( 'scale', 'cluster', 'transformer', 'transformercontroller' );
-    my $select_modules = qq|select ID from b_module where ID IN ( |;
-    for my $m (@test_modules) {
-        $select_modules .= qq('$m',);
+      
+    if ($db_type eq 'mysql') {
+        $upload_dir_select = qq(SELECT VALUE FROM b_option WHERE MODULE_ID='main' AND NAME='upload_dir');
+        $select_modules = qq|SELECT ID FROM b_module WHERE ID IN ( |;
+        for my $m (@test_modules) {
+            $select_modules .= qq('$m',);
+        }
+        $select_modules =~ s/,$/\);/;
+        
+        $dbi_str = "DBI:mysql:$db_name;host=$db_host;port=3306";
+        if ($db_host =~ /^(localhost|localhost\.localdomain|127\.0\.0\.1)$/) {
+            $dbi_str .= ":mysql_socket=/var/lib/mysqld/mysqld.sock";
+        }
     }
-    $select_modules =~ s/,$/\);/;
-
-    my $dbi_str = "DBI:mysql:" . $db_name . ";host=" . $db_host . ";port=3306";
-    if ( $db_host =~ /^(localhost|localhost\.localdomain|127\.0\.0\.1)$/ ) {
-        $dbi_str .= ":mysql_socket=/var/lib/mysqld/mysqld.sock";
+    elsif ($db_type eq 'pgsql') {
+        $upload_dir_select = qq(SELECT value FROM b_option WHERE module_id='main' AND name='upload_dir');
+        $select_modules = qq|SELECT id FROM b_module WHERE id IN ( |;
+        for my $m (@test_modules) {
+            $select_modules .= qq('$m',);
+        }
+        $select_modules =~ s/,$/\);/;
+        
+        $dbi_str = "DBI:Pg:dbname=$db_name;host=$db_host;port=5432";
     }
 
     ## connect to DB
@@ -545,7 +649,12 @@ sub bx_modules_options {
         my $row = $sth_u->rows;
         if ( $row > 0 ) {
             while ( my $data = $sth_u->fetchrow_hashref ) {
-                my $upload_dir = $data->{'VALUE'};
+                my $upload_dir;
+                if ($db_type eq 'mysql') {
+                    $upload_dir = $data->{'VALUE'};
+                } elsif ($db_type eq 'pgsql') {
+                    $upload_dir = $data->{'value'};
+                }
                 $modules_options->{'upload_dir'} = $upload_dir;
             }
         }
@@ -570,7 +679,12 @@ sub bx_modules_options {
 
             # test all modules one by one
             while ( my $data = $sth_t->fetchrow_hashref ) {
-                my $module_name = $data->{'ID'};
+                my $module_name;
+                if ($db_type eq 'mysql') {
+                    $module_name = $data->{'ID'};
+                } elsif ($db_type eq 'pgsql') {
+                    $module_name = $data->{'id'};
+                }
                 $modules_options->{ 'module_' . $module_name } = 'installed';
             }
         }
@@ -620,7 +734,7 @@ sub bx_modules_options {
 
 #enable or disable nlm option on the sites
 sub bx_ntlm_options {
-    my ( $self, $db_host, $db_name, $db_user, $db_pass ) = @_;
+    my ( $self, $db_host, $db_name, $db_user, $db_pass, $db_type ) = @_;
 
     my $message_p = ( caller(0) )[3];
     my $message_t = __PACKAGE__;
@@ -641,17 +755,26 @@ sub bx_ntlm_options {
     };
     $logOutput->log_data("$message_p: try defined NTLM options for $site_root");
 
-    my $select =
-      qq(SELECT VALUE FROM b_option WHERE MODULE_ID='LDAP' AND NAME=?);
+    my $dbi_str;
+    my $select;
+    my $select_module;
     my @options = ( 'use_ntlm', 'bitrixvm_auth_support' );
 
-    my $dbi_str = "DBI:mysql:" . $db_name . ";host=" . $db_host . ";port=3306";
-
-    # add socket option for mysql
-    if ( $db_host =~ /^(localhost|localhost\.localdomain|127\.0\.0\.1)$/ ) {
-        $dbi_str .= ":mysql_socket=/var/lib/mysqld/mysqld.sock";
+    if ($db_type eq 'mysql') {
+        $dbi_str = "DBI:mysql:" . $db_name . ";host=" . $db_host . ";port=3306";
+        $select = 
+      qq(SELECT VALUE FROM b_option WHERE MODULE_ID='LDAP' AND NAME=?);
+        $select_module = qq(select ID from b_module where ID ='ldap');
+          # add socket option for mysql
+        if ( $db_host =~ /^(localhost|localhost\.localdomain|127\.0\.0\.1)$/ ) {
+            $dbi_str .= ":mysql_socket=/var/lib/mysqld/mysqld.sock";
+        }
     }
-
+    elsif ($db_type eq 'pgsql') {
+        $dbi_str = "DBI:Pg:dbname=$db_name;host=$db_host;port=5432";
+        $select = qq(SELECT value FROM b_option WHERE module_id='LDAP' AND name=?);
+        $select_module = qq(SELECT id FROM b_module WHERE id='ldap');
+    }
     my $dbh =
       DBI->connect( "$dbi_str", $db_user, $db_pass, { PrintError => 0 }, );
 
@@ -667,7 +790,6 @@ sub bx_ntlm_options {
         "$message_p: Successfully connected to database $db_name");
 
     # test if module LDAP installed on server
-    my $select_module = qq(select ID from b_module where ID ='ldap');
     my $sth_module    = $dbh->prepare("$select_module");
     if ( !$sth_module ) {
         $ntlm_options->{'error'} = 6;
@@ -696,8 +818,7 @@ sub bx_ntlm_options {
     $sth_module->finish;
 
     # database can be empty
-    my $sth = $dbh->prepare(
-        'SELECT VALUE FROM b_option WHERE MODULE_ID="LDAP" AND NAME=?');
+    my $sth = $dbh->prepare($select);
     if ( !$sth ) {
         $ntlm_options->{'error'} = 6;
         $ntlm_options->{'message'} =
@@ -715,7 +836,12 @@ sub bx_ntlm_options {
             # add options to output
             if ( $b_options_rows > 0 ) {
                 while ( my $data_s = $sth->fetchrow_hashref() ) {
-                    my $value = $data_s->{'VALUE'};
+                    my $value;
+                    if ($db_type eq 'mysql') {
+                        $value = $data_s->{'VALUE'};
+                    } elsif ($db_type eq 'pgsql') {
+                        $value = $data_s->{'value'};
+                    }
                     $ntlm_options->{ "NTLM_" . $opt } = $value;
                 }
             }
@@ -744,7 +870,7 @@ sub bx_ntlm_options {
 
 # get search module options
 sub bx_sphinx_options {
-    my ( $self, $db_host, $db_name, $db_user, $db_pass ) = @_;
+    my ( $self, $db_host, $db_name, $db_user, $db_pass, $db_type ) = @_;
 
     my $message_p = ( caller(0) )[3];
     my $message_t = __PACKAGE__;
@@ -765,14 +891,25 @@ sub bx_sphinx_options {
     $logOutput->log_data(
         "$message_p: try defined sphinx options for $site_root");
 
-    my $select_module_opts =
-      qq(select name, value from b_option where MODULE_ID = 'search';);
-    my $select_b_options = qq(show tables like 'b_option';);
-    my $dbi_str = "DBI:mysql:" . $db_name . ";host=" . $db_host . ";port=3306";
+    my $select_module_opts;
+    my $select_b_options;
+    my $dbi_str;
 
-    # add socket option for mysql
-    if ( $db_host =~ /^(localhost|localhost\.localdomain|127\.0\.0\.1)$/ ) {
-        $dbi_str .= ":mysql_socket=/var/lib/mysqld/mysqld.sock";
+    if ($db_type eq 'mysql') {
+        $select_module_opts =
+          qq(select name, value from b_option where MODULE_ID = 'search';);
+        $select_b_options = qq(show tables like 'b_option';);
+        $dbi_str = "DBI:mysql:" . $db_name . ";host=" . $db_host . ";port=3306";
+
+        # add socket option for mysql
+        if ( $db_host =~ /^(localhost|localhost\.localdomain|127\.0\.0\.1)$/ ) {
+            $dbi_str .= ":mysql_socket=/var/lib/mysqld/mysqld.sock";
+        }
+    }
+    elsif ($db_type eq 'pgsql') {
+        $dbi_str = "DBI:Pg:dbname=$db_name;host=$db_host;port=5432";
+        $select_module_opts = qq(SELECT name, value FROM b_option WHERE module_id = 'search');
+        $select_b_options = qq(SELECT tablename FROM pg_tables WHERE tablename = 'b_option' AND schemaname = current_schema());
     }
 
     my $dbh =
@@ -1230,6 +1367,7 @@ sub get_site_files_options {
         my $bx_sphinx_options = $self->bx_sphinx_options(
             $site_options->{'DBHost'},  $site_options->{'DBName'},
             $site_options->{'DBLogin'}, $site_options->{'DBPassword'},
+            $site_options->{'DBType'},
         );
         foreach my $sphinx_k ( keys %$bx_sphinx_options ) {
             $site_options->{$sphinx_k} = $bx_sphinx_options->{$sphinx_k};
@@ -1244,6 +1382,7 @@ sub get_site_files_options {
         my $bx_modules_options = $self->bx_modules_options(
             $site_options->{'DBHost'},  $site_options->{'DBName'},
             $site_options->{'DBLogin'}, $site_options->{'DBPassword'},
+            $site_options->{'DBType'},
         );
 
         #print Dumper($bx_modules_options);
@@ -1262,6 +1401,7 @@ sub get_site_files_options {
         my $bx_ntlm_options = $self->bx_ntlm_options(
             $site_options->{'DBHost'},  $site_options->{'DBName'},
             $site_options->{'DBLogin'}, $site_options->{'DBPassword'},
+            $site_options->{'DBType'},
         );
         foreach my $mod_n ( keys %$bx_ntlm_options ) {
             $site_options->{$mod_n} = $bx_ntlm_options->{$mod_n};

@@ -5,11 +5,13 @@
 [bitrix-mgmt]
 {{ hostname }}   ansible_connection=local ansible_ssh_host={{ host_ip_address }}
 
-
 [bitrix-web]
 {{ hostname }}   ansible_connection=local ansible_ssh_host={{ host_ip_address }}
 
 [bitrix-mysql]
+{{ hostname }}   ansible_connection=local ansible_ssh_host={{ host_ip_address }}
+
+[bitrix-pgsql]
 {{ hostname }}   ansible_connection=local ansible_ssh_host={{ host_ip_address }}
 
 [bitrix-memcached]

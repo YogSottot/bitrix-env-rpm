@@ -42,8 +42,8 @@ menu_remove_pool() {
     exit
 }
 
-menu_upgrade_php() {
-    $hosts_menu/08_upgrade_php_mysql.sh
+menu_upgrade_php_sql() {
+    $hosts_menu/08_upgrade_php_sql.sh
 }
 
 menu_rename_server() {
@@ -89,8 +89,8 @@ submenu() {
         print_pool_info # print main host list
 
         # get upgrade task if the one exists in background
-        get_task_by_type upgrade_mysql_php POOL_SITE_TASK_LOCK POOL_SITE_TASK_INFO
-        print_task_by_type upgrade_mysql_php "$POOL_SITE_TASK_LOCK" "$POOL_SITE_TASK_INFO"
+        get_task_by_type '(upgrade_mysql_php|pgsql)' POOL_SITE_TASK_LOCK POOL_SITE_TASK_INFO
+        print_task_by_type '(upgrade_mysql_php|pgsql)' "$POOL_SITE_TASK_LOCK" "$POOL_SITE_TASK_INFO"
 
         if [[ $POOL_SITE_TASK_LOCK -eq 1 ]]; then
             menu_list="$menu_00"
@@ -125,7 +125,7 @@ submenu() {
                 "3") menu_passw_bitrix_host ;;
                 "4") menu_configure_tz ;;
                 "5") menu_remove_pool; POOL_SERVER_LIST= ;;
-                "6") menu_upgrade_php ;;
+                "6") menu_upgrade_php_sql ;;
                 "0") exit ;;
                 *) error_pick; HOST_MENU_SELECT= ;;
             esac

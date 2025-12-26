@@ -695,6 +695,7 @@ sub CreateSite {
         manage_web => "create_site",
         web_site_name => $site_options->{'ServerName'},
         web_site_type => $site_options->{'SiteInstall'},
+        web_site_dbtype => $site_options->{'DBType'},
     };
     if ( $site_options->{'DocumentRoot'} ) {
         $p_opts->{'web_site_dir'} = $site_options->{'DocumentRoot'};
@@ -792,7 +793,7 @@ sub DeleteSite {
     }
 
     # transform site_options to playbook options
-    my $p_opts = { manage_web => "delete_site", };
+    my $p_opts = { manage_web => "delete_site" };
 
     my $log_str = "delete site";
     if ( $site_options->{'DocumentRoot'} ) {
@@ -802,6 +803,10 @@ sub DeleteSite {
     if ( $site_options->{'ServerName'} ) {
         $p_opts->{'web_site_name'} = $site_options->{'ServerName'};
         $log_str .= " site_name=" . $site_options->{'ServerName'};
+    }
+    if ( $site_options->{'DBType'}) {
+	$p_opts->{'web_site_dbtype'} = $site_options->{'DBType'};
+	$log_str .= " dbtype=" . $site_options->{'DBType'};
     }
 
     $logOutput->log_data("$message_p: $log_str");

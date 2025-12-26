@@ -263,6 +263,25 @@ get_mysql_package() {
     MYSQL_UNI_VERSION=$(echo "$MYSQL_VERSION" | awk -F'.' '{printf "%s%s", $1,$2}')
 }
 
+get_postgresql_package() {
+    [[ -n $POSTGRESQL_PACKAGE ]] && return 0
+    PACKAGES_LIST=$(rpm -qa)
+
+    POSTGRESQL_PACKAGE=not_installed
+    POSTGRESQL_SERVICE=not_installed
+    POSTGRESQL_VERSION=not_installed
+
+    if [[ $(echo "$PACKAGES_LIST" | grep -c '^postgresql-server') -gt 0 ]]; then
+        POSTGRESQL_PACKAGE=postgresql-server
+        POSTGRESQL_SERVICE=postgresql
+    else
+        return 1
+    fi
+
+    POSTGRESQL_VERSION=$(rpm -qa --queryformat '%{version}' ${POSTGRESQL_PACKAGE}* | head -1)
+    POSTGRESQL_UNI_VERSION=$(echo "$POSTGRESQL_VERSION" | awk -F'.' '{print $1}')
+}
+
 get_sw_versions() {
     NGINX_VERSION=$(rpm -qa --queryformat '%{version}' bx-nginx 2>/dev/null | head -1 )
     NGINX_VERSION_UP=0
@@ -383,6 +402,12 @@ get_mysql_service_status() {
     fi
 }
 
+get_postgresql_service_status() {
+    get_postgresql_package
+    systemctl is-active $POSTGRESQL_SERVICE >/dev/null 2>&1
+    return $?
+}
+
 ## test mysql root password
 ## mysql_root_password - set | not_set
 ## mysql_root_config   - /path/to/file | no
@@ -431,6 +456,14 @@ get_bx_packages() {
         mysql_version=$MYSQL_VERSION
         mysql_mid_version=$MYSQL_MID_VERSION
         mysql_uni_version=$MYSQL_UNI_VERSION
+        get_postgresql_package
+        get_postgresql_service_status
+        [[ $? -gt 0 ]] && return 0
+        postgresql_service_status=active
+        postgresql_package=$POSTGRESQL_PACKAGE
+        postgresql_service=$POSTGRESQL_SERVICE
+        postgresql_version=$POSTGRESQL_VERSION
+        postgresql_uni_version=$POSTGRESQL_UNI_VERSION
         php_version=$($rpm_bin -qa --queryformat '%{name} %{version} \n' php | awk '{print $2}')
     fi
     [[ -z $php_version ]] && php_version='not_installed'
@@ -685,7 +718,11 @@ ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"firewalld_package":"'$firewalld_package'",'
 ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"firewalld_status":"'$firewalld_status'",'
 ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"firewalld_bx_type":"'$firewalld_bx_type'",'
 ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"firewalld_tolerance":"'$firewalld_tolerance'",'
-ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"iptables_status":"'$iptables_status'"'
+ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"iptables_status":"'$iptables_status'",'
+ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"postgresql_version":"'$postgresql_version'",'
+ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"postgresql_uni_version":"'$postgresql_uni_version'",'
+ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"postgresql_service":"'$postgresql_service'",'
+ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'"postgresql_service_status":"'$postgresql_service_status'"'
 ANSIBLE_OUTPUT=$ANSIBLE_OUTPUT'}}'
 
 echo -n $ANSIBLE_OUTPUT

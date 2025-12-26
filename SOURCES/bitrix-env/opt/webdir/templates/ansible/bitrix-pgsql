@@ -1,0 +1,17 @@
+iface: '{{ ansible_default_ipv4.interface }}'
+
+master_server: {{ hostname }}
+master_server_netaddr: {{ host_ip_address }}
+
+pgsql_logs: /var/log/pgsql
+pgsql_enable_logs: 1
+
+pgsql_max_log_size: 100M
+pgsql_expire_logs_days: 5
+
+pgsql_host: localhost
+pgsql_port: 5432
+pgsql_user: postgres
+pgsql_last_id: 1
+
+replica_login: bx_repluser

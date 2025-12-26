@@ -177,6 +177,16 @@ elsif ( $o_action =~ /^(bx_upgrade_mysql84)$/ ) {
     my $inventory = bxInventory->new( debug => $o_verbose );
     $output = $inventory->update_mysql($o_action, $o_hostname);
 }
+elsif ( $o_action =~ /^(bx_upgrade_pgsql_15)$/ ) {
+    use bxInventory;
+    my $inventory = bxInventory->new( debug => $o_verbose );
+    $output = $inventory->update_postgresql($o_action, $o_hostname);
+}
+elsif ( $o_action =~ /^(bx_upgrade_pgsql_16)$/ ) {
+    use bxInventory;
+    my $inventory = bxInventory->new( debug => $o_verbose );
+    $output = $inventory->update_postgresql($o_action, $o_hostname);
+}
 # Host operations
 elsif ( $o_action eq 'add' ) {
 

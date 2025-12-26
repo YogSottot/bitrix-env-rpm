@@ -4,15 +4,15 @@
 $_SERVER["DOCUMENT_ROOT"] = '{{ item.DocumentRoot }}';
 $DOCUMENT_ROOT = $_SERVER["DOCUMENT_ROOT"];
 define("NO_KEEP_STATISTIC", true);
-define("NOT_CHECK_PERMISSIONS",true);
+define("NOT_CHECK_PERMISSIONS", true);
 define('BX_NO_ACCELERATOR_RESET', true);
 require($_SERVER["DOCUMENT_ROOT"]."/bitrix/modules/main/include/prolog_before.php");
 
-if(!CModule::IncludeModule('cluster'))
+if (!CModule::IncludeModule('cluster'))
 {
-  // skip memcached registration if module cluster not installed
-	echo "Not found cluster module for {{ item.SiteName }}";
-	return 0;
+    // skip memcached registration if module cluster not installed
+    echo "Not found cluster module for {{ item.SiteName }}";
+    return 0;
 };
 
 // register variables for node
@@ -23,80 +23,87 @@ $mcWeight = 100;
 $groupId = 1;
 
 // return values
-$OK   = array( 0, 'Ok' );
-$ERR  = array( 1, 'Error');
+$OK = array(0, 'Ok');
+$ERR = array(1, 'Error');
 
 $dbNode = new CClusterDBNode;
 $rsNodes = $dbNode->GetList(
-	array(),
-	array(
-    "=ROLE_ID" => array("MAIN"),
-    "=MASTER_ID" => false,
-    "=STATUS" => "ONLINE",
-	)
+    array(),
+    array(
+	"=ROLE_ID" => array("MAIN"),
+	"=MASTER_ID" => false,
+	"=STATUS" => "ONLINE",
+    )
 );
 
-if($arNode = $rsNodes->Fetch())
+if ($arNode = $rsNodes->Fetch())
 {
-	$groupId = $arNode["GROUP_ID"];
+    $groupId = $arNode["GROUP_ID"];
 }
 else
 {
-	$returnResult = $ERR;
-	echo "Can't find db master: ". $returnResult[1];
-	return $returnResult[0];
+    $returnResult = $ERR;
+    echo "Can't find db master: ". $returnResult[1];
+    return $returnResult[0];
 }
 
 // return values
-$OK   = array( 0, 'Ok' );
-$ERR  = array( 1, 'Error');
+$OK = array(0, 'Ok');
+$ERR = array(1, 'Error');
 
-$arMemcacheServers = CClusterMemcache::LoadConfig();
+// if version of cluster module equals or greater 24.200.0 - using new \Bitrix\Cluster\ClusterCacheConfig class
+// if version of cluster module lower then 24.200.0 - using CClusterMemcache class as before
+if (class_exists('\Bitrix\Cluster\ClusterCacheConfig'))
+{
+    $arMemcacheServers = \Bitrix\Cluster\ClusterCacheConfig::getInstance()->getConfig();
+}
+else
+{
+    $arMemcacheServers = CClusterMemcache::LoadConfig();
+}
+
 $arServer = false;
 
-if(is_array($arMemcacheServers))
+if (is_array($arMemcacheServers))
 {
-	foreach($arMemcacheServers as $server)
+    foreach($arMemcacheServers as $server)
+    {
+	if ($server["HOST"] == $mcHost && $server["PORT"] == $mcPort)
 	{
-		if($server["HOST"] == $mcHost && $server["PORT"] == $mcPort)
-		{
-			$arServer = $server;
-		}
+	    $arServer = $server;
 	}
+    }
 }
 
 $ob = new CClusterMemcache;
 $arFields = array(
-	"GROUP_ID" => $groupId,
-	"HOST" => $mcHost,
-	"PORT" => $mcPort,
-	"WEIGHT" => $mcWeight,
+    "GROUP_ID" => $groupId,
+    "HOST" => $mcHost,
+    "PORT" => $mcPort,
+    "WEIGHT" => $mcWeight,
 );
 
-if(is_array($arServer))
+if (is_array($arServer))
 {
-	if ($mcStatus == "OFFLINE")
-	{
-		$res = $ob->Pause($arServer["ID"]);
-	}
-	else
-	{
-		$res = $ob->Update($arServer["ID"], $arFields);
-
-		if(intval($res) > 0)
-			$ob->Resume($res);
-	}
+    if ($mcStatus == "OFFLINE")
+    {
+	$res = $ob->Pause($arServer["ID"]);
+    }
+    else
+    {
+	$res = $ob->Update($arServer["ID"], $arFields);
+	if (intval($res) > 0)
+	    $ob->Resume($res);
+    }
 }
 else
 {
-	$res = $ob->Add($arFields);
-
-	if(intval($res) > 0)
-		$ob->Resume($res);
+    $res = $ob->Add($arFields);
+    if (intval($res) > 0)
+	$ob->Resume($res);
 }
 
 $returnResult = intval($res)>0 ? $OK : $ERR;
 echo "Update claster memcached node: ". $returnResult[1];
 return $returnResult[0];
-
 ?>

@@ -1,0 +1,64 @@
+- include_tasks: sites-gathering_facts-not_mandatory.yml
+
+- name: Include backup tasks before upgrade
+  include_tasks: backup_dbs.yml
+
+- name: stop postgresql
+  service:
+    name: postgresql
+    state: stopped
+
+- name: Reset PostgreSQL module
+  command: dnf module reset postgresql -y
+
+- name: Enable PostgreSQL 15 module stream
+  command: dnf module enable postgresql:15 -y
+
+- name: Upgrade PostgreSQL to version 15
+  dnf:
+    name:
+      - postgresql-server
+      - postgresql-contrib
+      - postgresql-upgrade
+    state: latest
+
+- name: Upgrade PostgreSQL database using postgresql-setup
+  command: postgresql-setup --upgrade
+
+- name: Copy old configuration files
+  copy:
+    src: "/var/lib/pgsql/data-old/{{ item }}"
+    dest: "/var/lib/pgsql/data/{{ item }}"
+    owner: postgres
+    group: postgres
+    mode: '0600'
+  with_items:
+    - pg_hba.conf
+    - postgresql.conf
+  
+- name: Remove old PostgreSQL 13 data directory
+  file:
+    path: /var/lib/pgsql/data-old
+    state: absent
+
+- name: Create PostgreSQL runtime directory
+  file:
+    path: /var/run/postgresql
+    state: directory
+    owner: postgres
+    group: postgres
+    mode: '0755'
+
+- name: start postgresql
+  service:
+    name: postgresql
+    enabled: yes
+    state: started
+
+- name: Reindex all PostgreSQL databases
+  command: reindexdb -U postgres --all
+
+- name: Restart PostgreSQL service
+  systemd:
+    name: postgresql
+    state: restarted

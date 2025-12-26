@@ -92,6 +92,26 @@ location ^~ /bitrix/groupdav.php {
     proxy_pass $proxyserver;
 }
 
+# Local resize cache
+location ~* ^/upload/resize_cache/x/(.+)$ {
+    internal;
+    set $new_uri $upstream_http_x_gen_src;
+    set $cdi $upstream_http_x_cd_info;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Server $host;
+    more_clear_input_headers 'Authorization';
+    if ($cdi) {
+	more_set_headers -s 200 'Content-Disposition:$cdi';
+    }
+    proxy_set_header "cookie" "";
+    proxy_set_header "content-type" "";
+    proxy_set_header "content-length" "";
+    proxy_pass $scheme://$host/upload/resize_cache/$1;
+    proxy_intercept_errors on;
+    error_page 403 404 500 502 503 504 = /$new_uri;
+}
+
 # Use nginx to return static content from s3 cloud storage
 # /upload/bx_cloud_upload/<schema>.<backet_name>.<s3_point>.amazonaws.com/<path/to/file>
 location ^~ /upload/bx_cloud_upload/ {
@@ -280,8 +300,272 @@ location ^~ /upload/bx_cloud_upload/ {
     }
 }
 
+# Cloud resize cache
+location ^~ /upload/resize_cache/c/upload/bx_cloud_upload/ {
+    # Amazon
+    location ~ ^/upload/resize_cache/c/upload/bx_cloud_upload/(http[s]?)\.([^/:\s]+)\.(s3|af-south-1|ap-east-1|ap-south-1|ap-south-2|ap-southeast-1|ap-southeast-2|ap-southeast-3|ap-southeast-4|ap-northeast-1|ap-northeast-2|ap-northeast-3|ca-central-1|ca-west-1|cn-north-1|cn-northwest-1|eu-central-1|eu-central-2|eu-west-1|eu-west-2|eu-west-3|eu-south-1|eu-south-2|eu-north-1|il-central-1|me-south-1|me-central-1|sa-east-1|us-east-1|us-east-2|us-west-1|us-west-2|us-gov-east-1|us-gov-west-1)\.amazonaws\.com/([^\s]+)$ {
+	internal;
+	set $new_uri $upstream_http_x_gen_src;
+	set $cdi $upstream_http_x_cd_info;
+	resolver 8.8.8.8 ipv6=off;
+	proxy_method GET;
+	proxy_set_header X-Real-IP $remote_addr;
+	proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+	proxy_set_header X-Forwarded-Server $host;
+	more_clear_input_headers 'Authorization';
+	proxy_set_header "cookie" "";
+	proxy_set_header "content-type" "";
+	proxy_set_header "content-length" "";
+	if ($cdi) {
+	    more_set_headers -s 200 'Content-Disposition: $cdi';
+	}
+	proxy_pass $1://$2.$3.amazonaws.com/$4;
+	proxy_intercept_errors on;
+	error_page 403 404 500 502 503 504 = /$new_uri;
+    }
+    # Rackspace
+    location ~ ^/upload/resize_cache/c/upload/bx_cloud_upload/(http[s]?)\.([^/:\s]+)\.([^/:\s]+)\.([^/:\s]+)\.rackcdn\.com/([^\s]+)$ {
+	internal;
+	set $new_uri $upstream_http_x_gen_src;
+	set $cdi $upstream_http_x_cd_info;
+	resolver 8.8.8.8 ipv6=off;
+	proxy_method GET;
+	proxy_set_header X-Real-IP $remote_addr;
+	proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+	proxy_set_header X-Forwarded-Server $host;
+	more_clear_input_headers 'Authorization';
+	proxy_set_header "cookie" "";
+	proxy_set_header "content-type" "";
+	proxy_set_header "content-length" "";
+	if ($cdi) {
+	    more_set_headers -s 200 'Content-Disposition: $cdi';
+	}
+	proxy_pass $1://$2.$3.$4.rackcdn.com/$5;
+	proxy_intercept_errors on;
+	error_page 403 404 500 502 503 504 = /$new_uri;
+    }
+    # Clodo
+    location ~ ^/upload/resize_cache/c/upload/bx_cloud_upload/(http[s]?)\.([^/:\s]+)\.clodo\.ru\:(80|443)/([^\s]+)$ {
+	internal;
+	set $new_uri $upstream_http_x_gen_src;
+	set $cdi $upstream_http_x_cd_info;
+	resolver 8.8.8.8 ipv6=off;
+	proxy_method GET;
+	proxy_set_header X-Real-IP $remote_addr;
+	proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+	proxy_set_header X-Forwarded-Server $host;
+	more_clear_input_headers 'Authorization';
+	proxy_set_header "cookie" "";
+	proxy_set_header "content-type" "";
+	proxy_set_header "content-length" "";
+	if ($cdi) {
+	    more_set_headers -s 200 'Content-Disposition: $cdi';
+	}
+	proxy_pass $1://$2.clodo.ru:$3/$4;
+	proxy_intercept_errors on;
+	error_page 403 404 500 502 503 504 = /$new_uri;
+    }
+    # Google
+    location ~ ^/upload/resize_cache/c/upload/bx_cloud_upload/(http[s]?)\.([^/:\s]+)\.commondatastorage\.googleapis\.com/([^\s]+)$ {
+	internal;
+	set $new_uri $upstream_http_x_gen_src;
+	set $cdi $upstream_http_x_cd_info;
+	resolver 8.8.8.8 ipv6=off;
+	proxy_method GET;
+	proxy_set_header X-Real-IP $remote_addr;
+	proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+	proxy_set_header X-Forwarded-Server $host;
+	more_clear_input_headers 'Authorization';
+	proxy_set_header "cookie" "";
+	proxy_set_header "content-type" "";
+	proxy_set_header "content-length" "";
+	if ($cdi) {
+	    more_set_headers -s 200 'Content-Disposition: $cdi';
+	}
+	proxy_pass $1://$2.commondatastorage.googleapis.com/$3;
+	proxy_intercept_errors on;
+	error_page 403 404 500 502 503 504 = /$new_uri;
+    }
+    # Selectel
+    location ~ ^/upload/resize_cache/c/upload/bx_cloud_upload/(http[s]?)\.([^/:\s]+)\.selcdn\.ru/([^\s]+)$ {
+	internal;
+	set $new_uri $upstream_http_x_gen_src;
+	set $cdi $upstream_http_x_cd_info;
+	resolver 8.8.8.8 ipv6=off;
+	proxy_method GET;
+	proxy_set_header X-Real-IP $remote_addr;
+	proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+	proxy_set_header X-Forwarded-Server $host;
+	more_clear_input_headers 'Authorization';
+	proxy_set_header "cookie" "";
+	proxy_set_header "content-type" "";
+	proxy_set_header "content-length" "";
+	if ($cdi) {
+	    more_set_headers -s 200 'Content-Disposition: $cdi';
+	}
+	proxy_pass $1://$2.selcdn.ru/$3;
+	proxy_intercept_errors on;
+	error_page 403 404 500 502 503 504 = /$new_uri;
+    }
+    # Selectel as S3 compatible storage
+    location ~ ^/upload/resize_cache/c/upload/bx_cloud_upload/(http[s]?)\.([^/:\s]+)\.selstorage\.ru/([^\s]+)$ {
+	internal;
+	set $new_uri $upstream_http_x_gen_src;
+	set $cdi $upstream_http_x_cd_info;
+	resolver 8.8.8.8 ipv6=off;
+	proxy_method GET;
+	proxy_set_header X-Real-IP $remote_addr;
+	proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+	proxy_set_header X-Forwarded-Server $host;
+	more_clear_input_headers 'Authorization';
+	proxy_set_header "cookie" "";
+	proxy_set_header "content-type" "";
+	proxy_set_header "content-length" "";
+	if ($cdi) {
+	    more_set_headers -s 200 'Content-Disposition: $cdi';
+	}
+	proxy_pass $1://$2.selstorage.ru/$3;
+	proxy_intercept_errors on;
+	error_page 403 404 500 502 503 504 = /$new_uri;
+    }
+    # Yandex
+    location ~* ^/upload/resize_cache/c/upload/bx_cloud_upload/(http[s]?)\.([^/:\s]+)\.storage\.yandexcloud\.net/([^\s]+)$ {
+	internal;
+	set $new_uri $upstream_http_x_gen_src;
+	set $cdi $upstream_http_x_cd_info;
+	resolver 8.8.8.8 ipv6=off;
+	proxy_method GET;
+	proxy_set_header X-Real-IP $remote_addr;
+	proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+	proxy_set_header X-Forwarded-Server $host;
+	more_clear_input_headers 'Authorization';
+	proxy_set_header "cookie" "";
+	proxy_set_header "content-type" "";
+	proxy_set_header "content-length" "";
+	if ($cdi) {
+	    more_set_headers -s 200 'Content-Disposition: $cdi';
+	}
+	proxy_pass $1://$2.storage.yandexcloud.net/$3;
+	proxy_intercept_errors on;
+	error_page 403 404 500 502 503 504 = /$new_uri;
+    }
+    # Yandex second option
+    location ~ ^/upload/resize_cache/c/upload/bx_cloud_upload/(http[s]?)\.storage\.yandexcloud\.net/([^\s].+)$ {
+	internal;
+	set $new_uri $upstream_http_x_gen_src;
+	set $cdi $upstream_http_x_cd_info;
+	resolver 8.8.8.8 ipv6=off;
+	proxy_method GET;
+	proxy_set_header X-Real-IP $remote_addr;
+	proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+	proxy_set_header X-Forwarded-Server $host;
+	more_clear_input_headers 'Authorization';
+	proxy_set_header "cookie" "";
+	proxy_set_header "content-type" "";
+	proxy_set_header "content-length" "";
+	if ($cdi) {
+	    more_set_headers -s 200 'Content-Disposition: $cdi';
+	}
+	proxy_pass $1://storage.yandexcloud.net/$2;
+	proxy_intercept_errors on;
+	error_page 403 404 500 502 503 504 = /$new_uri;
+    }
+    # HotBox
+    location ~ ^/upload/resize_cache/c/upload/bx_cloud_upload/(http[s]?)\.([^/:\s]+)\.hb\.bizmrg\.com/([^\s]+)$ {
+	internal;
+	set $new_uri $upstream_http_x_gen_src;
+	set $cdi $upstream_http_x_cd_info;
+	resolver 8.8.8.8 ipv6=off;
+	proxy_method GET;
+	proxy_set_header X-Real-IP $remote_addr;
+	proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+	proxy_set_header X-Forwarded-Server $host;
+	more_clear_input_headers 'Authorization';
+	proxy_set_header "cookie" "";
+	proxy_set_header "content-type" "";
+	proxy_set_header "content-length" "";
+	if ($cdi) {
+	    more_set_headers -s 200 'Content-Disposition: $cdi';
+	}
+	proxy_pass $1://$2.hb.bizmrg.com/$3;
+	proxy_intercept_errors on;
+	error_page 403 404 500 502 503 504 = /$new_uri;
+    }
+    # HotBox
+    location ~ ^/upload/resize_cache/c/upload/bx_cloud_upload/(http[s]?)\.hb\.bizmrg\.com/([^\s].+)$ {
+	internal;
+	set $new_uri $upstream_http_x_gen_src;
+	set $cdi $upstream_http_x_cd_info;
+	resolver 8.8.8.8 ipv6=off;
+	proxy_method GET;
+	proxy_set_header X-Real-IP $remote_addr;
+	proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+	proxy_set_header X-Forwarded-Server $host;
+	more_clear_input_headers 'Authorization';
+	proxy_set_header "cookie" "";
+	proxy_set_header "content-type" "";
+	proxy_set_header "content-length" "";
+	if ($cdi) {
+	    more_set_headers -s 200 'Content-Disposition: $cdi';
+	}
+	proxy_pass $1://hb.bizmrg.com/$2;
+	proxy_intercept_errors on;
+	error_page 403 404 500 502 503 504 = /$new_uri;
+    }
+    # Clodo.ru
+    location ~ ^/upload/resize_cache/c/upload/bx_cloud_upload/(http[s]?)\.([^/:\s]+)\.clodo\.ru/([^\s]+)$ {
+	internal;
+	set $new_uri $upstream_http_x_gen_src;
+	set $cdi $upstream_http_x_cd_info;
+	resolver 8.8.8.8 ipv6=off;
+	proxy_method GET;
+	proxy_set_header X-Real-IP $remote_addr;
+	proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+	proxy_set_header X-Forwarded-Server $host;
+	more_clear_input_headers 'Authorization';
+	proxy_set_header "cookie" "";
+	proxy_set_header "content-type" "";
+	proxy_set_header "content-length" "";
+	if ($cdi) {
+	    more_set_headers -s 200 'Content-Disposition: $cdi';
+	}
+	proxy_pass $1://$2.clodo.ru/$3;
+	proxy_intercept_errors on;
+	error_page 403 404 500 502 503 504 = /$new_uri;
+    }
+    # Timeweb.cloud S3 compatible storage
+    location ~ ^/upload/resize_cache/c/upload/bx_cloud_upload/(http[s]?)\.s3\.timeweb\.cloud/([^\s].+)$ {
+	internal;
+	set $new_uri $upstream_http_x_gen_src;
+	set $cdi $upstream_http_x_cd_info;
+	resolver 8.8.8.8 ipv6=off;
+	proxy_method GET;
+	proxy_set_header X-Real-IP $remote_addr;
+	proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+	proxy_set_header X-Forwarded-Server $host;
+	more_clear_input_headers 'Authorization';
+	proxy_set_header "cookie" "";
+	proxy_set_header "content-type" "";
+	proxy_set_header "content-length" "";
+	if ($cdi) {
+	    more_set_headers -s 200 'Content-Disposition: $cdi';
+	}
+	proxy_pass $1://s3.timeweb.cloud/$2;
+	proxy_intercept_errors on;
+	error_page 403 404 500 502 503 504 = /$new_uri;
+    }
+    # All other locations
+    location ~* .*$ {
+	deny all;
+    }
+}
+
 # Static content
-location ~* ^/(upload|bitrix/images|bitrix/tmp) { 
+location ~* ^/(upload|bitrix/images|bitrix/tmp) {
+    set $cdi $upstream_http_x_cd_info;
+    if ($cdi) {
+	more_set_headers -s 200 'Content-Disposition:$cdi';
+    }
     if ( $upstream_http_x_accel_redirect = '' ) {
 	expires 30d;
     }

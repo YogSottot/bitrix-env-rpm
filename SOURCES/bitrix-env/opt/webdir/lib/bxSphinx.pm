@@ -285,4 +285,31 @@ sub removeSphinx {
   return $created_process;
 }
 
+# migrate sphinx config from PHP to bash
+sub migrateSphinx {
+  my ($self) = @_;
+
+  my $message_p = (caller(0))[3];
+  my $message_t = __PACKAGE__;
+  my $group = $self->group;
+
+  # create ansible task options
+  my $po  = Pool->new();
+  my $ansData = $po->ansible_conf;
+  my $cmd_play = $ansData->{'playbook'};
+  my $cmd_conf = catfile($ansData->{'base'},"$group.yml");
+  my $cmd_opts = {
+    'manage_sphinx' => 'migrate'
+  };
+
+  # run as daemon in background
+  my $dh = bxDaemon->new(
+    debug => $self->debug,
+    task_cmd => qq($cmd_play $cmd_conf)
+  );
+  my $created_process = $dh->startAnsibleProcess($group, $cmd_opts);
+
+  return $created_process;
+}
+
 1;

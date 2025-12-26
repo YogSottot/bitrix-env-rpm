@@ -1,7 +1,7 @@
 [Unit]
 Description=Transformer worker daemon
 After=network.target
-After=rabbitmq-server.service mysqld.service
+After=rabbitmq-server.service mysqld.service postgresql.service
 
 [Service]
 Type=forking

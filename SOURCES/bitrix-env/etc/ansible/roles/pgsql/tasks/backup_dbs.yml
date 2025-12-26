@@ -1,0 +1,40 @@
+- name: Create backup directory
+  delegate_to: "{{ monitoring_server }}"
+  file:
+    path={{ item }}
+    state=directory
+    owner=bitrix
+    group=bitrix
+    mode=0770
+  with_items:
+    - "/home/bitrix/backup"
+    - "/home/bitrix/backup/pgsql"
+  tags: backup
+
+- name: Create temporary backup directory
+  delegate_to: "{{ monitoring_server }}"
+  become: yes
+  file:
+    path: "/var/lib/pgsql/backup"
+    state: directory
+    owner: postgres
+    group: postgres
+    mode: 0700
+  tags: backup
+
+- name: create backup of PostgreSQL databases only
+  delegate_to: "{{ monitoring_server }}"
+  postgresql_db:
+    name: "{{ item.DBName }}"
+    state: dump
+    login_user: "{{ pgsql_user }}"
+    target: "/var/lib/pgsql/backup/update_{{ item.DBName }}.sql.bz2"
+  with_items: "{{ bx_sites_info | default([]) }}"
+  when: item.DBName is defined
+  tags: backup
+
+- name: Copy PostgreSQL backups to bitrix backup directory
+  delegate_to: "{{ monitoring_server }}"
+  shell: "cp /var/lib/pgsql/backup/update_*.sql.bz2 /home/bitrix/backup/pgsql/ && chown -R bitrix:bitrix /home/bitrix/backup/pgsql"
+  tags: backup
+  ignore_errors: yes

@@ -1,31 +1,25 @@
-#!/usr/bin/php
+#!/bin/bash
 # {{ ansible_managed }}
 # Minimal Sphinx configuration for Bitrix
 #
 # Include site search db
-<?php
 
-$includeConfig = "\n\n";
-$confDir = "{{ sphinx_inx_dir }}";
-if(is_dir($confDir))
-{
-	if($dh = opendir($confDir))
-	{
-		while(($file = readdir($dh)) !== false)
-		{
-			if($file == "." || $file == "..")
-				continue;
-
-			$includeConfig .= file_get_contents($confDir.'/'.$file)."\n\n";
-		}
-		closedir($dh);
-	}
+include_configs() {
+    CONF_DIR="{{ sphinx_inx_dir }}"
+    if [ -d "$CONF_DIR" ]; then
+        for file in "$CONF_DIR"/*; do
+            if [ ! -f "$file" ] || [ "$(basename "$file")" = "." ] || [ "$(basename "$file")" = ".." ]; then
+                continue
+            fi
+            cat "$file"
+            echo -e "\n\n"
+        done
+    fi
 }
 
-echo $includeConfig;
+include_configs
 
-?>
-
+cat << 'EOT'
 index testrt
 {
     type		= rt
@@ -38,7 +32,9 @@ index testrt
     rt_attr_uint	= gid
 
 }
+EOT
 
+cat << EOT
 searchd
 {
 	listen			= {{ sphinx_general_listen }}
@@ -63,13 +59,18 @@ searchd
 }
 
 # {{ sphinx_type }}
+EOT
+
 {% if sphinx_type == '21' %}
+cat << 'EOT'
 indexer
 {
 	lemmatizer_cache	= 128M
 	lemmatizer_base		= /etc/sphinx/bx/dicts/
 }
+EOT
 {% else %}
+cat << 'EOT'
 indexer
 {
 	lemmatizer_cache	= 128M
@@ -78,4 +79,5 @@ common
 {
 	lemmatizer_base		= /usr/share/sphinx/dicts
 }
+EOT
 {% endif %}

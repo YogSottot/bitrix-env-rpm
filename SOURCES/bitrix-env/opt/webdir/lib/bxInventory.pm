@@ -87,7 +87,7 @@ sub get_bitrix_options {
         base              => $bitrix_dir,
         logs              => catfile( $bitrix_dir, 'logs' ),
         aHostsTemplate    => catfile( $bitrix_dir, 'templates', 'ansible' ),
-        aHostsRoles       => [ 'mgmt', 'mysql', 'web', 'memcached', 'sphinx', 'transformer' ],
+        aHostsRoles       => [ 'mgmt', 'mysql', 'pgsql', 'web', 'memcached', 'sphinx', 'transformer' ],
         aHostsDefaultRole => 'hosts',
         aHostsPrefix      => 'bitrix',
     };
@@ -863,6 +863,11 @@ sub create_host_vars {
         $host_vars_options->{'mysql_serverid'}         = 1;
     }
 
+    if ( grep /^pgsql$/, @{ $host_options->{'roles'} } ) {
+        $host_vars_options->{'pgsql_replication_role'} = 'master';
+        $host_vars_options->{'pgsql_serverid'}         = 1;
+    }
+
     my $file = catfile( $host_vars_dir, $host_options->{'inventory_hostname'} );
     my $save_to_yaml = save_to_yaml( $host_vars_options, $file );
     if ( $save_to_yaml->is_error ) { return $save_to_yaml; }
@@ -1324,7 +1329,7 @@ sub create_pool {
     }
 
     if ( not defined $host_options->{'roles'} ) {
-        $host_options->{'roles'} = [ 'mgmt', 'mysql', 'web', 'hosts' ];
+        $host_options->{'roles'} = [ 'mgmt', 'mysql', 'pgsql', 'web', 'hosts' ];
     }
 
     # system error: open file or smth else
@@ -1767,7 +1772,52 @@ sub update_mysql {
         $startProcess = $bxDaemon->startProcess($type);
     }
     else {
-        $startProcess = $bxDaemon->startAnsibleProcess( $type, $opts );
+        $startProcess = $bxDaemon->startAnsibleProcess( "upgrade_mysql_php", $opts );
+    }
+
+    return $startProcess;
+}
+
+sub update_postgresql {
+    my ( $self, $type, $inventory_host ) = @_;
+
+    my $message_p = ( caller(0) )[3];
+    my $message_t = __PACKAGE__;
+    if ( not defined $type ) {
+        $type = "bx_upgrade_postgresql";
+    }
+
+    my $debug = $self->debug;
+    my $logOutput = Output->new( error => 0, logfile => $self->logfile );
+
+    my $pool_status = $self->get_pool_status();
+
+    # start ansible process of updating postgresql
+    my $ansible_options = $self->ansible_options;
+    my $cmd_playbook    = $ansible_options->{'playbook'};
+    my ( $opts, $startProcess, $etc_playbook, $type_playbook );
+    $etc_playbook = catfile( $ansible_options->{'base'}, 'pgsql.yml' );
+    if ( $type eq "bx_upgrade_pgsql_15" ) {
+        $opts = { postgresql_manage => "bx_upgrade_pgsql_15" };
+    }
+    elsif ( $type eq "bx_upgrade_pgsql_16" ) {
+        $opts = { postgresql_manage => "bx_upgrade_pgsql_16" };
+    }
+    
+    if ( defined $inventory_host ) {
+        $opts->{updated_hostname} = $inventory_host;
+    }
+
+    my $bxDaemon = bxDaemon->new(
+        task_cmd => qq($cmd_playbook $etc_playbook),
+        debug    => $self->debug,
+        logfile  => $self->logfile,
+    );
+    if ( not defined $opts ) {
+        $startProcess = $bxDaemon->startProcess($type);
+    }
+    else {
+        $startProcess = $bxDaemon->startAnsibleProcess( "pgsql", $opts );
     }
 
     return $startProcess;

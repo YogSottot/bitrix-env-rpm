@@ -1,6 +1,6 @@
 ---
 # manage sphinx instances
-# manage_sphinx = create|delete|add_index|delete_index
+# manage_sphinx = create|delete|add_index|delete_index|migrate
 # manage_node   = host
 # manage_site   = create|delete index for defined site
 
@@ -8,6 +8,9 @@
 
 - include_tasks: sphinx.yml
   when: "manage_sphinx == 'create' or manage_sphinx == 'delete'"
+
+- include_tasks: sphinx-migrate-bash.yml
+  when: "manage_sphinx == 'migrate'"
 
 - include_tasks: index_site.yml
   when: "manage_sphinx == 'add_site' or manage_sphinx == 'delete_site'"

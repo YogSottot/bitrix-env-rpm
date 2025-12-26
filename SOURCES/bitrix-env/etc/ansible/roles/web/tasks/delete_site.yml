@@ -36,6 +36,7 @@
     web_site_bx_temp_directory: "{{ bx_site_info.dbconn_BX_TEMPORARY_FILES_DIRECTORY }}"
     web_site_nginx_bx_temp_config: ""
     web_site_costom_directory: ""
+    web_site_dbtype: "{{ bx_site_info.DBType }}"
   tags: configure_site
 
 - name: set additional variables
@@ -198,9 +199,12 @@
   when: web_site_name == "default" and ansible_distribution_major_version == "7" and inventory_hostname == cluster_web_server
   notify: restart httpd-scale
 
-# delete database from mysql server
-- include_tasks: delete_db.yml
-  when: "web_site_type == 'kernel' or web_site_type == 'ext_kernel'"
+# delete database from database server
+- include_tasks: delete_mysql_db.yml
+  when: "(web_site_type == 'kernel' or web_site_type == 'ext_kernel') and web_site_dbtype == 'mysql'"
+
+- include_tasks: delete_pgsql_db.yml  
+  when: "(web_site_type == 'kernel' or web_site_type == 'ext_kernel') and web_site_dbtype == 'pgsql'"
 
 - name: delete crontab settings
   file:

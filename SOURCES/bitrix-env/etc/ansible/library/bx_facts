@@ -38,6 +38,7 @@ my $o_status     = undef;
 my $o_install    = undef;
 my $o_site_dir   = undef;
 my $o_site_error = undef;
+my $o_dbtype     = undef;    # filter by database type (mysql or pgsql)
 
 # get command line options
 my $opt_file = $ARGV[0];
@@ -72,6 +73,7 @@ if ($opt_file) {
                 $o_install    = $val if ( $key eq "install" );
                 $o_site_dir   = $val if ( $key eq "site_dir" );
                 $o_site_error = $val if ( $key eq "error" );
+                $o_dbtype     = $val if ( $key eq "dbtype" );
             }
         }
     }
@@ -101,6 +103,9 @@ if ( $o_action =~ /^list$/ ) {
     }
     if ( defined $o_site_error ) {
         $filters->{'error'} = $o_site_error;
+    }
+    if ( defined $o_dbtype && $o_dbtype !~ /^NOT_DEFINED$/ ) {
+        $filters->{'DBType'} = $o_dbtype;
     }
 
     my $bx = bxSites->new( filters => $filters );

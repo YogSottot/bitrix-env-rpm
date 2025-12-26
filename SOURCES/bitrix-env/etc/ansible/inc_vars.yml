@@ -2,6 +2,9 @@
 - name: include variables from mysql group
   include_vars: /etc/ansible/group_vars/bitrix-mysql.yml
 
+- name: include variables from postgresql group
+  include_vars: /etc/ansible/group_vars/bitrix-pgsql.yml
+  
 - name: include variables from web group
   include_vars: /etc/ansible/group_vars/bitrix-web.yml
 

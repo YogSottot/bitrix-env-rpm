@@ -50,7 +50,8 @@ PHP_VERSION_MID=$(php -v 2> /dev/null | grep ^PHP | awk '{print $2}' | awk -F'.'
 NGINX_VERSION=$(nginx -v 2>&1 | grep "^nginx version" | awk -F'/' '{print $2}')
 MYSQL_CNF=/root/.my.cnf
 MYSQL_USER_BASE=bitrix
-
+PGSQL_PASS=$HOME/.pgpass
+PGSQL_PASSWORD=""
 # configure logging
 LOG_DIR=/opt/webdir/logs
 [ ! -d $LOG_DIR  ] && mkdir -p $LOG_DIR
@@ -933,7 +934,8 @@ purge_confs() {
 
     for conf in $list; do
         conf_fn="$dir/$conf"
-        if [[ -s $conf_fn ]]; then
+        if [[ -s $conf_fn ]];
+        then
             cp -f $conf_fn $conf_fn.disabled
             echo -n > $conf_fn
             log_to_file "Purge content of file=$conf_fn; backup=$conf_fn.disabled"
@@ -1078,7 +1080,8 @@ image/x-coreldraw=cdr"
         echo -e "[Service]\nPrivateTmp=false\nLimitSTACK=infinity" > $HTTPD_SERVICE_CUSTOM_FILE.tmp
         HTTPD_REPLACE_CONFIG=0
         HTTPD_RELOAD_SERVICE=0
-        if [[ -f $HTTPD_SERVICE_CUSTOM_FILE ]]; then
+        if [[ -f $HTTPD_SERVICE_CUSTOM_FILE ]];
+        then
             MD5_HTTPD_SERVICE_CUSTOM_FILE=$(md5sum $HTTPD_SERVICE_CUSTOM_FILE | awk '{print $1}')
             MD5_HTTPD_SERVICE_CUSTOM_TEMP=$(md5sum $HTTPD_SERVICE_CUSTOM_FILE.tmp | awk '{print $1}')
             [[ $MD5_HTTPD_SERVICE_CUSTOM_FILE != "$MD5_HTTPD_SERVICE_CUSTOM_TEMP" ]] && HTTPD_REPLACE_CONFIG=1
@@ -1086,17 +1089,20 @@ image/x-coreldraw=cdr"
             HTTPD_REPLACE_CONFIG=1
         fi
 
-        if [[ $HTTPD_REPLACE_CONFIG -gt 0 ]]; then
+        if [[ $HTTPD_REPLACE_CONFIG -gt 0 ]];
+        then
             mv -f $HTTPD_SERVICE_CUSTOM_FILE.tmp $HTTPD_SERVICE_CUSTOM_FILE
             log_to_file "Recreate $HTTPD_SERVICE_CUSTOM_FILE config file"
             HTTPD_RELOAD_SERVICE=1
         fi
         # disable additional modules for apache service (webdav, lua and etc.)
         HTTPD_MODULES_DIR=/etc/httpd/conf.modules.d
-        if [[ -n "$HTTPD_TMODULES_LIST" ]]; then
+        if [[ -n "$HTTPD_TMODULES_LIST" ]];
+        then
             for mod in $HTTPD_TMODULES_LIST; do
                 mod_file=$(find $HTTPD_MODULES_DIR -type f -name "*-$mod.conf")
-                if [[ -s "$mod_file" ]]; then
+                if [[ -s "$mod_file" ]];
+                then
                     mv -f $mod_file $mod_file.disabled
                     touch $mod_file
                     HTTPD_RELOAD_SERVICE=1
@@ -1109,7 +1115,8 @@ image/x-coreldraw=cdr"
         fi
         #configure_httpd_scale
 
-        if [[ $HTTPD_RELOAD_SERVICE -gt 0 ]]; then
+        if [[ $HTTPD_RELOAD_SERVICE -gt 0 ]];
+        then
             systemctl daemon-reload
             systemctl restart httpd
             log_to_file "Reload httpd service"
@@ -1125,7 +1132,8 @@ image/x-coreldraw=cdr"
         echo -e "[Service]\nPrivateTmp=false\nLimitSTACK=infinity" > $HTTPD_SERVICE_CUSTOM_FILE.tmp
         HTTPD_REPLACE_CONFIG=0
         HTTPD_RELOAD_SERVICE=0
-        if [[ -f $HTTPD_SERVICE_CUSTOM_FILE ]]; then
+        if [[ -f $HTTPD_SERVICE_CUSTOM_FILE ]];
+        then
             MD5_HTTPD_SERVICE_CUSTOM_FILE=$(md5sum $HTTPD_SERVICE_CUSTOM_FILE | awk '{print $1}')
             MD5_HTTPD_SERVICE_CUSTOM_TEMP=$(md5sum $HTTPD_SERVICE_CUSTOM_FILE.tmp | awk '{print $1}')
             [[ $MD5_HTTPD_SERVICE_CUSTOM_FILE != "$MD5_HTTPD_SERVICE_CUSTOM_TEMP" ]] && HTTPD_REPLACE_CONFIG=1
@@ -1133,17 +1141,20 @@ image/x-coreldraw=cdr"
             HTTPD_REPLACE_CONFIG=1
         fi
 
-        if [[ $HTTPD_REPLACE_CONFIG -gt 0 ]]; then
+        if [[ $HTTPD_REPLACE_CONFIG -gt 0 ]];
+        then
             mv -f $HTTPD_SERVICE_CUSTOM_FILE.tmp $HTTPD_SERVICE_CUSTOM_FILE
             log_to_file "Recreate $HTTPD_SERVICE_CUSTOM_FILE config file"
             HTTPD_RELOAD_SERVICE=1
         fi
         # disable additional modules for apache service (webdav, lua and etc.)
         HTTPD_MODULES_DIR=/etc/httpd/conf.modules.d
-        if [[ -n "$HTTPD_TMODULES_LIST" ]]; then
+        if [[ -n "$HTTPD_TMODULES_LIST" ]];
+        then
             for mod in $HTTPD_TMODULES_LIST; do
                 mod_file=$(find $HTTPD_MODULES_DIR -type f -name "*-$mod.conf")
-                if [[ -s "$mod_file" ]]; then
+                if [[ -s "$mod_file" ]];
+                then
                     mv -f $mod_file $mod_file.disabled
                     touch $mod_file
                     HTTPD_RELOAD_SERVICE=1
@@ -1156,7 +1167,8 @@ image/x-coreldraw=cdr"
         fi
         configure_httpd_scale
 
-        if [[ $HTTPD_RELOAD_SERVICE -gt 0 ]]; then
+        if [[ $HTTPD_RELOAD_SERVICE -gt 0 ]];
+        then
             systemctl daemon-reload
             systemctl restart httpd
             log_to_file "Reload httpd service"
@@ -1186,7 +1198,8 @@ configure_nginx() {
     replace_conf_by_bx "$NGINX_CONF_DIR" "$NGINX_CONF_LIST"
 
     # enable default sites
-    if [[ -n $NGINX_CONF_SITES ]]; then
+    if [[ -n $NGINX_CONF_SITES ]];
+    then
         NGINX_CONF_DIR_SITES=$NGINX_CONF_DIR/bx/site_enabled
         for conf in $NGINX_CONF_SITES; do
             conf_fn=$NGINX_CONF_DIR/$conf
@@ -1196,7 +1209,8 @@ configure_nginx() {
     fi
 
     # enable http_v2
-    if [[ -n $NGINX_CONF_DEFAULT_SSL ]]; then
+    if [[ -n $NGINX_CONF_DEFAULT_SSL ]];
+    then
         nginx_up=$(echo $NGINX_VERSION | awk -F'.' '{print $1}')
         nginx_mid=$(echo $NGINX_VERSION | awk -F'.' '{print $2}')
         nginx_end=$(echo $NGINX_VERSION | awk -F'.' '{print $3}')
@@ -1206,7 +1220,8 @@ configure_nginx() {
     fi
 
     # use empty/blank conmfig for sever_monitor.conf
-    if [[ -n $NGINX_CONF_LINKS ]]; then
+    if [[ -n $NGINX_CONF_LINKS ]];
+    then
         for def in $NGINX_CONF_LINKS; do
             to=$(echo "$def" | awk -F'=' '{print $1}')
             to_dir=$(dirname $to)
@@ -1217,15 +1232,18 @@ configure_nginx() {
             [[ -z $is_replace ]] && is_replace=1
             is_link=1
 
-            if [[  -f $NGINX_CONF_DIR/$to ]]; then
-                if [[ $is_replace -eq 1 ]]; then
+            if [[  -f $NGINX_CONF_DIR/$to ]];
+            then
+                if [[ $is_replace -eq 1 ]];
+                then
                     rm -f $NGINX_CONF_DIR/$to 1> /dev/null 2>&1
                     log_to_file "Delete file=$NGINX_CONF_DIR/$to"
                 else
                     is_link=0
                 fi
             fi
-            if [[ $is_link -eq 1 ]]; then
+            if [[ $is_link -eq 1 ]];
+            then
                 ln -s $NGINX_CONF_DIR/$from $NGINX_CONF_DIR/$to
                 log_to_file "Create link=$NGINX_CONF_DIR/$to from=$NGINX_CONF_DIR/$from"
             fi
@@ -1235,7 +1253,8 @@ configure_nginx() {
     # generate self-signed certificate for nginx
     NGINX_CONF_SSL_DIR=$NGINX_CONF_DIR/ssl
     NGINX_CONF_SSL_CRT=$NGINX_CONF_SSL_DIR/cert.pem
-    if [[ ! -f $NGINX_CONF_SSL_CRT ]]; then
+    if [[ ! -f $NGINX_CONF_SSL_CRT ]];
+    then
         # generate certificate
         [[ ! -d $NGINX_CONF_SSL_DIR ]] && mkdir -p $NGINX_CONF_SSL_DIR
         openssl req -new -x509 -days 3650 -nodes -out $NGINX_CONF_SSL_CRT -keyout $NGINX_CONF_SSL_CRT -config $NGINX_CONF_SSL_CNF
@@ -1262,7 +1281,8 @@ configure_nginx() {
         chown -R root:root $NGINX_CONF_SSL_DIR
     fi
     NGINX_CONF_SSL_DHP=$NGINX_CONF_SSL_DIR/dhparam.pem
-    if [[ ! -f $NGINX_CONF_SSL_DHP ]]; then
+    if [[ ! -f $NGINX_CONF_SSL_DHP ]];
+    then
         openssl dhparam -dsaparam -out $NGINX_CONF_SSL_DHP 2048
         log_to_file "create Diffie-Hellman Ephemeral Parameters"
     fi
@@ -1297,7 +1317,8 @@ application/vnd.ms-fontobject=eot application/x-font-opentype=otf"
         # nginx 1.14
         [[ $if_exist -eq 0 ]] && if_exist=$(grep -A1  "$mime" $NGINX_MIME_CONF | tail -n 1 | grep -c "$ext" )
 
-        if [[ $if_exist -eq 0 ]]; then
+        if [[ $if_exist -eq 0 ]];
+        then
             echo -e "\n$mime $ext; # bitrix-env" >> $NGINX_MIME_CONF
             log_to_file "Add settings \`$mime $ext\` to $NGINX_MIME_CONF"
         else
@@ -1312,7 +1333,8 @@ application/vnd.ms-fontobject=eot application/x-font-opentype=otf"
         : > /etc/nginx/bx/conf/bitrix_scale.conf
     fi
 
-    if [[ -f $NGINX_CONF_DIR/$NGINX_CONF_DEFAULT_SSL ]]; then
+    if [[ -f $NGINX_CONF_DIR/$NGINX_CONF_DEFAULT_SSL ]];
+    then
         # nginx 1.26 http2 syntax changed, fix it
         sed -i "s/.*listen 443 default_server http2.*/    listen 443 default_server ssl\;/" $NGINX_CONF_DIR/$NGINX_CONF_DEFAULT_SSL
     fi
@@ -1353,20 +1375,24 @@ configure_php() {
     log_to_file "Delete sendmail_path from $PHP_CONF_FILE"
 
     # disable modules
-    if [[ -n "$PHP_MODULES_DISABLE" ]]; then
+    if [[ -n "$PHP_MODULES_DISABLE" ]];
+    then
         for mod in $PHP_MODULES_DISABLE; do
             # php 5.4 - /etc/php.d/module.ini
             # php 5.6 - /etc/php.d/XX-module.ini
             # php 7   - /etc/php.d/XX-module.ini
             mod_f=$(find $PHP_CONF_DIR/ -name "*${mod}.ini" -type f)
-            if [[ -z "$mod_f" ]]; then
+            if [[ -z "$mod_f" ]];
+            then
                 log_to_file "Not found config file for php module=$mod"
                 continue
             fi
 
             for f in $mod_f; do
-                if [[ -f $f.disabled ]]; then
-                    if [[ -s $f ]]; then
+                if [[ -f $f.disabled ]];
+                then
+                    if [[ -s $f ]];
+                    then
                         log_to_file "Don't change settings for $mod; It looks like a user enable it in $f"
                     else
                         log_to_file "Don't change settings for $mod; It is already disabled"
@@ -1381,20 +1407,24 @@ configure_php() {
     fi
 
     # enable modules; old version doesn't work
-    if [[ -n "$PHP_MODULES_ENABLE" ]]; then
+    if [[ -n "$PHP_MODULES_ENABLE" ]];
+    then
         for mod in $PHP_MODULES_ENABLE; do
             mod_f=$(find $PHP_CONF_DIR/ -name "*${mod}.ini" -type f)
             mod_f_disabled=$(find $PHP_CONF_DIR/ -name "*${mod}.ini.disabled" -type f)
             
-            if [[ -z "$mod_f" ]]; then
+            if [[ -z "$mod_f" ]];
+            then
                 log_to_file "Not found config file for php module=$mod. Create new one"
                 mod_f=$PHP_CONF_DIR/$mod.ini
                 [[ $PHP_VERSION -ge 6 ]] && mod_f=$PHP_CONF_DIR/99-$mod.ini
             fi
 
             is_mod=$(php -m 2> /dev/null | grep -wc $mod)
-            if [[ $is_mod -eq 0 ]]; then
-                if [[ -n "$mod_f_disabled" && -s "$mod_f_disabled" ]]; then
+            if [[ $is_mod -eq 0 ]];
+            then
+                if [[ -n "$mod_f_disabled" && -s "$mod_f_disabled" ]];
+                then
                     mod_f=$(echo "$mod_f_disabled" | sed -e "s:\.disabled$::")
                     mv -f $mod_f_disabled $mod_f
                     log_to_file "Rename $mod_f_disabled to $mod_f"
@@ -1410,11 +1440,13 @@ configure_php() {
     if [[ ${OS_VERSION} -eq 7 ]];
     then
         # update php settings for php7
-        if [[ ( $PHP_VERSION -ge 7 ) && ( -d $SITE_DIR ) ]]; then
+        if [[ ( $PHP_VERSION -ge 7 ) && ( -d $SITE_DIR ) ]];
+        then
             # site configuration
             DBCON=$SITE_DIR/bitrix/php_interface/dbconn.php
             is_use_mysqli_enabled=$(grep -v '^#' $DBCON | grep -w 'BX_USE_MYSQLI' | grep -wc true )
-            if [[ $is_use_mysqli_enabled -eq 0 ]]; then
+            if [[ $is_use_mysqli_enabled -eq 0 ]];
+            then
                 log_to_file "Enable BX_USE_MYSQLI at $DBCON"
                 sed -i '/^?>/d' $DBCON
                 echo -e '\ndefine("BX_USE_MYSQLI", true);\n?>' >> $DBCON
@@ -1440,7 +1472,8 @@ configure_stunnel() {
     [[ ! -d $STUNNEL_DIR ]] && mkdir -m 750 $STUNNEL_DIR
 
     # generate stunnel certificate
-    if [[ ! -f $STUNNEL_CERT ]]; then
+    if [[ ! -f $STUNNEL_CERT ]];
+    then
         openssl req -new -x509 -days 3650 -nodes -out $STUNNEL_CERT -keyout $STUNNEL_CERT -config $OPENSSL_CNF
         chmod 0600 $STUNNEL_CERT
         log_to_file "Cretae stunnel certificate=$STUNNEL_CERT"
@@ -1449,7 +1482,8 @@ configure_stunnel() {
     # update stunnel config and init
     for f in $STUNNEL_CONF $STUNNEL_INIT; do
         # update stunnel config
-        if [[ -f $f ]]; then
+        if [[ -f $f ]];
+        then
             mv -f $f $f.ori.$UPDATE_TM
             log_to_file "Create backup config=$f.ori.$UPDATE_TM"
         fi
@@ -1536,9 +1570,12 @@ configure_dnf_exclude() {
     # Configure package exclusions in DNF to prevent updates
     DNF_CONF=/etc/dnf/dnf.conf
     # Configure exclusions for DNF
-    if [[ -f ${DNF_CONF} ]]; then
-        if [[ $(grep -c "exclude" ${DNF_CONF}) -gt 0 ]]; then
-            if [[ $(grep -c "perl-DBD-MySQL" ${DNF_CONF}) -eq 0 ]]; then
+    if [[ -f ${DNF_CONF} ]];
+    then
+        if [[ $(grep -c "exclude" ${DNF_CONF}) -gt 0 ]];
+        then
+            if [[ $(grep -c "perl-DBD-MySQL" ${DNF_CONF}) -eq 0 ]];
+            then
                 sed -i 's/^exclude=.\+/&,perl-DBD-MySQL/' ${DNF_CONF}
                 log_to_file "Added perl-DBD-MySQL package to DNF exclude list"
             fi
@@ -1557,7 +1594,8 @@ downgrade_perl_dbd_mysql() {
     log_to_file "Current package version: ${CURRENT_VERSION}"
     
     # Check if downgrade is required (if version is not 4.050)
-    if [[ "${CURRENT_VERSION}" != "4.050" ]]; then
+    if [[ "${CURRENT_VERSION}" != "4.050" ]];
+    then
         log_to_file "Package perl-DBD-MySQL version ${CURRENT_VERSION}, downgrade to 4.050..."
         
         # Create dedicated cron file for the downgrade script
@@ -1576,7 +1614,8 @@ configure_msmtp() {
     mv -f /etc/logrotate.d/msmtp.bx /etc/logrotate.d/msmtp ;
 
     # update system file, if user created personal usage in cron job
-    if [[ -f /home/bitrix/.msmtprc ]]; then
+    if [[ -f /home/bitrix/.msmtprc ]];
+    then
         [[ ! -f /etc/msmtprc ]] && ln -sf /home/bitrix/.msmtprc /etc/msmtprc
         log_to_file "Create msmtprc symbolic link from /home/bitrix/.msmtprc to /etc/msmtprc"
     fi
@@ -1588,7 +1627,8 @@ configure_ntp() {
 
     # disable tinker panic
     is_disabled=$(grep -c "tinker\s\+panic\s\+0" $NTP_CONF)
-    if [[ $is_disabled -eq 0 ]]; then
+    if [[ $is_disabled -eq 0 ]];
+    then
         cp -f $NTP_CONF $NTP_CONF.ori.$UPDATE_TM
         echo -e "\ntinker panic 0\n" >> $NTP_CONF
     fi
@@ -1623,7 +1663,8 @@ clear_catdoc() {
     # VMBITRIX_9.0
     BX_CATDOC_PACKAGE="bx-catdoc"
     PACKAGES_LIST=$(rpm -qa)
-    if [[ $(echo "${PACKAGES_LIST}" | grep -c '${BX_CATDOC_PACKAGE}') -eq 0 ]]; then
+    if [[ $(echo "${PACKAGES_LIST}" | grep -c '${BX_CATDOC_PACKAGE}') -eq 0 ]];
+    then
         # if was compiled from source and install - remove
         rm -f /usr/local/bin/catdoc > /dev/null 2>&1
         rm -f /usr/local/bin/xls2csv > /dev/null 2>&1
@@ -1647,14 +1688,16 @@ configure_crontab() {
     # Note: default site can be deleted
     CRON_EVENTS_SCRIPT='/home/bitrix/www/bitrix/modules/main/tools/cron_events.php'
     is_cron_events=$(grep -v '^#' $CRONTAB_CONF | grep -c "$CRON_EVENTS_SCRIPT")
-    if [[ $is_cron_events -eq 0 ]]; then
+    if [[ $is_cron_events -eq 0 ]];
+    then
         log_to_file "Update $CRONTAB_CONF file by bitrix cron_events script"
         echo -e "\n* * * * *  bitrix test -f $CRON_EVENTS_SCRIPT && { /usr/bin/php -f $CRON_EVENTS_SCRIPT; } > /dev/null 2>&1\n" >> $CRONTAB_CONF
     # http://jabber.bx/view.php?id=79008
     # missing ; 
     else
         is_good_cron_events=$(grep -v "^#" $CRONTAB_CONF | grep -c "$CRON_EVENTS_SCRIPT\s*;\s*}") 
-        if [[ $is_good_cron_events -eq 0 ]]; then
+        if [[ $is_good_cron_events -eq 0 ]];
+        then
             log_to_file "Fix $CRONTAB_CONF file by bitrix cron_events script"
             sed -i "/cron_events.php/d" $CRONTAB_CONF
             echo -e "\n* * * * *  bitrix test -f $CRON_EVENTS_SCRIPT && { /usr/bin/php -f $CRON_EVENTS_SCRIPT; } > /dev/null 2>&1\n" >> $CRONTAB_CONF
@@ -1664,7 +1707,8 @@ configure_crontab() {
     # delete old scripts
     BX_CHOWN_SCRIPT=/root/bitrix-env/check_bitrixenv_chown.sh
     is_bx_chown=$(grep -v '^#' $CRONTAB_CONF | grep -c $BX_CHOWN_SCRIPT)
-    if [[ $is_bx_chown -gt 0 ]]; then
+    if [[ $is_bx_chown -gt 0 ]];
+    then
         sed -i ":$BX_CHOWN_SCRIPT:d" $CRONTAB_CONF
     fi
 }
@@ -1691,6 +1735,10 @@ restart_services() {
     service_mysql enable
     service_mysql stop
     service_mysql start
+    #postgresql
+    service_postgresql enable
+    service_postgresql stop
+    service_postgresql start
 
     for srv in nginx httpd crond; do
         service_web $srv enable
@@ -1715,16 +1763,19 @@ configure_bitrix_env_var() {
         # VMBITRIX_9.0
         [[ (  $(echo $f | grep -c "/sysconfig/") -gt 0 ) && ( ${OS_VERSION} -eq 9 ) ]] && v_export=
         [[ (  $(echo $f | grep -c "/sysconfig/") -gt 0 ) && ( ${OS_VERSION} -eq 7 ) ]] && v_export=
-        if [[ ! -f $f ]]; then
+        if [[ ! -f $f ]];
+        then
             echo echo -e "#bitrix-env\n${v_export}BITRIX_VA_VER=$BITRIX_ENV_VER\n" > $f
         else
             # update version
-            if [[ $(grep -v  "^#" $f | grep -wc BITRIX_VA_VER ) -gt 0 ]]; then
+            if [[ $(grep -v  "^#" $f | grep -wc BITRIX_VA_VER ) -gt 0 ]];
+            then
                 sed -i '/BITRIX_VA_VER/d' $f
                 log_to_file "Delete current record BITRIX_VA_VER in file=$f"
             fi
             # update version
-            if [[ $(grep -v  "^#" $f | grep -wc BITRIX_ENV_TYPE ) -gt 0 ]]; then
+            if [[ $(grep -v  "^#" $f | grep -wc BITRIX_ENV_TYPE ) -gt 0 ]];
+            then
                 sed -i '/BITRIX_ENV_TYPE/d' $f
                 log_to_file "Delete current record BITRIX_ENV_TYPE in file=$f"
             fi
@@ -1740,7 +1791,8 @@ configure_bitrix_env_var() {
     then
         # configure apache
         HTTPD_ENV_CONF=/etc/httpd/bx/conf/00-environment.conf
-        if [[ -s $HTTPD_ENV_CONF ]]; then
+        if [[ -s $HTTPD_ENV_CONF ]];
+        then
             sed -i '/# bitrix-env/d;/BITRIX_VA_VER/d;/BITRIX_ENV_TYPE/d;/AUTHBIND_UNAVAILABLE/d' $HTTPD_ENV_CONF
         fi
         echo -e "# bitrix-env\nSetEnv BITRIX_VA_VER $BITRIX_ENV_VER" >> $HTTPD_ENV_CONF
@@ -1752,7 +1804,8 @@ configure_bitrix_env_var() {
     if [[ ${OS_VERSION} -eq 7 ]];
     then
         HTTPD_ENV_CONF=/etc/httpd/bx/conf/00-environment.conf
-        if [[ -s $HTTPD_ENV_CONF ]]; then
+        if [[ -s $HTTPD_ENV_CONF ]];
+        then
             sed -i '/# bitrix-env/d;/BITRIX_VA_VER/d;/BITRIX_ENV_TYPE/d;/AUTHBIND_UNAVAILABLE/d' $HTTPD_ENV_CONF
         fi
         echo -e "# bitrix-env\nSetEnv BITRIX_VA_VER $BITRIX_ENV_VER" >> $HTTPD_ENV_CONF
@@ -1775,11 +1828,13 @@ bx_alternatives_for_mycnf() {
         grep "^my\.cnf\s\+" | grep -cv '/etc/bitrix-my.cnf')
 
     # doesn't use alternatives; replace /etc/my.cnf
-    if [[ $is_mycnf_alters -eq 0 ]]; then
+    if [[ $is_mycnf_alters -eq 0 ]];
+    then
         DEST_CONF=/etc/my.cnf
     else
         # already created bitrix alternatives; replace /etc/bitrix-my.cnf
-        if [[ $is_percona_alternatives -eq 0 ]]; then
+        if [[ $is_percona_alternatives -eq 0 ]];
+        then
             DEST_CONF=/etc/bitrix-my.cnf
         fi
     fi
@@ -1787,7 +1842,8 @@ bx_alternatives_for_mycnf() {
     log_to_file "Update $DEST_CONF file"
     cp -f $BACKUP_CFG_FILE $DEST_CONF
 
-    if [[ $is_mycnf_alters -gt 0 && $is_percona_alternatives -gt 0 ]]; then
+    if [[ $is_mycnf_alters -gt 0 && $is_percona_alternatives -gt 0 ]];
+    then
         rm -f /etc/my.cnf
         update-alternatives --install /etc/my.cnf my.cnf "/etc/bitrix-my.cnf" 300
         log_to_file "Create /etc/bitrix-my.cnf alternatives"
@@ -1842,14 +1898,17 @@ bx_push_server() {
     tmp_push=$(mktemp /tmp/push_XXXXX)
     systemctl is-enabled push-server >$tmp_push 2>&1
     is_enabled=$?
-    if [[ $is_enabled -gt 0 ]];then
+    if [[ $is_enabled -gt 0 ]];
+    then
         rm -f $tmp_push
         return 0
     fi
 
     ps -ef | grep "^bitrix" | grep "node server.js" | awk '{print $2}' > $tmp_push 2>&1
-    if [[ $(cat $tmp_push | wc -l) -lt 8  ]]; then
-        if [[ $(cat $tmp_push | wc -l) -gt 0 ]]; then
+    if [[ $(cat $tmp_push | wc -l) -lt 8  ]];
+    then
+        if [[ $(cat $tmp_push | wc -l) -gt 0 ]];
+        then
             cat $tmp_path | xargs kill
         fi
         systemctl stop push-server
@@ -1865,7 +1924,8 @@ get_nginx_version() {
     NGINX_VERSION_END=0
     NGINX_DEPRECATED_SSL_ON=0
 
-    if [[ -n $NGINX_VERSION ]]; then
+    if [[ -n $NGINX_VERSION ]];
+    then
         NGINX_VERSION_UP=$(echo $NGINX_VERSION | awk -F'.' '{print $1}')
         NGINX_VERSION_MID=$(echo $NGINX_VERSION | awk -F'.' '{print $2}')
         NGINX_VERSION_END=$(echo $NGINX_VERSION | awk -F'.' '{print $3}')
@@ -1879,29 +1939,35 @@ get_nginx_version() {
 replace_nginx_listen() {
     file=$1
     sedfile="$file"
-    if [[ -L $file ]]; then
+    if [[ -L $file ]];
+    then
         sedfile=$(file "$file" | \
             egrep -o 'symbolic link to .+' | \
             awk -F'`' '{print $2}' | sed -e "s/'$//")
         # relative path
-        if [[ $(echo "$sedfile" | grep -c '^/') -eq 0 ]]; then
+        if [[ $(echo "$sedfile" | grep -c '^/') -eq 0 ]];
+        then
             file_dir=$(dirname "$file")
             sedfile="$file_dir/$sedfile"
         fi
         log_to_file "Change $file to $sedfile"
     fi
 
-    if [[ $file == "/etc/nginx/bx/site_enabled/push.conf" ]]; then
-        if [[ $(grep -v '^$\|^#' $file| grep -c 'listen\s\+8894;') -gt 0 ]]; then
+    if [[ $file == "/etc/nginx/bx/site_enabled/push.conf" ]];
+    then
+        if [[ $(grep -v '^$\|^#' $file| grep -c 'listen\s\+8894;') -gt 0 ]];
+        then
             sed -i 's/listen\s\+8894;/listen 8894 ssl;/' $sedfile
             log_to_file "Set listen to ssl in $sedfile"
         fi
     else
-        if [[ $(grep -v '^$\|^#' $file| grep -c 'listen\s\+443\s\+http2;') -gt 0 ]]; then
+        if [[ $(grep -v '^$\|^#' $file| grep -c 'listen\s\+443\s\+http2;') -gt 0 ]];
+        then
             sed -i 's/listen\s\+443\s\+http2;/listen 443 ssl http2;/' $sedfile
             log_to_file "Set listen to ssl http2 in $sedfile"
         fi
-        if [[ $(grep -v '^$\|^#' $file| grep -c 'listen\s\+443\s\+default_server\s\+http2;') -gt 0 ]]; then
+        if [[ $(grep -v '^$\|^#' $file| grep -c 'listen\s\+443\s\+default_server\s\+http2;') -gt 0 ]];
+        then
             sed -i 's/listen\s\+443\s\+default_server\s\+http2;/listen 443 default_server ssl http2;/' $sedfile
             log_to_file "Set listen to default_server ssl http2 in $sedfile"
         fi
@@ -1927,6 +1993,28 @@ secure_fixes() {
             systemctl restart sshd
             log_to_file "Disable GSSAPIAuthentication"
         fi
+    fi
+}
+
+fix_sphinx_config() {
+    SPHINX_CONF_FILE="/etc/sphinx/sphinx.conf"
+    if [ -f "$SPHINX_CONF_FILE" ];
+    then
+        if grep -q "^#!/usr/bin/php" "$SPHINX_CONF_FILE";
+        then
+            log_to_file "Found php syntax in sphinx.conf, running migration..."
+            /opt/webdir/bin/bx-sphinx -a migrate >> $LOGS_FILE 2>&1
+            if [ $? -eq 0 ];
+            then
+                log_to_file "Sphinx configuration migrated successfully"
+            else
+                log_to_file "Failed to migrate sphinx configuration" "ERROR"
+            fi
+        else
+            log_to_file "No need to migrate sphinx configuration"
+        fi
+    else
+        log_to_file "Sphinx configuration file not found: $SPHINX_CONF_FILE"
     fi
 }
 
@@ -1995,7 +2083,7 @@ upgrade_fixes() {
         # issue: https://github.com/ansible/ansible/issues/18223
         # docs: group_vars can optionally end in '.yml', '.yaml', or '.json'
         ANS_GROUP_VARS=/etc/ansible/group_vars
-        ANS_GROUPS="bitrix-hosts bitrix-mysql bitrix-web bitrix-sphinx bitrix-memcached"
+        ANS_GROUPS="bitrix-hosts bitrix-mysql bitrix-push bitrix-web bitrix-sphinx bitrix-memcached"
         for group in $ANS_GROUPS; do
             sfile=$ANS_GROUP_VARS/$group
             hlink=$ANS_GROUP_VARS/$group.yml
@@ -2329,12 +2417,16 @@ upgrade_fixes() {
 
         # clean cache
         clear_cache
+
+        # fix sphinx config php from bash
+        fix_sphinx_config
     fi
 }
 
 get_current_timezone_from_clock() {
     TZ_CLOCK=""
-    if [[ ( -n $CFG_SYSCLOCK ) && ( -f $CFG_SYSCLOCK ) ]]; then
+    if [[ ( -n $CFG_SYSCLOCK ) && ( -f $CFG_SYSCLOCK ) ]];
+    then
         TZ_CLOCK=$(grep -v '^#\|^$' $CFG_SYSCLOCK | awk -F'=' '/ZONE=/{print $2}' | sed -e "s:[\"\' ]::g" )
     fi
     [[ -z $TZ_CLOCK ]] && return 1
@@ -2345,17 +2437,20 @@ get_current_timezone_from_clock() {
 get_current_timzone() {
     TZ_TIME=""
     # link
-    if [[ -L $CFG_LOCALTIME ]]; then
+    if [[ -L $CFG_LOCALTIME ]];
+    then
         TZ_TIME=$(readlink -f $CFG_LOCALTIME | sed -e "s:^$TZ_DB/::")
     else
         # file
-        if [[ -f $CFG_LOCALTIME ]]; then
+        if [[ -f $CFG_LOCALTIME ]];
+        then
             MD5_LOCALTIME="$(md5sum $CFG_LOCALTIME | awk '{print $1}')"
             # check the md5sum of all files in a directory
             while read LINE; do
                 MD5_FOUND="$(md5sum "${LINE}" | awk '{print $1}')"
                 #echo ${LINE} ${MD5_FOUND}
-                if [[ "${MD5_LOCALTIME}" == "${MD5_FOUND}" ]]; then
+                if [[ "${MD5_LOCALTIME}" == "${MD5_FOUND}" ]];
+                then
                     TZ_TIME=$(echo "${LINE}" | sed -e "s:^$TZ_DB/::" )
                 fi
             done < <( find $TZ_DB -type f )
@@ -2368,7 +2463,8 @@ get_current_timzone() {
 # get tz from bitrixenv
 get_php_tz() {
     PHP_TZ=""
-    if [[ -f $CFG_PHP ]]; then
+    if [[ -f $CFG_PHP ]];
+    then
         PHP_TZ=$(grep '^date.timezone' $CFG_PHP | awk -F'=' '{print $2}' | sed -s 's/^\s\+//;s/\s\+$//;s/"//g')
     fi
     [[ -n $PHP_TZ ]] && return 1
@@ -2391,24 +2487,30 @@ localtime_sync() {
     # PHP_TZ - /etc/php.d/bitrixenv.ini
     get_php_tz
 
-    if [[ -z $PHP_TZ ]]; then
+    if [[ -z $PHP_TZ ]];
+    then
         log_to_file "Not found date.timezone in PHP config file: /etc/php.d/bitrixenv.ini. This is very odd issue."
         return 1
     else
-        if [[ -n ${TZ_TIME} ]]; then
-            if [[ ${TZ_TIME} != ${PHP_TZ} ]]; then
+        if [[ -n ${TZ_TIME} ]];
+        then
+            if [[ ${TZ_TIME} != ${PHP_TZ} ]];
+            then
                 sed -i "/date.timezone/d" $CFG_PHP
                 echo "date.timezone = ${TZ_TIME}" >> $CFG_PHP
                 log_to_file "Set PHP date.timezone to ${TZ_TIME}"
             fi
-            if [[ ${TZ_TIME} != ${TZ_CLOCK} ]]; then
+            if [[ ${TZ_TIME} != ${TZ_CLOCK} ]];
+            then
                 [[ -f $CFG_SYSCLOCK ]] && sed -i "/ZONE=/d" $CFG_SYSCLOCK
                 echo "ZONE=\"$TZ_TIME\"" >> $CFG_SYSCLOCK
                 log_to_file "Update ZONE=$TZ_TIME at $CFG_SYSCLOCK"
             fi
         else
-            if [[ -n ${TZ_CLOCK} ]]; then
-                if [[ ${TZ_CLOCK} != ${PHP_TZ} ]]; then
+            if [[ -n ${TZ_CLOCK} ]];
+            then
+                if [[ ${TZ_CLOCK} != ${PHP_TZ} ]];
+                then
                     sed -i "/date.timezone/d" $CFG_PHP
                     echo "date.timezone = ${TZ_CLOCK}" >> $CFG_PHP
                     log_to_file "Set PHP date.timezone to ${TZ_CLOCK}"
@@ -2526,6 +2628,22 @@ install_community_rabbitmq_ansible_collection_on_upgrade() {
 #
 }
 
+install_community_postgresql_ansible_collection_on_upgrade() {
+    if [[ ! -d /root/.ansible/collections/ansible_collections/community/postgresql ]];
+    then
+        COMMUNITY_PGSQL_ANSIBLE_GALAXY_COLLECTION_URL=https://github.com/ansible-collections/community.postgresql/archive/refs/tags/
+        COMMUNITY_PGSQL_ANSIBLE_GALAXY_COLLECTION_VERSION=3.1.0  
+        mkdir -p /root/.ansible/collections/ >> $LOGS_FILE 2>&1
+        cd /root >> $LOGS_FILE 2>&1
+        wget ${COMMUNITY_PGSQL_ANSIBLE_GALAXY_COLLECTION_URL}${COMMUNITY_PGSQL_ANSIBLE_GALAXY_COLLECTION_VERSION}.tar.gz >> $LOGS_FILE 2>&1
+        tar xvf ${COMMUNITY_PGSQL_ANSIBLE_GALAXY_COLLECTION_VERSION}.tar.gz > /dev/null 2>&1
+        ansible-galaxy collection install community.postgresql-${COMMUNITY_PGSQL_ANSIBLE_GALAXY_COLLECTION_VERSION} >> $LOGS_FILE 2>&1
+        rm -f ${COMMUNITY_PGSQL_ANSIBLE_GALAXY_COLLECTION_VERSION}.tar.gz >> $LOGS_FILE 2>&1
+        rm -rf community.postgresql-${COMMUNITY_PGSQL_ANSIBLE_GALAXY_COLLECTION_VERSION} >> $LOGS_FILE 2>&1  
+        log_to_file "Installed PostgreSQL Ansible collection"
+    fi
+}
+
 disable_php_xhprof_extension_on_upgrade() {
 #
     PHP_XHPROF_INI_FILE=/etc/php.d/40-xhprof.ini
@@ -2571,49 +2689,54 @@ disable_bitrix_user_privilege_escalation_on_upgrade() {
     TEST_HTTPD_PATH=$(ls -la /etc/httpd/conf/httpd.conf | grep -c 'bitrix')
     if [[ ${TEST_HTTPD_PATH} -eq 1 ]];
     then
-    chown -R root:root /etc/httpd
-    systemctl restart httpd.service > /dev/null 2>&1
-    log_to_file "Recursively change rights to all files on /etc/httpd path"
+	chown -R root:root /etc/httpd
+	systemctl restart httpd.service > /dev/null 2>&1
+	log_to_file "Recursively change rights to all files on /etc/httpd path"
     fi
+    #
     TEST_NGINX_PATH=$(ls -la /etc/nginx/nginx.conf | grep -c 'bitrix')
     if [[ ${TEST_NGINX_PATH} -eq 1 ]];
     then
-    chown -R root:root /etc/nginx
-    systemctl restart nginx.service > /dev/null 2>&1
-    log_to_file "Recursively change rights to all files on /etc/nginx path"
+	chown -R root:root /etc/nginx
+	systemctl restart nginx.service > /dev/null 2>&1
+	log_to_file "Recursively change rights to all files on /etc/nginx path"
     fi
+    #
     PUSH_INITD_FILE=/etc/rc.d/init.d/push-server-multi
     if [[ -f ${PUSH_INITD_FILE} ]];
     then
-    TEST_PUSH_INITD_PATH=$(ls -la ${PUSH_INITD_FILE} | grep -c 'bitrix')
-    if [[ ${TEST_PUSH_INITD_PATH} -eq 1 ]];
-    then
-        chown root:root ${PUSH_INITD_FILE}
-        log_to_file "Change rights to file ${PUSH_INITD_FILE}"
+	TEST_PUSH_INITD_PATH=$(ls -la ${PUSH_INITD_FILE} | grep -c 'bitrix')
+	if [[ ${TEST_PUSH_INITD_PATH} -eq 1 ]];
+	then
+	    chown root:root ${PUSH_INITD_FILE}
+	    log_to_file "Change rights to file ${PUSH_INITD_FILE}"
+	fi
     fi
-    fi
+    #
     TEST_PUSH_SYSCONFIG_PATH=$(ls -la /etc/sysconfig/push-server-multi | grep -c 'bitrix')
     if [[ ${TEST_PUSH_SYSCONFIG_PATH} -eq 1 ]];
     then
-        chown root:root /etc/sysconfig/push-server-*
-        log_to_file "Change rights to files /etc/sysconfig/push-server-*"
+	chown root:root /etc/sysconfig/push-server-*
+	log_to_file "Change rights to files /etc/sysconfig/push-server-*"
     fi
+    #
     TEST_PUSH_SERVICE_PATH=$(ls -la /lib/systemd/system/push-server.service | grep -c 'bitrix')
     if [[ ${TEST_PUSH_SERVICE_PATH} -eq 1 ]];
     then
-    chown root:root /lib/systemd/system/push-server.service
-    log_to_file "Change rights to file /lib/systemd/system/push-server.service"
+	chown root:root /lib/systemd/system/push-server.service
+	log_to_file "Change rights to file /lib/systemd/system/push-server.service"
     fi
+    #
     TEST_PUSH_SERVER_PATH=$(ls -la /etc/push-server/push-server.service | grep -c 'bitrix')
     if [[ ${TEST_PUSH_SERVER_PATH} -eq 1 ]];
     then
-    chown -R root:root /etc/push-server
-    log_to_file "Recursively change rights to all files on /etc/push-server path"
-    PUSH_PUB_9010_FILE=/etc/push-server/push-server-pub-9010.json
-    if [[ -f ${PUSH_PUB_9010_FILE} ]];
-    then
-        systemctl restart push-server.service > /dev/null 2>&1
-    fi
+	chown -R root:root /etc/push-server
+	log_to_file "Recursively change rights to all files on /etc/push-server path"
+	PUSH_PUB_9010_FILE=/etc/push-server/push-server-pub-9010.json
+	if [[ -f ${PUSH_PUB_9010_FILE} ]];
+	then
+	    systemctl restart push-server.service > /dev/null 2>&1
+	fi
     fi
 #
 }
@@ -2705,6 +2828,346 @@ change_authentication_plugin_for_sites_with_db_on_upgrade() {
 #
 }
 
+path_tmpfilesd_on_upgrade() {
+#
+    TRANSFORMER_TMPFILESD_FILE=/etc/tmpfiles.d/transformer.conf
+    if [[ -f ${TRANSFORMER_TMPFILESD_FILE} ]];
+    then
+        TRANSFORMER_TMPFILESD_FILE_CHECK=$(cat ${TRANSFORMER_TMPFILESD_FILE} | grep -c '/var/run/transformer')
+        if [[ ${TRANSFORMER_TMPFILESD_FILE_CHECK} -eq 1 ]];
+        then
+            sed -i "s/\/var\/run\//\/run\//" ${TRANSFORMER_TMPFILESD_FILE}
+            systemd-tmpfiles --create /etc/tmpfiles.d/transformer.conf > /dev/null 2>&1
+	    systemctl daemon-reload > /dev/null 2>&1
+	    systemctl restart transformer.service > /dev/null 2>&1
+            log_to_file "Change tmpfiles location to /run/transformer at ${TRANSFORMER_TMPFILESD_FILE} and recreate tmpfile"
+        fi
+    fi
+#
+    RABBITMQSERVER_TMPFILESD_FILE=/usr/lib/tmpfiles.d/rabbitmq-server.conf
+    if [[ -f ${RABBITMQSERVER_TMPFILESD_FILE} ]];
+    then
+        RABBITMQSERVER_TMPFILESD_FILE_CHECK=$(cat ${RABBITMQSERVER_TMPFILESD_FILE} | grep -c '/var/run/rabbitmq')
+        if [[ ${RABBITMQSERVER_TMPFILESD_FILE_CHECK} -eq 1 ]];
+        then
+            sed -i "s/\/var\/run\//\/run\//" ${RABBITMQSERVER_TMPFILESD_FILE}
+            systemd-tmpfiles --create /usr/lib/tmpfiles.d/rabbitmq-server.conf > /dev/null 2>&1
+	    systemctl daemon-reload > /dev/null 2>&1
+	    systemctl restart rabbitmq-server.service > /dev/null 2>&1
+            log_to_file "Change tmpfiles location to /run/rabbitmq at ${RABBITMQSERVER_TMPFILESD_FILE} and recreate tmpfile"
+        fi
+    fi
+#
+}
+
+# check postgresql package version
+postgresql_package() {
+    PACKAGES_LIST=$(rpm -qa)
+
+    POSTGRESQL_PACKAGE=not_installed
+    POSTGRESQL_SERVICE=not_installed
+    POSTGRESQL_VERSION=not_installed
+
+    if [[ $(echo "$PACKAGES_LIST" | grep -c '^postgresql-server') -gt 0 ]];
+    then
+        POSTGRESQL_PACKAGE=postgresql-server
+        POSTGRESQL_SERVICE=postgresql
+    else
+        return 1
+    fi
+
+    POSTGRESQL_VERSION=$(rpm -qa --queryformat '%{version}' ${POSTGRESQL_PACKAGE}* | head -1)
+    POSTGRESQL_UNI_VERSION=$(echo "$POSTGRESQL_VERSION" | awk -F'.' '{print $1}')
+}
+
+# interface for postgresql service
+service_postgresql() {
+    local action=$1
+    local restart_rtn=0
+    [[ -z $action ]] && return 1
+
+    postgresql_package || exit 1
+
+    if [[ ${OS_VERSION} -ne 9 ]];
+    then
+        log_to_file "Service $POSTGRESQL_SERVICE not supported on this OS version"
+        return 0
+    fi
+
+    if [[ "$action" == "status" ]];
+    then
+        systemctl is-active $POSTGRESQL_SERVICE > /dev/null 2>&1
+        return $?
+    elif [[ $action == "enable" ]];
+    then
+        systemctl enable $POSTGRESQL_SERVICE >> $LOGS_FILE 2>&1
+        restart_rtn=$?
+    elif [[ ( $action == "stop" ) || ( $action == "restart" ) ]];
+    then
+        systemctl $action $POSTGRESQL_SERVICE >> $LOGS_FILE 2>&1
+        restart_rtn=$?
+    else
+        systemctl $action $POSTGRESQL_SERVICE >> $LOGS_FILE 2>&1
+        restart_rtn=$?
+    fi
+
+    if [[ $restart_rtn -gt 0 ]];
+    then
+        log_to_file "Cannot $action for pgsql service" "ERROR"
+        exit 1
+    else
+        log_to_file "Service $POSTGRESQL_SERVICE is \"${action}ed\""
+    fi
+}
+
+# install and initialize postgresql
+init_postgresql() {
+    # check if postgresql is configured
+    if [[ -f "$PGSQL_PASS" ]];
+    then
+        log_to_file "PostgreSQL already configured, skipping PostgreSQL configuration"
+        return 0
+    else
+        postgresql_package
+
+        if [[ $? -gt 0 ]];
+        then
+            log_to_file "PostgreSQL should have been installed by dependencies but was not found" "ERROR"
+            return 1
+        fi
+
+        if [ ! -d /var/lib/pgsql/data/base ];
+        then
+            log_to_file "Initializing PostgreSQL database"
+            mkdir -p /var/run/postgresql
+            chown postgres:postgres /var/run/postgresql
+            chmod 755 /var/run/postgresql
+            postgresql-setup --initdb >> ${LOGS_FILE} 2>&1
+
+            if [[ $? -gt 0 ]];
+            then
+                log_to_file "Cannot initialize PostgreSQL database" "ERROR"
+                return 1
+            fi
+
+            log_to_file "Successfully initialized PostgreSQL database"
+        else
+            log_to_file "PostgreSQL database already initialized"
+        fi
+
+        # install postgresql ansible role
+        install_postgresql_ansible_role
+                    
+        # configure postgresql password
+        configure_postgress_password
+                    
+        # set postgresql timezone
+        configure_tz_postgresql
+        
+        return 0
+    fi
+}
+
+#install postgresql ansible role
+install_postgresql_ansible_role() {
+    if [[ ( -f /etc/ansible/hosts ) && ( $(grep -c "bitrix-hosts" /etc/ansible/hosts) -gt 0 ) && ( $(grep -c "bitrix-pgsql" /etc/ansible/hosts) -eq 0 ) ]];
+    then
+        # Get current host info: host:hostname:ip:roles:pass:bx_hostname:
+        local host_line=$(/opt/webdir/bin/wrapper_ansible_conf -a view 2>/dev/null | head -1)
+        if [[ -n "$host_line" ]];
+        then
+            hostname=$(echo "$host_line" | cut -d: -f2)
+            host_ip=$(echo "$host_line" | cut -d: -f3)
+            host_ip_full="ansible_ssh_host=$host_ip"
+        else
+            # Fallback to parsing if wrapper fails
+            hostname=$(awk '/^\[bitrix-hosts\]/{f=1;next} f && !/^\[/{print $1;exit}' /etc/ansible/hosts)
+            host_ip_full=$(awk '/^\[bitrix-hosts\]/{f=1;next} f && !/^\[/{print $3;exit}' /etc/ansible/hosts)
+            host_ip=$(echo "$host_ip_full" | sed 's/ansible_ssh_host=//')
+        fi
+        
+        echo -e "\n[bitrix-pgsql]\n$hostname   ansible_connection=local $host_ip_full" >> /etc/ansible/hosts
+        log_to_file "Added PostgreSQL group to Ansible inventory with host $hostname"
+        
+        # Copy PostgreSQL template to group_vars with variable substitution
+        if [[ -f /opt/webdir/templates/ansible/bitrix-pgsql && ! -f /etc/ansible/group_vars/bitrix-pgsql.yml ]];
+        then
+            # Replace template variables with actual values
+            sed -e "s/{{ hostname }}/$hostname/g" \
+                -e "s/{{ host_ip_address }}/$host_ip/g" \
+                /opt/webdir/templates/ansible/bitrix-pgsql > /etc/ansible/group_vars/bitrix-pgsql.yml
+            chmod 0640 /etc/ansible/group_vars/bitrix-pgsql.yml
+            log_to_file "Created PostgreSQL template at /etc/ansible/group_vars/bitrix-pgsql.yml with substituted variables"
+        fi
+        
+        # Check and add PostgreSQL variables to host_vars if missing
+        if [[ -d /etc/ansible/host_vars && -f /etc/ansible/host_vars/$hostname ]];
+        then
+            if [[ $(grep -wc "pgsql_replication_role" /etc/ansible/host_vars/$hostname) -eq 0 ]];
+            then
+                echo "" >> /etc/ansible/host_vars/$hostname
+                echo "# PostgreSQL replication role" >> /etc/ansible/host_vars/$hostname
+                echo "pgsql_replication_role: master" >> /etc/ansible/host_vars/$hostname
+                echo "pgsql_serverid: 1" >> /etc/ansible/host_vars/$hostname
+                log_to_file "Added PostgreSQL variables to host_vars for $hostname"
+            fi
+        fi
+    fi
+}
+
+# create pgpass file
+create_pgpass_file() {
+    local password="${1}"
+
+    touch "$PGSQL_PASS"
+    chmod 600 "$PGSQL_PASS"
+
+    echo "localhost:5432:*:postgres:${password}" > "$PGSQL_PASS"
+
+    if [[ $? -ne 0 ]];
+    then
+        log_to_file "Failed to create PostgreSQL password file" "ERROR"
+        return 1
+    fi
+
+    log_to_file "PostgreSQL password file created successfully"
+    return 0
+}
+
+# replace all authentication methods with password
+update_pgsql_config() {
+    local pg_hba_conf="/var/lib/pgsql/data/pg_hba.conf"
+
+    if [[ ! -f $pg_hba_conf ]];
+    then
+        log_to_file "PostgreSQL config file $pg_hba_conf not found" "ERROR"
+        return 1
+    fi
+
+    local tmp_conf=$(mktemp /tmp/pg_hba.XXXXX)
+
+    sed -e 's/\([ \t]\)ident\([ \t]*$\)/\1password\2/' \
+        -e 's/\([ \t]\)peer\([ \t]*$\)/\1password\2/' \
+        "$pg_hba_conf" > "$tmp_conf"
+
+    if [[ $? -ne 0 ]];
+    then
+        log_to_file "Failed to update PostgreSQL authentication methods" "ERROR"
+        rm -f "$tmp_conf"
+        return 1
+    fi
+
+    mv "$tmp_conf" "$pg_hba_conf"
+
+    chown postgres:postgres "$pg_hba_conf"
+    chmod 600 "$pg_hba_conf"
+
+    service_postgresql restart
+
+    return $?
+}
+
+# instruction:
+# pgsql_query "SELECT * FROM table"
+# pgsql_query "SELECT * FROM table" "postgres" (execute as postgres user)
+pgsql_query() {
+    local query="${1}"
+    local run_as="${2}"
+    local tmp_f=$(mktemp /tmp/XXXXX_pgsql_command)
+
+    [[ -z $query ]] && return 1
+
+    if ! service_postgresql status;
+    then
+        log_to_file "PostgreSQL service is not running" "ERROR"
+        rm -f $tmp_f
+        return 1
+    fi
+
+    if [[ ! -f $PGSQL_PASS ]];
+    then
+        log_to_file "PostgreSQL password file $PGSQL_PASS not found" "ERROR"
+        return 1
+    fi
+
+    echo "$query" > $tmp_f
+
+    if [[ -n "$run_as" ]];
+    then
+        chown postgres:postgres $tmp_f
+        sudo -u "$run_as" psql -f $tmp_f >> $LOGS_FILE 2>&1
+    else
+        psql -U postgres -f $tmp_f >> $LOGS_FILE 2>&1
+    fi
+
+    local pgsql_rtn=$?
+
+    rm -f $tmp_f
+
+    return $pgsql_rtn
+}
+
+# configure timezone for postgresql
+configure_tz_postgresql() {
+    if [[ -f /var/lib/pgsql/data/postgresql.conf ]];
+    then
+        get_current_timzone
+        if [[ $? -eq 0 && -n "$TZ_TIME" ]];
+        then
+            sed -i "s/^#\?timezone =.*$/timezone = '${TZ_TIME}'/" /var/lib/pgsql/data/postgresql.conf
+            sed -i "s/^#\?log_timezone =.*$/log_timezone = '${TZ_TIME}'/" /var/lib/pgsql/data/postgresql.conf
+            log_to_file "PostgreSQL timezone and log_timezone set to ${TZ_TIME}"
+        else
+            log_to_file "Could not determine system timezone, PostgreSQL will use default" "WARN"
+        fi
+    else
+        log_to_file "PostgreSQL is not installed" "ERROR"
+        exit 1
+    fi
+}
+
+# configure password for postgresql
+configure_postgress_password() {
+    local password=""
+    local escaped_password=""
+
+    password=$(randpw)
+    escaped_password=$(basic_single_escape "${password}")
+
+    service_postgresql start
+
+    create_pgpass_file "${escaped_password}"
+    if [[ $? -ne 0 ]];
+    then
+        log_to_file "$MBEPG06"
+        return 1
+    fi
+
+    pgsql_query "ALTER USER postgres WITH PASSWORD '${escaped_password}';" "postgres"
+    if [[ $? -ne 0 ]];
+    then
+        log_to_file "$MBEPG07"
+        return 1
+    fi
+
+    update_pgsql_config
+    if [[ $? -ne 0 ]];
+    then
+        log_to_file "$MBEPG08"
+        return 1
+    fi
+
+    pgsql_query "SELECT 1 as test;"
+    if [[ $? -ne 0 ]];
+    then
+        log_to_file "$MBEPG09"
+        return 1
+    fi
+
+    log_to_file "$MBEPG10"
+    return 0
+}
+
 # post installation action for install process; no previous installation bitrix-env
 install() {
     # configure shadow for old systems?
@@ -2713,9 +3176,11 @@ install() {
     # configure bitrix user
     id bitrix 1> /dev/null 2>&1
     bitrix_rtn=$?
-    if [[ $bitrix_rtn -gt 0 ]]; then
+    if [[ $bitrix_rtn -gt 0 ]];
+    then
         groupadd -g 600 bitrix && useradd -g 600 -u 600 -p bitrix bitrix && chage -d 0 bitrix
-        if [[ $? -gt 0 ]]; then
+        if [[ $? -gt 0 ]];
+        then
             log_to_file "Cannot create bitrix user. Exit" "ERROR"
             exit 1
         else
@@ -2725,7 +3190,8 @@ install() {
 
     # disable SELinux
     [[ -d /selinux ]] && echo 0 > /selinux/enforce
-    if [[ -f /etc/selinux/config ]]; then
+    if [[ -f /etc/selinux/config ]];
+    then
         sed -i".$UPDATE_TM" "s/^SELINUX\=.*/SELINUX\=disabled/g" /etc/selinux/config
         log_to_file "SELinux was disabled"
     fi
@@ -2841,7 +3307,7 @@ install() {
     # configure php
     PHP_CONF_FILE="/etc/php.ini"
     PHP_CONF_DIR=/etc/php.d
-    PHP_MODULES_DISABLE="xdebug xhprof mssql phar xmlwriter xmlreader sqlite3 pdo pdo_dblib pdo_mysql pdo_sqlite imap xsl soap curl gmp posix sybase_ct sysvmsg sysvsem sysvshm wddx xsl ftp"
+    PHP_MODULES_DISABLE="xdebug xhprof mssql phar xmlwriter xmlreader sqlite3 pdo pdo_dblib pdo_mysql pdo_pgsql pdo_sqlite imap xsl soap curl gmp posix sybase_ct sysvmsg sysvsem sysvshm wddx xsl ftp"
     PHP_MODULES_ENABLE="json mysqli dom xml zip" 
     configure_php
 
@@ -2873,6 +3339,9 @@ install() {
 
         # disable percona telemetry agent by default
         disable_percona_telemetry
+
+        # Set timezone for postgresql
+        configure_tz_postgresql
 
         # make rc.local file executable on install
         make_rc_local_executable
@@ -2974,7 +3443,7 @@ upgrade() {
     # configure php
     PHP_CONF_FILE="/etc/php.ini"
     PHP_CONF_DIR=/etc/php.d
-    PHP_MODULES_DISABLE=
+    PHP_MODULES_DISABLE="pdo_pgsql"
     PHP_MODULES_ENABLE="json mysqli dom xml zip"
     SITE_DIR=/home/bitrix/www
     configure_php
@@ -3001,7 +3470,7 @@ upgrade() {
         # configure DNF exclusions
         configure_dnf_exclude
 
-        # downgrade perl-DBD-MySQL to version 4.050
+        # Downgrade perl-DBD-MySQL if needed
         downgrade_perl_dbd_mysql
 
         # configure chrony
@@ -3016,8 +3485,14 @@ upgrade() {
         # modify httpd config if default site removed
         httpd_conf_if_no_default_site_exist
 
+        # init postgresql   
+        init_postgresql
+
         # if no community.rabbitmq ansible collection exist install it
         install_community_rabbitmq_ansible_collection_on_upgrade
+
+        # if no community.postgresql ansible collection exist install it
+        install_community_postgresql_ansible_collection_on_upgrade
 
         # on package upgrade disable php xhprof extension
         disable_php_xhprof_extension_on_upgrade
@@ -3027,6 +3502,9 @@ upgrade() {
 
         # change nginx pid file path on upgrade
         path_nginx_service_file_on_upgrade
+
+	# change tmpfiles location to /run/* for transformer and rabbitmq
+	path_tmpfilesd_on_upgrade
 
         # fix 207714, change rights to files on package upgrade
         disable_bitrix_user_privilege_escalation_on_upgrade

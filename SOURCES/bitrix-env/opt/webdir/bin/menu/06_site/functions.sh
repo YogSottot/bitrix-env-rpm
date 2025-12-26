@@ -130,6 +130,23 @@ cache_pool_sites() {
     fi
 }
 
+# Format database type
+format_db_type() {
+    local db_type="$1"
+    
+    case "$db_type" in
+        "mysql")
+            echo "MySQL"
+            ;;
+        "pgsql")
+            echo "PostgreSQL"
+            ;;
+        *)
+            echo "$db_type"
+            ;;
+    esac
+}
+
 # print error site info
 print_pool_sites_error() {
     [[ -z "$POOL_SITES_ERRORS_COUNT" ]] && cache_pool_sites
@@ -211,7 +228,8 @@ print_pool_sites() {
         _db_list=""
         print_color_text "Found $_pool_filtered_kernel_count kernel sites:" blue
         echo $MENU_SPACER
-        printf "%3s| %-15s | %-15s | %15s | %10s | %1s | %1s | %s\n" "ID" "SiteName" "dbName" "Status" "Type" "S" "C" "DocumentRoot"
+        #printf "%3s| %-15s | %-11s | %-15s | %15s | %10s | %1s | %1s | %s\n" "ID" "SiteName" "DBType" "dbName" "Status" "Type" "S" "C" "DocumentRoot"
+        printf "%3s| %-15s | %-11s | %-15s | %15s | %10s | %1s | %s\n" "ID" "SiteName" "DBType" "dbName" "Status" "Type" "C" "DocumentRoot"
         echo $MENU_SPACER
 
         IFS_BAK=$IFS
@@ -227,9 +245,11 @@ print_pool_sites() {
             _site_sr=$(echo "$line" | awk -F':' '{print $5}')  # full servername
             _site_rt=$(echo "$line" | awk -F':' '{print $6}')  # document root
             _site_ch=$(echo "$line" | awk -F':' '{print $7}')  # charset
-            _site_sc=$(echo "$line" | awk -F':' '{print $8}')  # scale
+            #_site_sc=$(echo "$line" | awk -F':' '{print $8}')  # scale - old version
             _site_cl=$(echo "$line" | awk -F':' '{print $9}')  # cluster
-            printf "%3d| %-15s | %-15s | %15s | %10s | %1s | %1s | %s\n" "$COUNT" "$_site_id" "$_site_db" "$_site_st" "$_site_tp" "$_site_sc" "$_site_cl" "$_site_rt"
+            _site_db_type=$(echo "$line" | awk -F':' '{print $NF}')  # db_type (последнее поле)
+            #printf "%3d| %-15s | %-11s | %-15s | %15s | %10s | %1s | %1s | %s\n" "$COUNT" "$_site_id" "$(format_db_type $_site_db_type)" "$_site_db" "$_site_st" "$_site_tp" "$_site_sc" "$_site_cl" "$_site_rt"
+            printf "%3d| %-15s | %-11s | %-15s | %15s | %10s | %1s | %s\n" "$COUNT" "$_site_id" "$(format_db_type $_site_db_type)" "$_site_db" "$_site_st" "$_site_tp" "$_site_cl" "$_site_rt"
             _db_list=$_db_list"$_site_db
 "
             SITES_LIST_WITH_NUMBER=$SITES_LIST_WITH_NUMBER"$COUNT:$_site_id:$_site_db:$_site_st:$_site_tp:$_site_rt:$_site_sr
@@ -254,7 +274,7 @@ print_pool_sites() {
 
                     _pool_db_links=$(echo "$_pool_filtered_link" | grep ":$_db_found:")
                     echo $MENU_SPACER
-                    printf "%3s| %-15s | %-15s | %15s | %10s | %s\n" "ID" "SiteName" "dbName" "Status" "Type" "DocumentRoot"
+                    printf "%3s| %-15s | %-11s | %-15s | %15s | %10s | %s\n" "ID" "SiteName" "DBType" "dbName" "Status" "Type" "DocumentRoot"
                     echo $MENU_SPACER
                     IFS_BAK=$IFS
                     IFS=$'\n'
@@ -266,7 +286,8 @@ print_pool_sites() {
                         _site_st=$(echo "$line" | awk -F':' '{print $4}')  # status site installation
                         _site_sr=$(echo "$line" | awk -F':' '{print $5}')  # full servername
                         _site_rt=$(echo "$line" | awk -F':' '{print $6}')  # document root
-                        printf "%3d| %-15s | %-15s | %15s | %10s | %s\n" "$COUNT" "$_site_id" "$_site_db" "$_site_st" "$_site_tp" "$_site_rt"
+                        _site_db_type=$(echo "$line" | awk -F':' '{print $NF}')  # db_type (последнее поле)
+                        printf "%3d| %-15s | %-11s | %-15s | %15s | %10s | %s\n" "$COUNT" "$_site_id" "$(format_db_type $_site_db_type)" "$_site_db" "$_site_st" "$_site_tp" "$_site_rt"
                         SITES_LIST_WITH_NUMBER=$SITES_LIST_WITH_NUMBER"$COUNT:$_site_id:$_site_db:$_site_st:$_site_tp:$_site_rt:$_site_sr
 "
                         COUNT=$(($COUNT+1))
@@ -278,7 +299,7 @@ print_pool_sites() {
             done
         fi
         print_color_text "Note:" blue
-        echo "S - scale module   (Y = installed, N = not installed)"
+        #echo "S - scale module   (Y = installed, N = not installed)"
         echo "C - cluster module (Y = installed, N = not installed)"
         echo
     else
@@ -311,7 +332,7 @@ print_site_list_point_cron() {
     then
         print_color_text "Found $POOL_SITES_KERNEL_COUNT kernel sites:" blue
         echo $MENU_SPACER
-        printf "%-15s | %-15s | %15s | %5s | %s\n" "SiteName" "dbName" "Status" "Cron" "DocumentRoot"
+        printf "%-15s | %-11s | %-15s | %15s | %5s | %s\n" "SiteName" "DBType" "dbName" "Status" "Cron" "DocumentRoot"
         echo $MENU_SPACER
 
         IFS_BAK=$IFS
@@ -323,10 +344,11 @@ print_site_list_point_cron() {
             _site_db=$(echo "$line" | awk -F':' '{print $2}')  # dbname
             _site_st=$(echo "$line" | awk -F':' '{print $4}')  # status site installation
             _site_root=$(echo "$line" | awk -F':' '{print $6}')  # document root
+            _site_db_type=$(echo "$line" | awk -F':' '{print $NF}') 
             _site_info=$($bx_sites_script -a status --site $_site_id -r $_site_root | grep ':cron:' | sed -e 's/^bxSite:cron://')
             # ext_share:dbcp:enable:/etc/cron.d/bx_dbcp
             _site_cron=$(echo "$_site_info" | awk -F':' '{print $3}' | sed -e 's/enable/Y/;s/disable/N/;')
-            printf "%-15s | %-15s | %15s | %5s | %s\n" "$_site_id" "$_site_db" "$_site_st" "$_site_cron" "$_site_root"
+            printf "%-15s | %-11s | %-15s | %15s | %5s | %s\n" "$_site_id" "$(format_db_type $_site_db_type)" "$_site_db" "$_site_st" "$_site_cron" "$_site_root"
         done
         IFS_BAK=$IFS
         IFS=$'\n'
@@ -371,7 +393,7 @@ print_site_list_point_composite() {
     then
         print_color_text "Found $POOL_SITES_COUNT sites:" blue
         echo $MENU_SPACER
-        printf "%-15s | %-15s | %10s | %9s | %5s | %s\n" "SiteName" "dbName" "Type" "Composite" "Nginx" "Storage"
+        printf "%-15s | %-11s | %-15s | %10s | %9s | %5s | %s\n" "SiteName" "DBType" "dbName" "Type" "Composite" "Nginx" "Storage"
         echo $MENU_SPACER
 
         IFS_BAK=$IFS
@@ -381,10 +403,11 @@ print_site_list_point_composite() {
             _site_id=$(echo "$line" | awk -F':' '{print $1}')   # short name for site
             _site_db=$(echo "$line" | awk -F':' '{print $2}')   # dbname
             _site_type=$(echo "$line" | awk -F':' '{print $3}') # type: kernel, ext_kernel
+            _site_db_type=$(echo "$line" | awk -F':' '{print $NF}')
             composite_status=$(echo "$line" | awk -F':' '{print $10}')
             nginx_composite=$(echo "$line" | awk -F':' '{print $11}')
             composite_storage=$(echo "$line" | awk -F':' '{print $12}')
-            printf "%-15s | %-15s | %10s | %9s | %5s | %s\n" "$_site_id" "$_site_db" "$_site_type" "$composite_status" "$nginx_composite" "$composite_storage"
+            printf "%-15s | %-11s | %-15s | %10s | %9s | %5s | %s\n" "$_site_id" "$(format_db_type $_site_db_type)" "$_site_db" "$_site_type" "$composite_status" "$nginx_composite" "$composite_storage"
         done
         IFS_BAK=$IFS
         IFS=$'\n'
@@ -410,7 +433,7 @@ print_site_list_point_https() {
     then
         print_color_text "There are $POOL_SITES_COUNT sites:" blue
         echo $MENU_SPACER
-        printf "%-15s | %-15s | %10s | %1s | %-20s | %s\n" "SiteName" "dbName" "Type" "S" "Certificate" "Key"
+        printf "%-15s | %-11s | %-15s | %10s | %1s | %-20s | %s\n" "SiteName" "DBType" "dbName" "Type" "S" "Certificate" "Key"
         echo $MENU_SPACER
         IFS_BAK=$IFS
         IFS=$'\n'
@@ -421,12 +444,13 @@ print_site_list_point_https() {
             _site_type=$(echo "$line" | awk -F':' '{print $3}') # type: kernel, ext_kernel
             _site_st=$(echo "$line" | awk -F':' '{print $4}')   # status site installation
             _site_root=$(echo "$line" | awk -F':' '{print $6}')  # document root
+            _site_db_type=$(echo "$line" | awk -F':' '{print $NF}') 
             _site_info=$($bx_sites_script -a status --site $_site_id -r $_site_root | grep ':https:' | sed -e 's/^bxSite:https://')
             # default:sitemanager:disable:/etc/nginx/ssl/cert.pem:/etc/nginx/ssl/cert.pem:/etc/nginx/bx/conf/ssl.conf
             https_cert=$(echo "$_site_info" | awk -F':' '{print $4}' | sed -e "s:/etc/nginx/::")
             https_key=$(echo "$_site_info" | awk -F':' '{print $5}' | sed -e "s:/etc/nginx/::")
              _https_enable=$(echo "$_site_info" | awk -F':' '{print $3}' | sed -e 's/enable/Y/;s/disable/N/;' )
-            printf "%-15s | %-15s | %10s | %1s | %-20s | %s\n" "$_site_id" "$_site_db" "$_site_type" "$_https_enable" "$https_cert" "$https_key"
+            printf "%-15s | %-11s | %-15s | %10s | %1s | %-20s | %s\n" "$_site_id" "$(format_db_type $_site_db_type)" "$_site_db" "$_site_type" "$_https_enable" "$https_cert" "$https_key"
         done
         IFS=$IFS_BAK
         IFS_BAK=
@@ -490,7 +514,7 @@ print_site_list_point_email() {
     then
         print_color_text "Found $POOL_SITES_COUNT sites:" blue
         echo $MENU_SPACER
-        printf "%-15s | %-15s | %5s | %15s | %5s | %s\n" "SiteName" "dbName" "Email" "Server" "TLS" "From"
+        printf "%-15s | %-11s | %-15s | %5s | %15s | %5s | %s\n" "SiteName" "DBType" "dbName" "Email" "Server" "TLS" "From"
         echo $MENU_SPACER
 
         IFS_BAK=$IFS
@@ -501,6 +525,7 @@ print_site_list_point_email() {
             _site_db=$(echo "$line" | awk -F':' '{print $2}')  # dbname
             _site_st=$(echo "$line" | awk -F':' '{print $4}')  # status site installation
             _site_root=$(echo "$line" | awk -F':' '{print $6}')  # document root
+            _site_db_type=$(echo "$line" | awk -F':' '{print $NF}')
             _site_info=$($bx_sites_script -a status --site $_site_id -r $_site_root | grep ':email:' | sed -e 's/^bxSite:email://')
             # cp.ksh.bx:dbcp:cp.ksh.bx:bob@example.org:192.168.0.25:26:bob@example.org:*************:on
             _site_email=$(echo "$_site_info" | awk -F':' '{print $4}')
@@ -510,7 +535,7 @@ print_site_list_point_email() {
             _email_status=N
             [[ -n "$_site_email" ]] && _email_status=Y
             [[ -n "$_email_port" ]] && _email_serv="$_email_serv:$_email_port"
-            printf "%-15s | %-15s | %5s | %15s | %5s | %s\n" "$_site_id" "$_site_db" "$_email_status" "$_email_serv" "$_email_tls" "$_site_email"
+            printf "%-15s | %-11s | %-15s | %5s | %15s | %5s | %s\n" "$_site_id" "$(format_db_type $_site_db_type)" "$_site_db" "$_email_status" "$_email_serv" "$_email_tls" "$_site_email"
         done
         IFS_BAK=$IFS
         IFS=$'\n'
@@ -527,7 +552,7 @@ print_site_list_point_backup() {
     then
         print_color_text "Found $POOL_SITES_KERNEL_COUNT kernel sites:" blue
         echo $MENU_SPACER
-        printf "%-15s | %-15s | %4s | %15s | %18s | %s\n" "SiteName" "dbName" "Back" "CronTime" "LastBackup" "BackupDir"
+        printf "%-15s | %-11s | %-15s | %4s | %15s | %18s | %s\n" "SiteName" "DBType" "dbName" "Back" "CronTime" "LastBackup" "BackupDir"
         echo $MENU_SPACER
 
         IFS_BAK=$IFS
@@ -538,6 +563,7 @@ print_site_list_point_backup() {
             _site_id=$(echo "$line" | awk -F':' '{print $1}')  # short name for site
             _site_db=$(echo "$line" | awk -F':' '{print $2}')  # dbname
             _site_root=$(echo "$line" | awk -F':' '{print $6}')  # document root
+            _site_db_type=$(echo "$line" | awk -F':' '{print $NF}')
             _site_info=$($bx_sites_script -a status --site $_site_id -r $_site_root | grep ':backup:' | sed -e 's/^bxSite:backup://')
             # default:sitemanager:enable:v5:/home/bitrix/backup/archive:10:23:*:*:*
             _site_backup=$(echo "$_site_info" | awk -F':' '{print $3}' | sed -e 's/enable/Y/;s/disable/N/;')
@@ -561,7 +587,7 @@ print_site_list_point_backup() {
                 _backup_cron=
                 _backup_last=
             fi
-            printf "%-15s | %-15s | %4s | %15s | %18s | %s\n" "$_site_id" "$_site_db" "$_site_backup" "$_backup_cron" "$_backup_last" "$_backup_dir"
+            printf "%-15s | %-11s | %-15s | %4s | %15s | %18s | %s\n" "$_site_id" "$(format_db_type $_site_db_type)" "$_site_db" "$_site_backup" "$_backup_cron" "$_backup_last" "$_backup_dir"
         done
         IFS_BAK=$IFS
         IFS=$'\n'
@@ -578,7 +604,7 @@ print_site_list_point_cronservices() {
     then
         print_color_text "Found $POOL_SITES_KERNEL_COUNT kernel sites:" blue
         echo $MENU_SPACER
-        printf "%-15s | %-15s | %10s | %10s | %s\n" "SiteName" "dbName" "XMMPD" "SMTPD" "DocumentRoot"
+        printf "%-15s | %-11s | %-15s | %10s | %10s | %s\n" "SiteName" "DBType" "dbName" "XMMPD" "SMTPD" "DocumentRoot"
         echo $MENU_SPACER
 
         IFS_BAK=$IFS
@@ -589,6 +615,7 @@ print_site_list_point_cronservices() {
             _site_id=$(echo "$line" | awk -F':' '{print $1}')  # short name for site
             _site_db=$(echo "$line" | awk -F':' '{print $2}')  # dbname
             _site_root=$(echo "$line" | awk -F':' '{print $6}')  # document root
+            _site_db_type=$(echo "$line" | awk -F':' '{print $NF}')
             _site_info=$($bx_sites_script -a status --site $_site_id -r $_site_root | grep ':cron_services:' | sed -e 's/^bxSite:cron_services://')
             # ext_www:sitemanager:enabled:smtpd
             _site_cron=$(echo "$_site_info" | awk -F':' '{print $3}' | sed -e 's/enabled/Y/;s/disabled/N/;')
@@ -599,7 +626,7 @@ print_site_list_point_cronservices() {
                 [[ $(echo "$_site_info" | awk -F':' '{print $4}' | grep -wc 'xmppd') -gt 0 ]] && _site_xmmpd=Y
                 [[ $(echo "$_site_info" | awk -F':' '{print $4}' | grep -wc 'smtpd') -gt 0 ]] && _site_smtpd=Y
             fi
-            printf "%-15s | %-15s | %10s | %10s | %s\n" "$_site_id" "$_site_db" "$_site_xmmpd" "$_site_smtpd" "$_site_root"
+            printf "%-15s | %-11s | %-15s | %10s | %10s | %s\n" "$_site_id" "$(format_db_type $_site_db_type)" "$_site_db" "$_site_xmmpd" "$_site_smtpd" "$_site_root"
         done
         IFS_BAK=$IFS
         IFS=$'\n'
@@ -653,7 +680,7 @@ print_site_list_point_ntlm() {
     then
         print_color_text "                 Found $POOL_SITES_KERNEL_COUNT kernel sites:" blue
         echo $MENU_SPACER
-        printf "%-15s | %-15s | %7s | %7s | %8s | %s\n" "SiteName" "dbName" "LDAPMod" "UseNTLM" "LDAPAuth" "DocumentRoot"
+        printf "%-15s | %-11s | %-15s | %7s | %7s | %8s | %s\n" "SiteName" "DBType" "dbName" "LDAPMod" "UseNTLM" "LDAPAuth" "DocumentRoot"
         echo $MENU_SPACER
 
         IFS_BAK=$IFS
@@ -664,6 +691,7 @@ print_site_list_point_ntlm() {
             _site_id=$(echo "$line" | awk -F':' '{print $1}')  # short name for site
             _site_db=$(echo "$line" | awk -F':' '{print $2}')  # dbname
             _site_root=$(echo "$line" | awk -F':' '{print $6}')  # document root
+            _site_db_type=$(echo "$line" | awk -F':' '{print $NF}') 
             _site_info=$($bx_sites_script -a status --site $_site_id -r $_site_root | grep ':ntlm:' | sed -e 's/^bxSite:ntlm://')
             # default:sitemanager:N:N:Y
             # option: bitrixvm_auth_support
@@ -671,7 +699,7 @@ print_site_list_point_ntlm() {
             # option: use_ntlm
             site_ntlm_use=$(echo "$_site_info" | awk -F':' '{print $4}')
             site_ldap_module=$(echo "$_site_info" | awk -F':' '{print $5}')
-            printf "%-15s | %-15s | %7s | %7s | %8s | %s\n" "$_site_id" "$_site_db" "$site_ldap_module" "$site_ntlm_use" "$site_ntlm_bv" "$_site_root"
+            printf "%-15s | %-11s | %-15s | %7s | %7s | %8s | %s\n" "$_site_id" "$(format_db_type $_site_db_type)" "$_site_db" "$site_ldap_module" "$site_ntlm_use" "$site_ntlm_bv" "$_site_root"
             if [[ $site_ntlm_bv == "N" ]];
             then
                 NONTLM_SITES=$NONTLM_SITES"$_site_id:$_site_db:$_site_root:$site_ntlm_bv:$site_ntlm_use:$site_ldap_module
@@ -697,7 +725,7 @@ print_site_list_point_options() {
     then
         print_color_text "Found $POOL_SITES_COUNT sites:" blue
         echo $MENU_SPACER
-        printf "%-15s | %10s | %4s | %4s | %4s | %15s | %s\n" "dbName" "Type" "IGA" "NCSS" "NCTF" "DCTF" "SiteName"
+        printf "%-15s | %-11s | %10s | %4s | %4s | %4s | %15s | %s\n" "SiteName" "DBType" "dbName" "Type" "IGA" "NCSS" "NCTF" "DCTF"
         # ignore_client_abort - IGA
         # nginx_custom_site_settings - NCSS
         # nginx_custom_temp_files - NCTF
@@ -712,6 +740,7 @@ print_site_list_point_options() {
             _site_type=$(echo "$line" | awk -F':' '{print $3}') # type: kernel, ext_kernel
             _site_st=$(echo "$line" | awk -F':' '{print $4}')   # status site installation
             _site_root=$(echo "$line" | awk -F':' '{print $6}')  # document root
+            _site_db_type=$(echo "$line" | awk -F':' '{print $NF}')
             _site_all_info=$($bx_sites_script -a status --site $_site_id -r $_site_root)
             _site_configs=$(echo "$_site_all_info" | grep 'bxSite:configs:' | sed -e 's/^bxSite:configs://')
             _site_custom=$(echo "$_site_all_info" | grep 'bxSite:custom_options:' | sed -e 's/^bxSite:custom_options://')
@@ -721,7 +750,7 @@ print_site_list_point_options() {
             _nginx_custom_settings=$(echo "$_site_custom" | awk -F':' '{print $2}')
             _nginx_bx_temp_files_dir_conf=$(echo "$_site_custom" | awk -F':' '{print $3}')
             _dbconn_bx_temp_files_dir=$(echo "$_site_custom" | awk -F':' '{print $4}' | sed -e "s:/home/bitrix/.bx_temp/::")
-            printf "%-15s | %10s | %4s | %4s | %4s | %15s | %s\n" "$_site_db" "$_site_type" "$_proxy_ignore_client_abort" "$_nginx_custom_settings" "$_nginx_bx_temp_files_dir_conf" "$_dbconn_bx_temp_files_dir" "$_site_id: $_site_root"
+            printf "%-15s | %-11s | %-10s | %4s | %4s | %4s | %15s | %s\n" "$_site_id" "$(format_db_type $_site_db_type)" "$_site_db" "$_site_type" "$_proxy_ignore_client_abort" "$_nginx_custom_settings" "$_nginx_bx_temp_files_dir_conf" "$_dbconn_bx_temp_files_dir"
         done
         IFS_BAK=$IFS
         IFS=$'\n'

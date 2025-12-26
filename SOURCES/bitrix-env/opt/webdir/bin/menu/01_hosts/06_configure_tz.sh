@@ -27,6 +27,7 @@ configure_tz() {
     [[ $php_choice -eq 1 ]] && echo " /etc/php.d/bitrixenv.ini"
     print_color_text "$HM0064" red
     echo " mysqld"
+    echo " postgresql"
     echo " crond"
     echo " rsyslog"
     [[ $php_choice -eq 1 ]] && echo " httpd"
