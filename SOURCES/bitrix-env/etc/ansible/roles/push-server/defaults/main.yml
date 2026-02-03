@@ -1,7 +1,7 @@
 ---
 # redis
 redis_socket: /tmp/redis.sock
-redis_pidfile: /var/run/redis_6379.pid
+redis_pidfile: /var/run/redis/redis.pid
 redis_logdir: /var/log/redis
 redis_logfile: "{{ redis_logdir }}/redis.log"
 redis_datadir: /var/lib/redis

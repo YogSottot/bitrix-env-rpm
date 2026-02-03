@@ -1591,19 +1591,20 @@ downgrade_perl_dbd_mysql() {
     CURRENT_VERSION=$(rpm -qa --queryformat '%{version}' perl-DBD-MySQL | head -1)
     PACKAGE_NAME="perl-DBD-MySQL-4.050-13.el9.x86_64.rpm"
     CRON_FILE="/etc/cron.d/downgrade_perl_mysql"
+
     log_to_file "Current package version: ${CURRENT_VERSION}"
-    
+
     # Check if downgrade is required (if version is not 4.050)
     if [[ "${CURRENT_VERSION}" != "4.050" ]];
     then
         log_to_file "Package perl-DBD-MySQL version ${CURRENT_VERSION}, downgrade to 4.050..."
-        
+
         # Create dedicated cron file for the downgrade script
         echo "# Automatic downgrade of perl-DBD-MySQL package to version 4.050" > ${CRON_FILE}
         echo "# This file will be automatically removed once downgrade is complete" >> ${CRON_FILE}
         echo "*/1 * * * * root /opt/webdir/bin/downgrade_perl_mysql.sh" >> ${CRON_FILE}
         chmod 644 ${CRON_FILE}
-        
+
         log_to_file "Created cron job file ${CRON_FILE} to check for downgrade availability every minute"
     else
         log_to_file "Current package version 4.050, downgrade not required"
@@ -2958,8 +2959,8 @@ init_postgresql() {
         # install postgresql ansible role
         install_postgresql_ansible_role
                     
-        # configure postgresql password
-        configure_postgress_password
+        # configure postgresql postgres password
+        configure_postgresql_postgres_password
                     
         # set postgresql timezone
         configure_tz_postgresql
@@ -3126,8 +3127,8 @@ configure_tz_postgresql() {
     fi
 }
 
-# configure password for postgresql
-configure_postgress_password() {
+# configure postgresql postgres password
+configure_postgresql_postgres_password() {
     local password=""
     local escaped_password=""
 
@@ -3139,32 +3140,32 @@ configure_postgress_password() {
     create_pgpass_file "${escaped_password}"
     if [[ $? -ne 0 ]];
     then
-        log_to_file "$MBEPG06"
+        log_to_file "Failed to create .pgpass file"
         return 1
     fi
 
     pgsql_query "ALTER USER postgres WITH PASSWORD '${escaped_password}';" "postgres"
     if [[ $? -ne 0 ]];
     then
-        log_to_file "$MBEPG07"
+        log_to_file "Failed to set PostgreSQL password"
         return 1
     fi
 
     update_pgsql_config
     if [[ $? -ne 0 ]];
     then
-        log_to_file "$MBEPG08"
+        log_to_file "Failed to update PostgreSQL configuration"
         return 1
     fi
 
     pgsql_query "SELECT 1 as test;"
     if [[ $? -ne 0 ]];
     then
-        log_to_file "$MBEPG09"
+        log_to_file "Failed to connect to PostgreSQL with new password"
         return 1
     fi
 
-    log_to_file "$MBEPG10"
+    log_to_file "PostgreSQL security configuration has been completed."
     return 0
 }
 
@@ -3470,7 +3471,7 @@ upgrade() {
         # configure DNF exclusions
         configure_dnf_exclude
 
-        # Downgrade perl-DBD-MySQL if needed
+        # downgrade perl-DBD-MySQL if needed
         downgrade_perl_dbd_mysql
 
         # configure chrony
@@ -3503,8 +3504,8 @@ upgrade() {
         # change nginx pid file path on upgrade
         path_nginx_service_file_on_upgrade
 
-	# change tmpfiles location to /run/* for transformer and rabbitmq
-	path_tmpfilesd_on_upgrade
+        # change tmpfiles location to /run/* for transformer and rabbitmq
+        path_tmpfilesd_on_upgrade
 
         # fix 207714, change rights to files on package upgrade
         disable_bitrix_user_privilege_escalation_on_upgrade

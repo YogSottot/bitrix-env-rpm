@@ -1561,7 +1561,7 @@ my_generate_sitepw() {
     update_site_settings "$site_settings"
 }
 
-#check postgresql package version
+# check postgresql package version
 postgresql_package() {
     PACKAGES_LIST=$(rpm -qa)
 
@@ -1581,8 +1581,9 @@ postgresql_package() {
     POSTGRESQL_UNI_VERSION=$(echo "$POSTGRESQL_VERSION" | awk -F'.' '{print $1}')
 }
 
-#interface for postgresql service
+# interface for postgresql service
 service_postgresql() {
+    [[ -z $OS_VERSION ]] && get_os_type
     local action=$1
     local restart_rtn=0
     [[ -z $action ]] && return 1
@@ -1621,7 +1622,7 @@ service_postgresql() {
     fi
 }
 
-#create pgpass file
+# create pgpass file
 create_pgpass_file() {
     local password="${1}"
 
@@ -1640,7 +1641,7 @@ create_pgpass_file() {
     return 0
 }
 
-#replace all authentication methods with password
+# replace all authentication methods with password
 update_pgsql_config() {
     local pg_hba_conf="/var/lib/pgsql/data/pg_hba.conf"
     
@@ -1673,9 +1674,9 @@ update_pgsql_config() {
     return $?
 }
 
-#instruction:
-#pgsql_query "SELECT * FROM table"
-#pgsql_query "SELECT * FROM table" "postgres" (execute as postgres user)
+# instruction:
+# pgsql_query "SELECT * FROM table"
+# pgsql_query "SELECT * FROM table" "postgres" (execute as postgres user)
 pgsql_query() {
     local query="${1}"
     local run_as="${2}"
@@ -1713,7 +1714,39 @@ pgsql_query() {
     return $pgsql_rtn
 }
 
-#end postgres functions
+# update postgresql postgres password
+update_postgresql_postgres_password() {
+    local password=""
+    local escaped_password=""
+
+    password=$(randpw)
+    escaped_password=$(basic_single_escape "${password}")
+
+    pgsql_query "ALTER USER postgres WITH PASSWORD '${escaped_password}';"
+    if [[ $? -ne 0 ]];
+    then
+        log_to_file "Failed to set PostgreSQL password"
+        return 1
+    fi
+
+    create_pgpass_file "${escaped_password}"
+    if [[ $? -ne 0 ]];
+    then
+        log_to_file "Failed to create .pgpass file"
+        return 1
+    fi
+
+    pgsql_query "SELECT 1 as test;"
+    if [[ $? -ne 0 ]];
+    then
+        log_to_file "Failed to connect to PostgreSQL with new password"
+        return 1
+    fi
+
+    log_to_file "PostgreSQL security configuration has been completed."
+    return 0
+}
+
 update_settings_option() {
     local option="${1}"
     local value="${2}"

@@ -15,9 +15,10 @@ sub_menu_update_php() {
 
     local host_logo="$HM0088"
     local menu_exit="$HM0042"
-    local up_php84="1. $HM00889"
-    local up_php83="2. $HM00888"
-    local up_php82="3. $HM00887"
+    local up_php85="1. $HM00901"
+    local up_php84="2. $HM00889"
+    local up_php83="3. $HM00888"
+    local up_php82="4. $HM00887"
 #    local up_php81="3. $HM00886"
 #    local up_php80="4. $HM00885"
 #    local up_php74="5. $HM00884"
@@ -31,6 +32,7 @@ sub_menu_update_php() {
     [[ $min_php_version -ge 56 && $min_php_version -lt 82  && $OS_VERSION -gt 6 ]] && up_menu=" "$up_php82"\n\t\t"$up_menu
     [[ $min_php_version -ge 56 && $min_php_version -lt 83  && $OS_VERSION -gt 6 ]] && up_menu=" "$up_php83"\n\t\t"$up_menu
     [[ $min_php_version -ge 56 && $min_php_version -lt 84  && $OS_VERSION -gt 6 ]] && up_menu=" "$up_php84"\n\t\t"$up_menu
+    [[ $min_php_version -ge 56 && $min_php_version -lt 85  && $OS_VERSION -gt 6 ]] && up_menu=" "$up_php85"\n\t\t"$up_menu
 #    [[ $min_php_version -ge 56 && $min_php_version -lt 81  && $OS_VERSION -gt 6 ]] && up_menu=$up_menu"\n\t$up_php81"
 #    [[ $min_php_version -ge 56 && $min_php_version -lt 80  && $OS_VERSION -gt 6 ]] && up_menu=$up_menu"\n\t$up_php80"
 #    [[ $min_php_version -ge 56 && $min_php_version -lt 74  && $OS_VERSION -gt 6 ]] && up_menu=$up_menu"\n\t$up_php74"
@@ -80,6 +82,17 @@ sub_menu_update_php() {
                 ;;
             "1")
                 echo "$UP_MENU"
+                if [[ $min_php_version -ge 85 || $OS_VERSION -eq 6 ]];
+                then
+                    error_pick
+                    UP_MENU=
+                    continue
+                fi
+                upgrade_cmd="$ansible_wrapper -a bx_php_upgrade_php85 --host $phost_name "
+                upgrade_version="8.5"
+                ;;
+            "2")
+                echo "$UP_MENU"
                 if [[ $min_php_version -ge 84 || $OS_VERSION -eq 6 ]];
                 then
                     error_pick
@@ -89,7 +102,7 @@ sub_menu_update_php() {
                 upgrade_cmd="$ansible_wrapper -a bx_php_upgrade_php84 --host $phost_name "
                 upgrade_version="8.4"
                 ;;
-            "2")
+            "3")
                 echo "$UP_MENU"
                 if [[ $min_php_version -ge 83 || $OS_VERSION -eq 6 ]];
                 then
@@ -100,7 +113,7 @@ sub_menu_update_php() {
                 upgrade_cmd="$ansible_wrapper -a bx_php_upgrade_php83 --host $phost_name "
                 upgrade_version="8.3"
                 ;;
-            "3")
+            "4")
                 if [[ $min_php_version -ge 82 || $OS_VERSION -eq 6 ]];
                 then
                     error_pick
@@ -221,6 +234,7 @@ sub_menu_downgrade_php() {
     local down_php81="1. $HM00897"
     local down_php82="2. $HM00898"
     local down_php83="3. $HM00899"
+    local down_php84="4. $HM00902"
 
     local down_menu=""
 #    [[ $min_php_version -gt 56 && $BITRIX_ENV_TYPE != "crm" ]] && down_menu=$down_menu"\n\t$down_php56"
@@ -230,6 +244,7 @@ sub_menu_downgrade_php() {
 #    [[ $min_php_version -gt 73 ]] && down_menu=$down_menu"\n\t$down_php73"
 #    [[ $min_php_version -gt 74 ]] && down_menu=$down_menu"\n\t$down_php74"
 #    [[ $min_php_version -gt 80 ]] && down_menu=$down_menu"\n\t$down_php80"
+    [[ $min_php_version -gt 84 ]] && down_menu=" "$down_php84"\n\t\t"$down_menu
     [[ $min_php_version -gt 83 ]] && down_menu=" "$down_php83"\n\t\t"$down_menu
     [[ $min_php_version -gt 82 ]] && down_menu=" "$down_php82"\n\t\t"$down_menu
     [[ $min_php_version -gt 81 ]] && down_menu=" "$down_php81"\n\t\t"$down_menu
@@ -284,6 +299,16 @@ sub_menu_downgrade_php() {
                 fi
                 down_cmd="$ansible_wrapper -a bx_php_rollback_php83 --host ${phost_name}"
                 down_version="8.3"
+                ;;
+            "4")
+                if [[ $min_php_version -le 84 ]];
+                then
+                    error_pick
+                    DOWN_MENU=
+                    continue
+                fi
+                down_cmd="$ansible_wrapper -a bx_php_rollback_php84 --host ${phost_name}"
+                down_version="8.4"
                 ;;
             *)
                 error_pick

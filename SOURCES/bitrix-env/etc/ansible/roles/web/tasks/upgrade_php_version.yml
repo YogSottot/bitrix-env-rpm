@@ -36,3 +36,6 @@
 
 - include_tasks: upgrade_php84.yml
   when: to_php_version >= 84 and 84 in php_upgraded_versions
+
+- include_tasks: upgrade_php85.yml
+  when: to_php_version >= 85 and 85 in php_upgraded_versions

@@ -488,7 +488,7 @@ get_bx_packages() {
     # Rocky Linux 9 / AlmaLinux 9 / Oracle Linux 9 / CentOS Stream 9
     if [[ $OS_VERSION -eq 9 ]];
     then
-	php_supported_versions=(81 82 83 84)
+	php_supported_versions=(81 82 83 84 85)
     fi
     php_upgraded_versions=()
     php_rollback_versions=()

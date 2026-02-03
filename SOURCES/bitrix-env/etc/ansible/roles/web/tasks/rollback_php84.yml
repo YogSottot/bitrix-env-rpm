@@ -1,0 +1,56 @@
+---
+# 1. copy /etc/php.d files
+# 2. remove current version php
+# 3. install old version php
+# 4. restart httpd
+
+- shell: rsync -a --delete /etc/php.d/ /opt/webdir/tmp/php.d/
+  args:
+    creates: /opt/webdir/tmp/php.d/bitrixenv.ini
+
+# Rocky Linux 9 / AlmaLinux 9 / Oracle Linux 9 / CentOS Stream 9
+- name: backup php.ini file
+  shell: /opt/webdir/bin/backup_php_ini_file.sh
+  when: (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
+
+- name: enable remi php84 repository
+  dnf:
+    name: '@php:remi-8.4'
+    state: present
+  tags: remi
+  when: (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
+
+- name: disable remi php85 repository
+  dnf:
+    name: '@php:remi-8.5'
+    state: absent
+  tags: remi
+  when: (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
+
+- include_tasks: reinstall_php.yml
+  vars:
+    is_php71: false
+    is_php56: false
+    is_json_module: false
+  when: (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
+
+- name: enable opcache extension back
+  shell: /opt/webdir/bin/php_opcache_switcher.sh on
+  when: (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
+
+- include_tasks: php_ext_dublicates.yml
+  when: (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
+
+- name: convert extension names
+  shell: /opt/webdir/bin/convert_phpd_files.sh
+  when: (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
+
+- name: convert php.ini file
+  shell: /opt/webdir/bin/convert_php_ini_file.sh
+  when: (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"
+
+- name: restart httpd
+  service:
+    name: httpd
+    state: restarted
+  when: (ansible_distribution == "Rocky" or ansible_distribution == "AlmaLinux" or ansible_distribution == "OracleLinux" or ansible_distribution == "CentOS") and ansible_distribution_major_version == "9"

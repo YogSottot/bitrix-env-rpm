@@ -12,6 +12,7 @@ export PATH=/sbin:/bin:/usr/sbin:/usr/bin
 
 INIT_FLAG=/root/BX_INITIAL_SETUP
 MYSQL_CNF=/root/.my.cnf
+PGSQL_PASS=/root/.pgpass
 
 # upload proc
 . /opt/webdir/bin/bitrix_utils.sh || exit 1
@@ -49,14 +50,17 @@ bx_init() {
     # cleanup
     delete_packer_user
 
-    # generate root password and update security options
+    # generate mysql root password and update security options
     my_generate_rootpw
 
-    # generate bitrix password for default site
+    # generate mysql bitrix password for default site
     my_generate_sitepw
 
     # update crypo key
     update_crypto_key
+
+    # regenerate postgresql postgres password
+    update_postgresql_postgres_password
 
     # generate pool server
     # generate_ansible_inventory 0 "$BITRIX_ENV_TYPE"

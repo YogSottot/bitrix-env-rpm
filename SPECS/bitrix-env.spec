@@ -21,7 +21,7 @@
 %define bitrix_source		bitrix-env
 %define bitrix_type		general
 %define bitrix_conflicts	bitrix-env-crm
-%define bitrix_rel		8
+%define bitrix_rel		9
 
 Name:		bitrix-env
 Version:	9.0
@@ -181,12 +181,14 @@ cp -fr usr $RPM_BUILD_ROOT/
 
 %post
 # test install or upgrade
-if [ $1 -eq 1 ]; then
-  RPM_ACTION=install
-elif [ $1 -gt 1 ]; then
-  RPM_ACTION=upgrade
+if [ $1 -eq 1 ];
+then
+    RPM_ACTION=install
+elif [ $1 -gt 1 ];
+then
+    RPM_ACTION=upgrade
 else
-  RPM_ACTION=undefined
+    RPM_ACTION=undefined
 fi
 
 BITRIX_ENV_VER=%{version}.%{bitrix_rel}
@@ -197,27 +199,26 @@ BITRIX_ENV_TYPE=%{bitrix_type}
 
 # Remove BitrixEnv
 %postun
-if [ $1 -eq 0 ]; then
+if [ $1 -eq 0 ];
+then
+    service stunnel stop >/dev/null 2>&1 ;
+    chkconfig --del stunnel >/dev/null 2>&1 ;
+    rm -rf /etc/init.d/stunnel >/dev/null 2>&1 ;
+    rm -rf /etc/stunnel/stunnel.conf >/dev/null 2>&1 ;
 
-	service stunnel stop >/dev/null 2>&1 ;
-	chkconfig --del stunnel >/dev/null 2>&1 ;
-	rm -rf /etc/init.d/stunnel >/dev/null 2>&1 ;
-	rm -rf /etc/stunnel/stunnel.conf >/dev/null 2>&1 ;
+    sed  -i".$UPDATE_TM" '/bitrix\/modules\/main\/tools\/cron\_events/d' /etc/crontab ;
+    sed  -i".$UPDATE_TM" '/xmppd\.sh/d' /etc/crontab ;
+    sed  -i".$UPDATE_TM" '/smtpd\.sh/d' /etc/crontab ;
+    sed  -i".$UPDATE_TM" '/root\/bitrix\-env\/check\_bitrixenv\_chown/d' /etc/crontab ;
 
-	sed  -i".$UPDATE_TM" '/bitrix\/modules\/main\/tools\/cron\_events/d' /etc/crontab ;
-	sed  -i".$UPDATE_TM" '/xmppd\.sh/d' /etc/crontab ;
-	sed  -i".$UPDATE_TM" '/smtpd\.sh/d' /etc/crontab ;
-	sed  -i".$UPDATE_TM" '/root\/bitrix\-env\/check\_bitrixenv\_chown/d' /etc/crontab ;
+    chkconfig --del bvat >/dev/null 2>&1 ;
+    rm -rf /usr/bin/bvat >/dev/null 2>&1 ;
 
-	chkconfig --del bvat >/dev/null 2>&1 ;
-	rm -rf /usr/bin/bvat >/dev/null 2>&1 ;
-
-	sed -i".$UPDATE_TM" '/;bitrix-env/d' /etc/php.ini >/dev/null 2>&1 ;
-	sed -i".$UPDATE_TM" '/#bitrix-env/d' /etc/profile >/dev/null 2>&1 ;
-	sed -i".$UPDATE_TM" '/#bitrix-env/d' /root/.bash_profile >/dev/null 2>&1 ;
-	sed -i".$UPDATE_TM" '/#bitrix-env/d' /etc/nginx/mime.types >/dev/null 2>&1 ;
+    sed -i".$UPDATE_TM" '/;bitrix-env/d' /etc/php.ini >/dev/null 2>&1 ;
+    sed -i".$UPDATE_TM" '/#bitrix-env/d' /etc/profile >/dev/null 2>&1 ;
+    sed -i".$UPDATE_TM" '/#bitrix-env/d' /root/.bash_profile >/dev/null 2>&1 ;
+    sed -i".$UPDATE_TM" '/#bitrix-env/d' /etc/nginx/mime.types >/dev/null 2>&1 ;
 fi
-
 
 %posttrans
 

@@ -8,6 +8,9 @@
 
 # rollback
 
+- include_tasks: rollback_php84.yml
+  when: to_php_version <= 84 and 84 in php_rollback_versions
+
 - include_tasks: rollback_php83.yml
   when: to_php_version <= 83 and 83 in php_rollback_versions
 

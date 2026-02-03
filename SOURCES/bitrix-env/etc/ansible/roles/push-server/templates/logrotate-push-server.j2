@@ -1,0 +1,20 @@
+# {{ ansible_managed }}
+# rotate info.log and error.log for push server service
+/var/log/push-server/*.log
+{
+    su bitrix bitrix
+    create 0644 bitrix bitrix
+    copytruncate
+    ifempty
+    daily
+    rotate 10
+    maxage 30
+    missingok
+    notifempty
+    compress
+    delaycompress
+    sharedscripts
+    postrotate
+        /bin/systemctl restart push-server.service > /dev/null 2>/dev/null || true
+    endscript
+}
